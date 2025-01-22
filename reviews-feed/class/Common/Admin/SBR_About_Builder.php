@@ -50,7 +50,8 @@ class SBR_About_Builder extends About_Builder
             'adminNoticeContent' => apply_filters('sbr_admin_notices_filter', 1),
             'aboutPageUrl' => admin_url('admin.php?page=sbr-about'),
             'collectionsPageUrl' => admin_url('admin.php?page=sbr-collections'),
-            'builderUrl'           => admin_url( 'admin.php?page=sbr')
+            'builderUrl'           => admin_url( 'admin.php?page=sbr'),
+            'freeRetrieverData'     => Util::get_free_retriever_data()
         ];
 
         return $aboutus_data;

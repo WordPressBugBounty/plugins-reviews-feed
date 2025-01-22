@@ -222,7 +222,7 @@ class SBR_Sources{
 	 *
 	 * @return array
 	 *
-	 * @since 1.5
+	 * @since 2.0
 	 */
 	public static function sources_by_providers($providers = [])
 	{
@@ -236,5 +236,58 @@ class SBR_Sources{
 			$provider_list
 		);
 		return $wpdb->get_results($sql, ARRAY_A);
+	}
+
+	/**
+	 * Check Source reviews were already retrieved
+	 *
+	 * @param string $provider
+	 * @param string $provider_id
+	 *
+	 * @return boolean
+	 *
+	 * @since 2.0
+	 */
+	public static function already_fetched($provider, $provider_id)
+	{
+		global $wpdb;
+		$posts_table = $wpdb->prefix . SBR_POSTS_TABLE;
+		$sql = $wpdb->prepare(
+			"SELECT COUNT(*) FROM $posts_table
+			WHERE provider = %s AND provider_id = %s",
+			esc_sql($provider),
+			esc_sql($provider_id)
+		);
+
+		return $wpdb->get_var($sql) > 0;
+	}
+
+	/**
+	 * Check Source reviews were already retrieved
+	 *	The Current Week
+	 *
+	 * @param string $provider
+	 * @param string $provider_id
+	 *
+	 * @return boolean
+	 *
+	 * @since 2.0
+	 */
+	public static function already_fetched_week($provider, $provider_id)
+	{
+		global $wpdb;
+		$posts_table = $wpdb->prefix . SBR_POSTS_TABLE;
+
+		$sql = $wpdb->prepare(
+			"SELECT COUNT(*) FROM $posts_table
+			WHERE provider = %s
+			AND provider_id = %s
+			AND created_on > %s
+			",
+			esc_sql($provider),
+			esc_sql($provider_id),
+			date('Y-m-d', strtotime('-1 week', time()))
+		);
+		return $wpdb->get_var($sql) > 0;
 	}
 }

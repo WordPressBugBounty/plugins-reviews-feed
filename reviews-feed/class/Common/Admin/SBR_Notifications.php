@@ -539,7 +539,7 @@ class SBR_Notifications extends ServiceProvider
 
 		$is_review_notice = ! empty( $notifications[0] ) && ! empty( $notifications[0]['id'] ) && $notifications[0]['id'] === 'review';
 
-		if ( ! $is_review_notice && ! empty( $_GET['feed_id'] ) ) {
+		if ( ! $is_review_notice || ! empty( $_GET['feed_id'] ) ) {
 			return null;
 		}
 

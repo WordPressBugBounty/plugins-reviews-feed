@@ -69,6 +69,11 @@ if (!defined('SBR_RELAY_BASE_URL')) {
  	define('SBR_RELAY_BASE_URL', 'https://reviews.smashballoon.com/api/v1.0/');
 }
 
+if (!defined('SBR_CONNECT_SITE_URL')) {
+	define('SBR_CONNECT_SITE_URL', 'https://connect.smashballoon.com/auth/rv/');
+}
+
+
 if (!defined('SBR_CRON_UPDATE_CACHE_TIME')) {
 	define('SBR_CRON_UPDATE_CACHE_TIME', 60 * 60 * 24 * 60);
 }
@@ -126,9 +131,10 @@ if (!defined('SBR_FB_CONNECT_URL')){
     define('SBR_FB_CONNECT_URL', 'https://connect.smashballoon.com/auth/fb/');
 }
 
-
 require_once trailingslashit(SBR_PLUGIN_DIR) . 'vendor/autoload.php';
 require_once trailingslashit(SBR_PLUGIN_DIR) . 'class/sbr-functions.php';
+
+
 
 //Customizer container config
 $customizerContainer = \Smashballoon\Customizer\V2\Container::getInstance();

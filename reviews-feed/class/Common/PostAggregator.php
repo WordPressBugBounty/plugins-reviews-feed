@@ -6,6 +6,7 @@
  */
 namespace SmashBalloon\Reviews\Common;
 use SmashBalloon\Reviews\Common\Helpers\Data_Encryption;
+use SmashBalloon\Reviews\Pro\Integrations\Forms\ReviewsSubmissionsRules;
 
 class PostAggregator {
 
@@ -106,7 +107,7 @@ class PostAggregator {
 
         if( sizeof($posts_id_todelete) > 0 )  {
             $posts_ids = implode(',', $posts_id_todelete);
-            $wpdb->query(
+			$wpdb->query(
                 "DELETE FROM $table_name WHERE id IN ($posts_ids)"
             );
         }
@@ -282,6 +283,9 @@ class PostAggregator {
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
 		$provider_value = $provider === 'collection' ? 'none' : $provider;
+
+		ReviewsSubmissionsRules::remove_auto_approved($review_id, $provider_id, '', 'single', false);
+
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM $table_name

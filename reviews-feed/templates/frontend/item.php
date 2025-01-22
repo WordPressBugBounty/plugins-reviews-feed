@@ -11,10 +11,11 @@ if (!defined('ABSPATH')) {
 }
 
 $item_classes = $this->item_classes( $post );
+$no_icon = ['wpforms', 'formidable'];
 ?>
 <div class="sb-post-item-wrap sb-new <?php echo esc_attr( $item_classes ); ?>">
 	<div class="sb-post-item">
-		<?php if (isset($post['provider']['name']) && $post['provider']['name'] !== 'none') { ?>
+		<?php if (isset($post['provider']['name']) && $post['provider']['name'] !== 'none' && !in_array($post['provider']['name'], $no_icon)) { ?>
 			<span class="sb-item-provider-icon">
 				<img src="<?php echo esc_html( $this->provider_icon_url( $post, $settings ) ); ?>" alt="<?php echo esc_html( $this->parser->get_provider_name( $post ) ); ?>" />
 			</span>

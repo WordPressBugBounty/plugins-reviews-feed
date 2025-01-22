@@ -50,7 +50,11 @@ abstract class BaseProvider extends ServiceProvider
      */
     public function getSourcesInfo($args = []) {
         $response = $this->relay->call( $this->sources_endpoint  , $args, 'GET', true);
-        if( isset( $response['data'] ) && $response['data'] ){
+        if (isset($response['success']) && false === $response['success']) {
+            return wp_json_encode($response);
+        }
+
+        if(isset($response['data']) && $response['data'] ){
             return wp_json_encode( $response['data'] );
         }
         return false;

@@ -106,76 +106,76 @@ msgstr "プラグインを有効化できませんでした。プラグインペ
 msgid "Could not deactivate the Plugin. Please deactivate from the Plugins page."
 msgstr "プラグインを無効化できませんでした。プラグインページから無効化してください。"
 
-#: class/Common/Admin/SBR_Support_Builder.php:67
+#: class/Common/Admin/SBR_Support_Builder.php:69
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Getting Started"
 msgstr "はじめましょう"
 
-#: class/Common/Admin/SBR_Support_Builder.php:68
+#: class/Common/Admin/SBR_Support_Builder.php:70
 msgid "Some helpful resources to get you started"
 msgstr "始めるのに役立つ情報をご覧ください。"
 
-#: class/Common/Admin/SBR_Support_Builder.php:72
+#: class/Common/Admin/SBR_Support_Builder.php:74
 msgid "Getting Started with Reviews Feed"
 msgstr "Reviews Feed を使い始めよう"
 
-#: class/Common/Admin/SBR_Support_Builder.php:76
+#: class/Common/Admin/SBR_Support_Builder.php:78
 msgid "How to Create a Yelp API Key"
 msgstr "Yelp API キーの作成方法"
 
-#: class/Common/Admin/SBR_Support_Builder.php:80
+#: class/Common/Admin/SBR_Support_Builder.php:82
 msgid "How to Create a Google API Key"
 msgstr "Google API キーの作成方法"
 
-#: class/Common/Admin/SBR_Support_Builder.php:85
+#: class/Common/Admin/SBR_Support_Builder.php:87
 msgid "More help on Getting started"
 msgstr "入門ヘルプをもっと見る"
 
-#: class/Common/Admin/SBR_Support_Builder.php:90
+#: class/Common/Admin/SBR_Support_Builder.php:92
 msgid "Docs & Troubleshooting"
 msgstr "ヘルプ文書とトラブルシューティング"
 
-#: class/Common/Admin/SBR_Support_Builder.php:91
+#: class/Common/Admin/SBR_Support_Builder.php:93
 msgid "Run into an issue? Check out our help docs."
 msgstr "問題が発生しましたか？ ヘルプドキュメントをご覧ください。"
 
-#: class/Common/Admin/SBR_Support_Builder.php:95
+#: class/Common/Admin/SBR_Support_Builder.php:97
 msgid "Why do I only see a few reviews?"
 msgstr "表示されるレビューがなぜ少ないのしょうか ?"
 
-#: class/Common/Admin/SBR_Support_Builder.php:99
+#: class/Common/Admin/SBR_Support_Builder.php:101
 msgid "How to Resolve Error Messages"
 msgstr "エラーメッセージを解決する方法"
 
-#: class/Common/Admin/SBR_Support_Builder.php:103
+#: class/Common/Admin/SBR_Support_Builder.php:105
 msgid "Translating Google Reviews"
 msgstr "Google レビューを翻訳"
 
-#: class/Common/Admin/SBR_Support_Builder.php:108
+#: class/Common/Admin/SBR_Support_Builder.php:110
 msgid "View Documentation"
 msgstr "ドキュメンテーションを表示"
 
-#: class/Common/Admin/SBR_Support_Builder.php:113
+#: class/Common/Admin/SBR_Support_Builder.php:115
 msgid "Additional Resources"
 msgstr "追加リソース"
 
-#: class/Common/Admin/SBR_Support_Builder.php:114
+#: class/Common/Admin/SBR_Support_Builder.php:116
 msgid "To help you get the most out of the plugin"
 msgstr "プラグインを最大限に活用するための追加リソースをご覧ください。"
 
-#: class/Common/Admin/SBR_Support_Builder.php:118
+#: class/Common/Admin/SBR_Support_Builder.php:120
 msgid "Can I Display Multiple Reviews on One Page?"
 msgstr "1つのページに複数のレビューを表示できますか ?"
 
-#: class/Common/Admin/SBR_Support_Builder.php:122
+#: class/Common/Admin/SBR_Support_Builder.php:124
 msgid "License Tiers Explained (additional review providers)"
 msgstr "ライセンスレベルの説明 (追加のレビュープロバイダー)"
 
-#: class/Common/Admin/SBR_Support_Builder.php:126
+#: class/Common/Admin/SBR_Support_Builder.php:128
 msgid "How do I Embed My Feed Directly in a Template?"
 msgstr "自分のフィードをテンプレートに直接埋め込むにはどうすればよいですか ?"
 
-#: class/Common/Admin/SBR_Support_Builder.php:131
+#: class/Common/Admin/SBR_Support_Builder.php:133
 msgid "View Blog"
 msgstr "ブログを見る"
 
@@ -188,74 +188,70 @@ msgstr ""
 msgid "Cannot get info"
 msgstr ""
 
-#: class/Common/Builder/SBR_Feed_Builder.php:132
+#: class/Common/Builder/SBR_Feed_Builder.php:146
 msgid "Default"
 msgstr "デフォルト"
 
-#: class/Common/Builder/SBR_Feed_Builder.php:136
+#: class/Common/Builder/SBR_Feed_Builder.php:150
 msgid "Simple Cards"
 msgstr "シンプルなカード"
 
-#: class/Common/Builder/SBR_Feed_Builder.php:141
+#: class/Common/Builder/SBR_Feed_Builder.php:155
 #: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:165
 msgid "Masonry"
 msgstr "レンガ状"
 
-#: class/Common/Builder/SBR_Feed_Builder.php:152
+#: class/Common/Builder/SBR_Feed_Builder.php:166
 msgid "Single Review"
 msgstr "シングルレビュー"
 
-#: class/Common/Builder/SBR_Feed_Builder.php:157
+#: class/Common/Builder/SBR_Feed_Builder.php:171
 msgid "Showcase Carousel"
 msgstr "ショーケースのカルーセル"
 
-#: class/Common/Builder/SBR_Feed_Builder.php:162
+#: class/Common/Builder/SBR_Feed_Builder.php:176
 #: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:170
 msgid "Carousel"
 msgstr "カルーセル"
 
-#: class/Common/Builder/SBR_Feed_Builder.php:167
+#: class/Common/Builder/SBR_Feed_Builder.php:181
 msgid "Grid Carousel"
 msgstr "グリッドカルーセル"
 
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:496
-msgid "Supports only Json file"
-msgstr "Json ファイルのみをサポート"
-
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:501
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:509
 msgid "Don't have file, Please try again"
 msgstr "ファイルがありません。もう一度お試しください"
 
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:904
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:967
 msgid "No feed source is included. Cannot upload feed."
 msgstr "フィードソースは含まれていません。フィードをアップロードできません。"
 
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:916
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:979
 msgid "Feed settings imported successfully."
 msgstr "フィード設定をインポートしました。"
 
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:921
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:984
 msgid "Could not import feed. Please try again"
 msgstr "フィードをインポートできませんでした。もう一度やり直してください"
 
-#: class/Common/Customizer/DB.php:450
+#: class/Common/Customizer/DB.php:451
 #: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:77
 #: class/Common/Feed_Locator.php:368
 msgid "Header"
 msgstr "ヘッダー"
 
-#: class/Common/Customizer/DB.php:452
+#: class/Common/Customizer/DB.php:453
 #: class/Common/Feed_Locator.php:378
 msgid "Footer"
 msgstr "フッター"
 
-#: class/Common/Customizer/DB.php:454
+#: class/Common/Customizer/DB.php:455
 #: class/Common/Feed_Locator.php:373
 msgid "Sidebar"
 msgstr "サイドバー"
 
-#: class/Common/Customizer/DB.php:456
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:592
+#: class/Common/Customizer/DB.php:457
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:603
 #: class/Common/Feed_Locator.php:364
 msgid "Content"
 msgstr "内容"
@@ -317,307 +313,307 @@ msgstr "カラム"
 msgid "Columns and Rows"
 msgstr "カラムと行"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:426
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:437
 msgid "Pagination"
 msgstr "ページ送り"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:439
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:450
 msgid "Loop Type"
 msgstr "ループタイプ"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:441
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:452
 msgid "Rewind"
 msgstr "巻き戻す"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:442
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:453
 msgid "Infinity"
 msgstr "無限"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:451
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:462
 msgid "Interval Time"
 msgstr "間隔"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:457
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:468
 msgid "Show Navigation Arrows"
 msgstr "ナビゲーション矢印を表示"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:467
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:478
 msgid "Show Pagination"
 msgstr "ページネーションを表示"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:477
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:488
 msgid "Enable Autoplay"
 msgstr "自動再生を有効化"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:489
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:500
 msgid "Content Length"
 msgstr "コンテンツの長さ"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:494
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:505
 #: class/Common/Customizer/Tabs/SBR_Settings_Tab.php:338
 #: class/Common/Customizer/Tabs/SBR_Settings_Tab.php:349
 msgid "characters"
 msgstr "文字"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:517
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:528
 msgid "Inherit from Theme"
 msgstr "テーマから継承"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:522
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:533
 msgid "Light"
 msgstr "ライト"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:527
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:538
 msgid "Dark"
 msgstr "ダーク"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:532
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1569
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:543
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1580
 msgid "Custom"
 msgstr "カスタム"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:567
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:938
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:578
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:949
 #: class/Common/Customizer/Tabs/SBR_Settings_Tab.php:376
 msgid "Enable"
 msgstr "有効化"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:577
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1201
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1313
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:588
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1212
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1324
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Name"
 msgstr "名前"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:584
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:595
 msgid "Heading"
 msgstr "見出し"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:609
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:706
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:804
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:992
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1219
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1269
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:620
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:717
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:815
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1003
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1230
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1280
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Color"
 msgstr "色"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:614
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:694
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:714
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:961
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:973
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1004
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1017
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1276
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:625
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:705
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:725
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:972
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:984
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1015
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1028
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1287
 msgid "Text"
 msgstr "テキスト"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:630
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:750
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:838
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1054
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1174
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1229
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1284
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1336
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1381
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1452
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1501
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:641
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:761
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:849
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1065
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1185
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1240
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1295
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1347
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1392
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1463
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1512
 msgid "Element Spacing"
 msgstr "項目の間隔"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:638
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:756
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:844
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:877
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1064
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1180
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1235
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1290
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1342
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1458
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1507
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:649
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:767
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:855
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:888
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1075
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1191
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1246
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1301
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1353
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1469
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1518
 msgid "Padding"
 msgstr "パディング"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:645
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:763
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:851
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:887
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1075
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1242
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1297
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1349
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1387
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1465
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1514
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:656
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:774
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:862
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:898
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1086
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1253
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1308
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1360
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1398
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1476
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1525
 msgid "Margin"
 msgstr "余白"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:651
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:662
 msgid "Button"
 msgstr "ボタン"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:658
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:669
 msgid "Link to"
 msgstr "リンク先"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:666
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:677
 msgid "Google (Write a Review)"
 msgstr "Google (レビューを書く)"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:667
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:678
 msgid "External Link"
 msgstr "外部リンク"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:723
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:734
 msgid "Background"
 msgstr "背景"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:732
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:743
 msgid "Text/ Hover"
 msgstr "テキスト / マウスオーバー"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:741
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:752
 msgid "Bg/ Hover"
 msgstr "Bg/ マウスオーバー"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:772
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:783
 msgid "Average Review Rating"
 msgstr "平均レビュー評価"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:780
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:821
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1206
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:791
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:832
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1217
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Rating"
 msgstr "評価"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:792
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:803
 msgid "Rating Subtext"
 msgstr "評価のサブテキスト"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:812
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:823
 msgid "Rating Icon"
 msgstr "評価アイコン"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:830
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:841
 msgid "Subtext"
 msgstr "サブテキスト"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:865
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:876
 msgid "Element Header Spacing"
 msgstr "項目ヘッダーの間隔"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:908
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:919
 msgid "Post Style"
 msgstr "投稿スタイル"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:916
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:927
 msgid "Edit Individual Elements"
 msgstr "個別の要素を編集"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:917
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:928
 msgid "Hide or Show individual elements of a post or edit their options"
 msgstr "投稿の個別の要素を表示、非表示にしたり、オプションを編集したりします"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1030
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1041
 msgid "Text / Hover"
 msgstr "テキスト / マウスオーバー"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1043
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1054
 msgid "Bg / Hover"
 msgstr "Bg / マウスオーバー"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1103
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1114
 msgid "Boxed"
 msgstr "ボックス"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1109
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1120
 msgid "Regular"
 msgstr "標準"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1119
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1478
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1130
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1489
 msgid "Colors"
 msgstr "色"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1124
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1135
 msgid "Background Color"
 msgstr "背景色"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1139
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1150
 msgid "Properties"
 msgstr "プロパティ"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1147
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1158
 msgid "Box Shadow"
 msgstr "ボックスシャドウ"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1156
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1167
 msgid "Corner Radius"
 msgstr "コーナー半径"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1162
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1173
 msgid "Stroke"
 msgstr "ストローク"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1213
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1224
 msgid "Icon Color"
 msgstr "アイコンの色"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1250
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1261
 msgid "Review Paragraph"
 msgstr "レビューの段落"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1257
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1324
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1402
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1268
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1335
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1413
 msgid "Font"
 msgstr "フォント"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1305
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1316
 msgid "Author and Date"
 msgstr "投稿者と日付"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1317
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1485
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1328
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1496
 msgid "Author Name"
 msgstr "投稿者名"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1357
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1368
 msgid "Author Image"
 msgstr "投稿者の画像"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1370
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1381
 msgid "Border Radius"
 msgstr "境界半径"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1395
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1493
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1406
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1504
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Date"
 msgstr "日付"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1414
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1425
 msgid "Format"
 msgstr "フォーマット"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1433
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1444
 msgid "Add text before date"
 msgstr "日付の前にテキストを追加"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1441
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1452
 msgid "Add text after date"
 msgstr "日付の後にテキストを追加"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1522
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1533
 msgid "Images or Videos"
 msgstr "画像または動画"
 
-#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1549
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:1560
 msgid "2 days ago"
 msgstr "2日前"
 
@@ -854,44 +850,44 @@ msgstr ""
 msgid "More Information"
 msgstr "詳しく見る"
 
-#: class/Common/Feed.php:71
+#: class/Common/Feed.php:72
 #: class/Pro/Feed.php:17
 msgid "No feed with the ID %d found."
 msgstr "ID %d のフィードが見つかりません。"
 
 #. translators: %s: Opening and closing anchor HTML tags
-#: class/Common/Feed.php:71
+#: class/Common/Feed.php:72
 #: class/Pro/Feed.php:18
 msgid "Please go to the %sReviews Feed%s settings page to create a feed."
 msgstr "%sReviews Feed%s 設定ページにアクセスして、フィードを作成してください。"
 
-#: class/Common/Feed.php:75
+#: class/Common/Feed.php:76
 #: class/Pro/Feed.php:22
 msgid "No sources available for this feed."
 msgstr "このフィードのソースはありません。"
 
-#: class/Common/Feed.php:75
+#: class/Common/Feed.php:76
 #: class/Pro/Feed.php:22
 msgid "Please go to the %sReviews Feed%s settings page add sources for this feed to use."
 msgstr "%sReviews Feed%s 設定ページにアクセスして、このフィードが使用するソースを追加してください。"
 
-#: class/Common/Feed.php:188
+#: class/Common/Feed.php:196
 msgid "No Posts Found."
 msgstr "投稿が見つかりません。"
 
-#: class/Common/Feed.php:190
+#: class/Common/Feed.php:198
 msgid "There were no posts that fit your filters. Try modifying the filters set or add more sources with reviews that fit the filter by %sediting your feed%s"
 msgstr "フィルターに該当する投稿がありませんでした。フィルターを変更するか、 %sフィードを編集%sしてフィルターに合うレビューのソースをさらに追加してみてください。"
 
-#: class/Common/Feed.php:192
+#: class/Common/Feed.php:200
 msgid "There were no posts found for the sources selected. Make sure reviews are available for this source or change the source by %sediting your feed%s"
 msgstr "選択されたソースには投稿がありませんでした。このソースでレビューが利用可能であることを確認するか、%sフィードを編集%sしてソースを変更してください。"
 
-#: class/Common/Feed.php:383
+#: class/Common/Feed.php:399
 msgid "This is affecting the source %s for %s. New reviews will not be fetched until this is resolved."
 msgstr "これは %s のソース %s に影響を与えています。この問題が解決するまで、新しいレビューは取得されません。"
 
-#: class/Common/Feed.php:385
+#: class/Common/Feed.php:401
 msgid "Troubleshoot by visiting %serror message reference page%s."
 msgstr "%sエラーメッセージの参照ページ%sを確認して、問題を解決してください。"
 
@@ -902,105 +898,105 @@ msgstr "%sエラーメッセージの参照ページ%sを確認して、問題�
 msgid "Write a Review"
 msgstr "レビューを書く"
 
-#: class/Common/FeedDisplay.php:237
+#: class/Common/FeedDisplay.php:238
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:77
 #: class/sbr-functions.php:262
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "second"
 msgstr "秒"
 
-#: class/Common/FeedDisplay.php:238
+#: class/Common/FeedDisplay.php:239
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:82
 #: class/sbr-functions.php:263
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "seconds"
 msgstr "秒"
 
-#: class/Common/FeedDisplay.php:239
+#: class/Common/FeedDisplay.php:240
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:87
 #: class/sbr-functions.php:264
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "minute"
 msgstr "分"
 
-#: class/Common/FeedDisplay.php:240
+#: class/Common/FeedDisplay.php:241
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:92
 #: class/sbr-functions.php:265
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "minutes"
 msgstr "分"
 
-#: class/Common/FeedDisplay.php:241
+#: class/Common/FeedDisplay.php:242
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:97
 #: class/sbr-functions.php:266
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "hour"
 msgstr "時間"
 
-#: class/Common/FeedDisplay.php:242
+#: class/Common/FeedDisplay.php:243
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:102
 #: class/sbr-functions.php:267
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "hours"
 msgstr "時間"
 
-#: class/Common/FeedDisplay.php:243
+#: class/Common/FeedDisplay.php:244
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:107
 #: class/sbr-functions.php:268
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "day"
 msgstr "日"
 
-#: class/Common/FeedDisplay.php:244
+#: class/Common/FeedDisplay.php:245
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:112
 #: class/sbr-functions.php:269
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "days"
 msgstr "日"
 
-#: class/Common/FeedDisplay.php:245
+#: class/Common/FeedDisplay.php:246
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:117
 #: class/sbr-functions.php:270
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "week"
 msgstr "週間"
 
-#: class/Common/FeedDisplay.php:246
+#: class/Common/FeedDisplay.php:247
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:122
 #: class/sbr-functions.php:271
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "weeks"
 msgstr "週間"
 
-#: class/Common/FeedDisplay.php:247
+#: class/Common/FeedDisplay.php:248
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:127
 #: class/sbr-functions.php:272
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "month"
 msgstr "月"
 
-#: class/Common/FeedDisplay.php:248
+#: class/Common/FeedDisplay.php:249
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:132
 #: class/sbr-functions.php:273
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "months"
 msgstr "月"
 
-#: class/Common/FeedDisplay.php:249
 #: class/Common/FeedDisplay.php:250
+#: class/Common/FeedDisplay.php:251
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:142
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "years"
 msgstr "年"
 
-#: class/Common/FeedDisplay.php:251
+#: class/Common/FeedDisplay.php:252
 #: class/Common/Settings/Tabs/SBR_Translation_Tab.php:147
 #: class/sbr-functions.php:276
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "ago"
 msgstr "前"
 
-#: class/Common/FeedDisplay.php:392
+#: class/Common/FeedDisplay.php:393
 #: class/Pro/FeedDisplay.php:158
 msgid "This error message is only visible to WordPress admins"
 msgstr "このエラーメッセージは WordPress の管理者にだけ表示されます "
@@ -1356,286 +1352,286 @@ msgstr "さらに詳しく"
 msgid "Done"
 msgstr "完了"
 
-#: class/Common/Util.php:22
+#: class/Common/Util.php:23
 msgid "Place ID"
 msgstr "場所 ID"
 
-#: class/Common/Util.php:23
+#: class/Common/Util.php:24
 msgid "Enter Place ID"
 msgstr "場所 ID を入力"
 
-#: class/Common/Util.php:35
-#: class/Common/Util.php:44
-#: class/Common/Util.php:52
-#: class/Common/Util.php:59
+#: class/Common/Util.php:36
+#: class/Common/Util.php:45
+#: class/Common/Util.php:53
+#: class/Common/Util.php:60
 msgid "Page URL"
 msgstr "ページ URL"
 
-#: class/Common/Util.php:36
+#: class/Common/Util.php:37
 msgid "https://tripadvisor.com/..."
 msgstr "https://tripadvisor.com/..."
 
-#: class/Common/Util.php:45
+#: class/Common/Util.php:46
 msgid "https://yelp.com/..."
 msgstr "https://yelp.com/..."
 
-#: class/Common/Util.php:53
+#: class/Common/Util.php:54
 msgid "https://trustpilot.com/review/..."
 msgstr "https://trustpilot.com/review/..."
 
-#: class/Common/Util.php:60
+#: class/Common/Util.php:61
 msgid "https://wordpress.org/..."
 msgstr "https://wordpress.org/..."
 
-#: class/Common/Util.php:93
+#: class/Common/Util.php:94
 msgid "Unable to connect to Facebook to retrieve account information."
 msgstr "Facebook に接続してアカウント情報を取得することができません。"
 
-#: class/Common/Util.php:183
+#: class/Common/Util.php:184
 msgid "New reviews will not display until an API key is entered for your sources."
 msgstr "ソースの API キーが入力されるまで、新しいレビューは表示されません。"
 
-#: class/Common/Util.php:184
+#: class/Common/Util.php:185
 msgid "Due to API limitations your feeds will not show new reviews until you enter an API key on the settings page."
 msgstr "API の制限により、設定ページで API キーを入力するまで、フィードに新しいレビューは表示されません。"
 
-#: class/Common/Util.php:188
+#: class/Common/Util.php:189
 msgid "How to create an API key"
 msgstr "API キーの作成方法"
 
-#: class/Common/Util.php:193
+#: class/Common/Util.php:194
 msgid "Go to Settings page"
 msgstr "設定ページに移動"
 
-#: class/Common/Util.php:206
+#: class/Common/Util.php:207
 msgid "You have reached the number of allowed sources."
 msgstr "許可されたソースの数に達しました。"
 
-#: class/Common/Util.php:207
+#: class/Common/Util.php:208
 msgid "Due to API limitations your feeds will not show new reviews because you have reached the number of allowed sources."
 msgstr "許可されたソースの数に達したため、API の制限によりフィードに新しいレビューが表示されません。"
 
-#: class/Common/Util.php:265
+#: class/Common/Util.php:266
 msgid "Custom Facebook Feed"
 msgstr "Custom Facebook Feed"
 
-#: class/Common/Util.php:266
+#: class/Common/Util.php:267
 msgid "Add Facebook posts from your timeline, albums and much more."
 msgstr "タイムラインやアルバムなどから、Facebook 投稿を追加します。"
 
-#: class/Common/Util.php:275
+#: class/Common/Util.php:276
 msgid "Instagram Feed"
 msgstr "Instagram Feed"
 
-#: class/Common/Util.php:276
+#: class/Common/Util.php:277
 msgid "A quick and elegant way to add your Instagram posts to your website. "
 msgstr "すばやくエレガントな方法で、Instagram の投稿をサイトに追加できます。 "
 
-#: class/Common/Util.php:285
+#: class/Common/Util.php:286
 msgid "Custom Twitter Feeds"
 msgstr "Custom Twitter Feeds"
 
-#: class/Common/Util.php:286
+#: class/Common/Util.php:287
 msgid "A customizable way to display tweets from your Twitter account. "
 msgstr "カスタマイズ可能な方法で、Twitter アカウントからツイートを表示します。 "
 
-#: class/Common/Util.php:295
+#: class/Common/Util.php:296
 msgid "Feeds for YouTube"
 msgstr "Feeds for YouTube"
 
-#: class/Common/Util.php:296
+#: class/Common/Util.php:297
 msgid "A simple yet powerful way to display videos from YouTube. "
 msgstr "シンプルかつパワフルな方法で、YouTube の動画を表示します。 "
 
-#: class/Common/Util.php:316
+#: class/Common/Util.php:317
 msgid "WPForms"
 msgstr "WPForms"
 
-#: class/Common/Util.php:317
+#: class/Common/Util.php:318
 msgid "The most beginner friendly drag & drop WordPress forms plugin allowing you to create beautiful contact forms, subscription forms, payment forms, and more in minutes, not hours!"
 msgstr "初心者でも使いやすいドラッグアンドドロップによる WordPress のフォームプラグインを使用すると、きれいなお問い合わせフォームやサブスクリプションフォーム、支払いフォームなどを数時間といわず数分で作成できます。"
 
-#: class/Common/Util.php:325
+#: class/Common/Util.php:326
 msgid "MonsterInsights"
 msgstr "MonsterInsights"
 
-#: class/Common/Util.php:326
+#: class/Common/Util.php:327
 msgid "MonsterInsights makes it “effortless” to properly connect your WordPress site with Google Analytics, so you can start making data-driven decisions to grow your business."
 msgstr "MonsterInsights を利用すると、WordPress サイトとGoogle Analytics を「手間をかけずに」適切に連携させられるため、データに基づいた意思決定を始め、ビジネスを成長させることができます。"
 
-#: class/Common/Util.php:334
+#: class/Common/Util.php:335
 msgid "OptinMonster"
 msgstr "OptinMonster"
 
-#: class/Common/Util.php:335
+#: class/Common/Util.php:336
 msgid "Our high-converting optin forms like Exit-Intent® popups, Fullscreen Welcome Mats, and Scroll boxes help you dramatically boost conversions and get more email subscribers."
 msgstr "Exit-Intent® ポップアップ、フルスクリーンのウェルカム画面、スクロールボックスなどのコンバージョンを高めるオプトインフォームにより、コンバージョンを大幅に増やし、より多くのメール購読者を獲得できます。"
 
-#: class/Common/Util.php:343
+#: class/Common/Util.php:344
 msgid "WP Mail SMTP"
 msgstr "WP Mail SMTP"
 
-#: class/Common/Util.php:344
+#: class/Common/Util.php:345
 msgid "Make sure your website's emails reach the inbox. Our goal is to make email deliverability easy and reliable. Trusted by over 1 million websites."
 msgstr "サイトのメールが受信トレイに確実に届くようにします。弊社は、メール配信を簡単で信頼できるものにすることを目指しています。このプラグインは100万以上のサイトで信頼されています。"
 
-#: class/Common/Util.php:352
+#: class/Common/Util.php:353
 msgid "RafflePress"
 msgstr "RafflePress"
 
-#: class/Common/Util.php:353
+#: class/Common/Util.php:354
 msgid "Turn your visitors into brand ambassadors! Easily grow your email list, website traffic, and social media followers with powerful viral giveaways & contests."
 msgstr "訪問者をブランドアンバサダーに変えましょう ! 強力なバイラルプレゼントやコンテストで、メーリングリスト、サイトのトラフィック、ソーシャルメディアのフォロワーを簡単に増やすことができます。"
 
-#: class/Common/Util.php:361
+#: class/Common/Util.php:362
 msgid "All in One SEO Pack"
 msgstr "All in One SEO Pack"
 
-#: class/Common/Util.php:362
+#: class/Common/Util.php:363
 msgid "Out-of-the-box SEO for WordPress. Features like XML Sitemaps, SEO for custom post types, SEO for blogs, business sites, or ecommerce sites, and much more."
 msgstr "WordPress ですぐに使える SEO 対策です。XMLサイトマップ、カスタム投稿タイプの SEO、ブログやビジネスサイトの SEO、eコマースサイトの SEO など。2007年以来 5000万以上ダウンロードされています。"
 
-#: class/Common/Util.php:889
+#: class/Common/Util.php:890
 msgid "Upgrade to Pro to display Facebook reviews"
 msgstr "Pro にアップグレードして Facebook レビューを表示しましょう"
 
-#: class/Common/Util.php:890
+#: class/Common/Util.php:891
 msgid "Upgrade to our \"Plus\" tier to display reviews from the well known social media platform."
 msgstr "「Plus」プランにアップグレードすると、有名なソーシャルメディアプラットフォームからのレビューを表示できます。"
 
-#: class/Common/Util.php:901
+#: class/Common/Util.php:902
 msgid "Upgrade to Pro to display TrustPilot reviews"
 msgstr "Pro にアップグレードして TrustPilot レビューを表示しましょう"
 
-#: class/Common/Util.php:902
+#: class/Common/Util.php:903
 msgid "Upgrade to our \"Plus\" tier to display reviews from the well known business review site."
 msgstr "「Plus」プランにアップグレードすると、有名なビジネスレビューサイトからのレビューを表示できます。"
 
-#: class/Common/Util.php:911
+#: class/Common/Util.php:912
 msgid "Upgrade to Pro to display TripAdvisor reviews"
 msgstr "Pro にアップグレードしてトリップアドバイザーのレビューを表示しましょう"
 
-#: class/Common/Util.php:912
+#: class/Common/Util.php:913
 msgid "Upgrade to our \"Elite\" tier to display reviews from the well known travel advice site."
 msgstr "「Elite」プランにアップグレードすると、有名な旅行アドバイスサイトからのレビューを表示できます。"
 
-#: class/Common/Util.php:921
+#: class/Common/Util.php:922
 msgid "Upgrade to Pro to display WordPress.org reviews"
 msgstr "Pro にアップグレードして WordPress.org のレビューを表示しましょう"
 
-#: class/Common/Util.php:922
+#: class/Common/Util.php:923
 msgid "Upgrade to our \"Elite\" tier to display reviews for plugins and themes."
 msgstr "「Elite」プランにアップグレードすると、プラグインやテーマのレビューを表示できます。"
 
-#: class/Common/Util.php:931
+#: class/Common/Util.php:932
 msgid "Upgrade to Pro to get Carousel layout"
 msgstr "Pro にアップグレードして、カルーセルレイアウトを利用しましょう"
 
-#: class/Common/Util.php:932
+#: class/Common/Util.php:933
 msgid "An eye-catching rotating slider of your videos to add extra content in minimal space on your website."
 msgstr "人目を引く動画の回転スライダーで、ウェブサイト上の最小スペースに追加コンテンツをプラスできます。"
 
-#: class/Common/Util.php:941
+#: class/Common/Util.php:942
 msgid "Upgrade to Pro to display more reviews"
 msgstr "Pro にアップグレードしてより多くのレビューを表示しましょう"
 
-#: class/Common/Util.php:942
+#: class/Common/Util.php:943
 msgid "More layout settings to customize the look and feel of your reviews even more."
 msgstr "より多くのレイアウト設定により、レビューの見た目をさらにカスタマイズできます。"
 
-#: class/Common/Util.php:951
+#: class/Common/Util.php:952
 msgid "Upgrade to Pro to display average rating"
 msgstr "Pro にアップグレードして平均評価を表示しましょう"
 
-#: class/Common/Util.php:952
+#: class/Common/Util.php:953
 msgid "Boost social proof to make more sales conversions with the number of ratings and an average rating."
 msgstr "ソーシャルプルーフ (社会的証明) を強化して、評価数や平均評価で販売コンバージョン数を増やします。"
 
-#: class/Common/Util.php:961
+#: class/Common/Util.php:962
 msgid "Upgrade to Pro to add load more functionality"
 msgstr "Pro にアップグレードして、「さらに読み込む」機能を追加しましょう"
 
-#: class/Common/Util.php:962
+#: class/Common/Util.php:963
 msgid "Overwhelm (in a good way) your visitors with additional reviews loaded on the page with a click."
 msgstr "クリックするだけでページに追加レビューが表示され、訪問者を (良い意味で) 驚かせます。"
 
-#: class/Common/Util.php:971
+#: class/Common/Util.php:972
 msgid "Upgrade to Pro to add images"
 msgstr "Pro にアップグレードして画像を追加しましょう"
 
-#: class/Common/Util.php:972
+#: class/Common/Util.php:973
 msgid "Display images from Yelp and Tripadvisor reviews."
 msgstr "Yelp やトリップアドバイザーからの画像を表示します。"
 
-#: class/Common/Util.php:981
+#: class/Common/Util.php:982
 msgid "Upgrade to Pro to display author images"
 msgstr "Pro にアップグレードして投稿者の画像を表示しましょう"
 
-#: class/Common/Util.php:982
+#: class/Common/Util.php:983
 msgid "Build brand trust with positive reviews from real customers."
 msgstr "実際の顧客からの好意的なレビューでブランドの信頼を築くことができます。"
 
-#: class/Common/Util.php:991
+#: class/Common/Util.php:992
 msgid "Upgrade to Pro to filter your reviews"
 msgstr "Pro にアップグレードしてレビューをフィルタリングしましょう"
 
-#: class/Common/Util.php:992
+#: class/Common/Util.php:993
 msgid "Show only the most positive reviews and build brand trust with review filtering."
 msgstr "レビューをフィルタリングして最も好意的なレビューのみを表示し、ブランドの信頼を築くことができます。"
 
-#: class/Common/Util.php:1001
+#: class/Common/Util.php:1002
 msgid "Upgrade to Pro to moderate your reviews"
 msgstr "Pro にアップグレードしてレビューを管理しましょう"
 
-#: class/Common/Util.php:1002
+#: class/Common/Util.php:1003
 msgid "Take complete control of what reviews show in the feed using keyword filters and a visual moderation system."
 msgstr "キーワードフィルターとビジュアルのモデレーションシステムを使って、フィードに表示されるレビューを完全にコントロールできます。"
 
-#: class/Common/Util.php:1011
+#: class/Common/Util.php:1012
 msgid "Upgrade to Pro to get one-click templates!"
 msgstr "Pro にアップグレードして、ワンクリックテンプレートを利用しましょう"
 
-#: class/Common/Util.php:1012
+#: class/Common/Util.php:1013
 msgid "Quickly create and preview new feeds with pre-configured options based on popular feed types."
 msgstr "一般的なフィード形式に基づいた設定済みのオプションを使って、新しいフィードをすばやく作成し、プレビューできます。"
 
-#: class/Common/Util.php:1021
+#: class/Common/Util.php:1022
 msgid "Upgrade to Pro for responsive layouts"
 msgstr "Pro にアップグレードして、レスポンシブレイアウトを利用しましょう"
 
-#: class/Common/Util.php:1022
+#: class/Common/Util.php:1023
 msgid "Take control of your feed layouts by customizing number of reviews & columns"
 msgstr "レビュー数とカラム数をカスタマイズして、フィードのレイアウトをコントロールできます。"
 
-#: class/Common/Util.php:1047
+#: class/Common/Util.php:1048
 msgid "Display images"
 msgstr "画像を表示"
 
-#: class/Common/Util.php:1048
+#: class/Common/Util.php:1049
 msgid "With the Pro version enable images like avatars and review  photos"
 msgstr "Pro バージョンでは、アバターやレビュー写真などの画像を使用できます。"
 
-#: class/Common/Util.php:1053
+#: class/Common/Util.php:1054
 msgid "Get carousel layout"
 msgstr "カルーセルのレイアウトを利用しましょう"
 
-#: class/Common/Util.php:1054
+#: class/Common/Util.php:1055
 msgid "Show your reviews in a neat carousel with Review Feed Pro"
 msgstr "Review Feed Pro でレビューをすっきりしたカルーセルに表示しましょう"
 
-#: class/Common/Util.php:1059
+#: class/Common/Util.php:1060
 msgid "Change your feed style with one-click templates!"
 msgstr "ワンクリックで利用できるテンプレートで、フィードのスタイルを変更できます !"
 
-#: class/Common/Util.php:1060
+#: class/Common/Util.php:1061
 msgid "Over 12 templates to choose from"
 msgstr "12種類以上のテンプレートから選択可能"
 
-#: class/Common/Util.php:1065
+#: class/Common/Util.php:1066
 msgid "Only show selected reviews with Moderation mode"
 msgstr "モデレーションモードで選択したレビューのみを表示"
 
-#: class/Common/Util.php:1066
+#: class/Common/Util.php:1067
 msgid "Hide or show only certain reviews"
 msgstr "特定のレビューだけを非表示または表示"
 
@@ -2902,17 +2898,17 @@ msgstr ""
 msgid "You have reached the review source limit for (%s). In order to add additional sources you'll need to create and enter an API key. Please add API key %shere%s."
 msgstr ""
 
-#: class/Common/Admin/SBR_Collections_Builder.php:31
+#: class/Common/Admin/SBR_Collections_Builder.php:35
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Collections"
 msgstr ""
 
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1158
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1264
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1249
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1355
 msgid "Please make sure the collection exists"
 msgstr ""
 
-#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1436
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1526
 msgid "Cannot duplicate Collection, something went wrong!"
 msgstr ""
 
@@ -2925,7 +2921,7 @@ msgstr ""
 msgid "Used for header Reviews number “Over XXX Reviews”, make sure to add %s to be replaced with reviews number."
 msgstr ""
 
-#: class/Common/Util.php:133
+#: class/Common/Util.php:134
 msgid ""
 "Your server could not complete a remote request to Facebook's API. Your host may be blocking access or\n"
 "                    there may be a problem with your server."
@@ -3273,4 +3269,499 @@ msgstr ""
 
 #: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
 msgid "Collections Reviews List"
+msgstr ""
+
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:504
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1783
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1792
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1801
+msgid "JSON file needed. Your file is not in the correct format."
+msgstr ""
+
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1703
+msgid "Collection imported successfully"
+msgstr ""
+
+#: class/Common/Builder/SBR_Feed_Saver_Manager.php:1810
+msgid "Something went wrong. This doesn't look like a collections import file."
+msgstr ""
+
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:363
+msgid "Number of Rows"
+msgstr ""
+
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:365
+msgid "1"
+msgstr ""
+
+#: class/Common/Customizer/Tabs/SBR_Customize_Tab.php:366
+msgid "2"
+msgstr ""
+
+#: class/Common/Services/UsageTrackingService.php:174
+msgid "Once Weekly"
+msgstr ""
+
+#: class/Common/Settings/Tabs/SBR_General_Tab.php:95
+msgid "Import Collection"
+msgstr ""
+
+#: class/Common/Settings/Tabs/SBR_General_Tab.php:97
+msgid "You will need a JSON file previously exported from the collections Reviews Feed Plugin"
+msgstr ""
+
+#: class/Common/Settings/Tabs/SBR_General_Tab.php:100
+msgid "Export Collection"
+msgstr ""
+
+#: class/Common/Settings/Tabs/SBR_General_Tab.php:102
+msgid "Export collection reviews"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Feeds are updating once a week. To update them more often, add an API key."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "To fetch new reviews, add an API key or Upgrade your plan."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add an API Key."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Upgrade Plan"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Unable to retrieve reviews history for this source. Clear the cache or reconnect the source to try again."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Fetching reviews history in the background!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Google API key"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "How to get a Goole API key"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Yekp API key"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "How to get a Yelp API key"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add API Keys"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Currently the Yelp and Google’s API does not allow us to update your feed without you creating an app and adding an API key."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "The API key is invalid. Please try a new API key."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "API Key added successfully!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Due to API pricing by Google and Yelp, we update your sources once a week. To update them more often, you can add a Google and Yelp API Key."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Due to API pricing by Google and Yelp, we can only fetch the latest 10 reviews in the free plan. To fetch more or fetch again, you can add an API key or upgrade your plan."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Account added successfully"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Okay"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add API key"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "You can only add 2 Google and 5 Yelp sources"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "You can only add 1 source"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Due to paid API pricing by Yelp and Google, we only offer a limited amount of Google or Yelp source. To add more, you can add an API key for each platform."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Due to paid API pricing by Yelp and Google, we only offer a single Google or Yelp source on the free plan. To add more, you can add an API key or upgrade your plan."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add a Source"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "To add another source, please delete any existing sources."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add an API Key"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Upgrade your Plan"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Please verify your email"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Before you can add a source, we need to make sure it's you. Please verify your email. It takes less than 2 minutes."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Verify Email"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "API Key deleted successfuly"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Remove"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Error Logs"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Clear Log"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Error logs cleared!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Download"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Error ID"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Code"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Message"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Details"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Refresh List"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Connect Forms"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Get reviews submissions from your audience"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "With the help of WPForms or Formidable Forms, you can create a form and get submissions straight to a review collection."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Configure Form Submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Get reviews directly from WPForms or Formidable Forms"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Create a form, connect it to this collection, and watch reviews collect directly in this collection."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Connect a Form"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Install WPForms"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Looks like you do not have any compatible form plugin installed. One click install WPForms and start setting up your form right away."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Purchase WPForms Pro"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Connect a form"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Form"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Select"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Cannot find a form?"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "To select a form, you need to first create a compatible form from templates"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Create from Template"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "New Form connect successfully!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "We are importing your form submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Connect"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Select a rule"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 3 stars or more"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 4 stars or more"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 5 stars or more"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "is longer than"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "is shorter than"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 1 star or less"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 2 stars or less"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 3 stars or less"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 4 stars or less"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "has 5 stars or less"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Connected Forms"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Configure forms that are allowed to add reviews to this collection."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add Form"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Disconnect "
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Are you sure you want to disconnect this form?"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Form Disconnected!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Rules"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add rules to auto-approve or auto-delete form submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Collection form rules updated!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Apply rules"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Auto Approve"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add posts to collection automatically if..."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "REVIEW"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "AND"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "200"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "chars"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Auto Archive"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Archive form submission automatically if..."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Reviews added from collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Reviews removed from collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Reviews archived from collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Add To collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Remove from collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Delete Submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Loading connected forms submissions..."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Form Submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "When your users submit reviews from a connected form, it will show up here."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Remove from Collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "View"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Reviews Unarchived from collection"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Delete Submissions."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Are you sure you want to permanently delete submissions from your collection?"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Reviews Deleted!"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Unarchive Submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Loading collections archived submissions..."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Archived Submissions"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "When you archive a submission, it will be displayed here."
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Unarchive"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Permanently Delete"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Reviews list updated successfully"
+msgstr ""
+
+#: vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js:2
+msgid "Back to"
 msgstr ""

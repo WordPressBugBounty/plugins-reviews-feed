@@ -37,7 +37,10 @@ class RegisterWebsiteRoutine extends ServiceProvider
             'POST',
             false
         );
-        if( isset($response['data']) && $response['data'] && isset( $response['data']['token'] ) ){
+        if (isset($response['data'])
+            && $response['data']
+            && isset($response['data']['token'])
+        ) {
             $settings = get_option('sbr_settings', []);
             $settings['access_token'] = $response['data']['token'];
 		    update_option('sbr_settings', $settings);

@@ -48,6 +48,7 @@ class FeedCacheUpdateService extends ServiceProvider {
 	public function should_do_updates() {
 		$statuses = $this->auth_check->get_statuses();
 		$time_with_minute_buffer = time() + 60;
+		$statuses['last_cron_update'] = 0;
 		if ( $statuses['last_cron_update'] <  $time_with_minute_buffer - $statuses['update_frequency'] ) {
 			return true;
 		}

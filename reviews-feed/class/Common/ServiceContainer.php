@@ -17,6 +17,7 @@ use SmashBalloon\Reviews\Common\Services\FeedCacheUpdateService;
 use SmashBalloon\Reviews\Common\Services\SBR_Upgrader;
 use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
 use SmashBalloon\Reviews\Common\Services\ShortcodeService;
+use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 use Smashballoon\Stubs\Services\ServiceProvider;
 use SmashBalloon\Reviews\Common\Services\Upgrade\RoutineManagerService;
 use SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager;

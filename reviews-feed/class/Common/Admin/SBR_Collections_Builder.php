@@ -11,6 +11,8 @@ use Smashballoon\Customizer\V2\Collections_Builder;
 use SmashBalloon\Reviews\Common\Builder\Config\Proxy;
 use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
 use SmashBalloon\Reviews\Common\Util;
+
+
 class SBR_Collections_Builder extends Collections_Builder
 {
 
@@ -43,6 +45,7 @@ class SBR_Collections_Builder extends Collections_Builder
 
 	public function custom_collections_data()
 	{
+
 		$collections_data = [
 			'nonce' => wp_create_nonce('sbr-admin'),
 			'assetsURL' => SB_COMMON_ASSETS,
@@ -53,9 +56,14 @@ class SBR_Collections_Builder extends Collections_Builder
 			'adminNoticeContent' => apply_filters('sbr_admin_notices_filter', 1),
 			'collectionsPageUrl' => admin_url('admin.php?page=sbr-collections'),
 			'sourcesList' => SBR_Sources::get_sources_list(),
-            'sourcesCount' => SBR_Sources::get_sources_count(),
-            'builderUrl'           => admin_url( 'admin.php?page=sbr')
+			'sourcesCount' => SBR_Sources::get_sources_count(),
+			'builderUrl'           => admin_url( 'admin.php?page=sbr'),
+			'adminHomeURL'           => admin_url( 'admin.php'),
 		];
+		if (Util::sbr_is_pro()) {
+			$FormsManager = new \SmashBalloon\Reviews\Pro\Integrations\Forms\FormsManager();
+			$collections_data['formsManagerData'] = $FormsManager->get_form_plugins_data();
+		}
 		return $collections_data;
 	}
 

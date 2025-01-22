@@ -2,6 +2,7 @@
 namespace SmashBalloon\Reviews\Common;
 use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
 use SmashBalloon\Reviews\Common\Customizer\DB;
+use SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler;
 
 class Util
 {
@@ -21,8 +22,6 @@ class Util
                 'name'    => 'Google',
                 'heading' => __( 'Place ID', 'reviews-feed' ),
                 'placeholder' => __( 'Enter Place ID', 'reviews-feed' ),
-                'apiKey'    => true,
-                'mandatoryApiKey'    => true,
                 'docLink' => 'https://smashballoon.com/doc/creating-a-google-api-key/'
             ],
             [
@@ -43,7 +42,6 @@ class Util
                 'name' => 'Yelp',
                 'heading' => __( 'Page URL', 'reviews-feed' ),
                 'placeholder' => __( 'https://yelp.com/...', 'reviews-feed' ),
-                'apiKey' => true,
                 'docLink' => 'https://smashballoon.com/doc/creating-a-yelp-api-key/'
             ],
             [
@@ -1114,4 +1112,59 @@ class Util
     {
         return ( isset($post['provider']) && isset($post['provider']['name']) && $post['provider']['name'] === 'facebook' &&  isset($post['provider_id']) && strpos($post['provider_id'], 'collection') !== false ) === true;
     }
+
+    /**
+     * Convert Object to Array
+     *
+     * @return array
+     *
+     * @since 1.0
+     */
+    public static function object_to_array($data)
+    {
+		if (is_object($data)) {
+			$data = json_decode(json_encode($data), true);
+		}
+		return $data;
+	}
+
+    /**
+     * Convert Object to Array
+     *
+     * @return array
+     *
+     * @since 1.0
+     */
+    public static function get_free_retriever_data()
+    {
+        if (Util::sbr_is_pro()) {
+            $retriever = new \SmashBalloon\Reviews\Pro\Utils\FreeRetriever();
+        } else {
+            $retriever = new \SmashBalloon\Reviews\Common\Utils\FreeRetriever();
+        }
+        return $retriever->get_settings();
+    }
+
+     /**
+     * Get Feeds Settings
+     *
+     * @since 1.0
+     *
+     * @return string
+     */
+    public static function get_settings_page_errors()
+    {
+        $output = '## ERROR LOGS: ## </br></br>';
+        $errors = SBR_Error_Handler::get_errors();
+        $errors = array_reverse($errors);
+        foreach ($errors as $error) {
+            $output .= json_encode($error);
+            $output .= '</br></br>';
+        }
+        $output .= '</br>';
+
+        return $output;
+    }
+
+
 }

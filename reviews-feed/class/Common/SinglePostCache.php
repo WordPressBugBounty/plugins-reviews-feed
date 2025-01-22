@@ -177,10 +177,21 @@ class SinglePostCache {
 	public function db_record() {
 		global $wpdb;
 		$table_name    = esc_sql( $wpdb->prefix . self::POSTS_TABLE_NAME );
+		$provider_id  	= !empty($this->post_data['provider_id'])
+			? $this->post_data['provider_id']
+			: $this->provider_id;
+
 		if( isset( $this->post_data['review_id'] ) ){
-			$feed_id_match = $wpdb->get_results( $wpdb->prepare(
+			$feed_id_match = $wpdb->get_results(
+				$wpdb->prepare(
 				"SELECT * FROM $table_name
-                        WHERE post_id = %s AND lang = %s LIMIT 1", $this->post_data['review_id'], $this->lang ), ARRAY_A );
+                        WHERE post_id = %s AND lang = %s AND provider_id = %s LIMIT 1",
+						$this->post_data['review_id'],
+						$this->lang,
+						$provider_id
+					),
+					ARRAY_A
+				);
 
 			if ( ! empty( $feed_id_match[0] ) ) {
 				return $feed_id_match[0];
@@ -232,7 +243,7 @@ class SinglePostCache {
 		}
 	}
 
-    public function update_single()
+    public function update_single($strict_update = false)
     {
         $rating = $this->post_data['rating'];
         if (Util::is_facebook_collection_post($this->post_data)) {
@@ -264,8 +275,14 @@ class SinglePostCache {
         $table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
         $where = array();
         $where_format = array();
-        $where['post_id'] = $this->post_data['review_id'];
+
+		$where['post_id'] = $this->post_data['review_id'];
         $where_format[] = '%s';
+
+		if ($strict_update) {
+			$where['provider_id'] = $this->get_provider_id();
+			$where_format[] = '%s';
+		}
 
         $error = $wpdb->update($table_name, $data, $where, $format, $where_format);
 
@@ -385,33 +402,18 @@ class SinglePostCache {
 	 /**
 	 * Used to update or insert Single Post Data
 	 *
-	 * @param array $post_data
 	 *
-	 * @return bool
+	 * @return void
 	 *
-	 * @since 6.0
+	 * @since 1.6
 	 */
-	public static function update_or_insert($post_data)
+	public function update_or_insert($strict_udpate = false)
 	{
-		if (!isset($post_data['id'])) {
-			return false;
-		}
-
-		if (isset($source_data)) {
-			// data from an API request related to the source is saved as a JSON string
-			if (is_object($source_data ) || is_array( $source_data ) ) {
-				$source_data['info'] = sbr_json_encode( $source_data );
-			}
-		}
-
-		if ( self::exists_in_database( $source_data ) ) {
-			$source_data['last_updated'] = date( 'Y-m-d H:i:s' );
-			self::update( $source_data, false );
+		if ($this->db_record_exists()) {
+			$this->update_single($strict_udpate);
 		} else {
-			self::insert( $source_data );
+			$this->store();
 		}
-
-		return true;
 	}
 
 }

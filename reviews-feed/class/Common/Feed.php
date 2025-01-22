@@ -178,6 +178,7 @@ class Feed
 	public function update_posts_cache()
 	{
 		$settings = $this->get_settings();
+
 		if (empty($settings['sources'])) {
 			return array();
 		}
@@ -360,7 +361,6 @@ class Feed
 	public function api_request($requests_needed, $type = 'reviews')
 	{
 		$data = array();
-
 		foreach ($requests_needed as $request) {
 			if ($request['provider'] === 'collection' && $type === 'sources') {
 				$collection = SBR_Sources::update_collection_ratings($request['account_id']);
@@ -376,8 +376,7 @@ class Feed
                     $request['language'] = Util::get_api_call_language($this->settings);
                 }
 
-
-				if( ! SBR_Feed_Saver_Manager::limit_provider_api_calls( $request['provider'] ) ){
+				if( ! SBR_Feed_Saver_Manager::limit_provider_api_calls( $request['provider'], $request['account_id'] ) ){
 					if ($request['provider'] === 'facebook') {
 						$new_data = \SmashBalloon\Reviews\Pro\Integrations\Providers\Facebook::get_facebook_info($type, $request);
 					} else {
@@ -553,7 +552,7 @@ class Feed
 			if (!is_null($post)) {
 				$keep_post = false;
 				//Work Around for facebook Positive / Negative Reviews
-				if (Util::is_facebook_collection_post($post)) {
+				if ( !empty($post['provider']['name']) && $post['provider']['name'] === 'facebook' ) {
 					if( in_array( $post['rating'], [ 'positive', 'negative' ] ) ){
 						$post['rating'] = $post['rating'] === 'positive' ? 5 : 1;
 					}

@@ -13,6 +13,7 @@ use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
 use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\Services\SBR_Upgrader;
 use SmashBalloon\Reviews\Common\Util;
+use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 
 class SBR_Settings_Builder extends Settings_Builder {
 
@@ -57,6 +58,8 @@ class SBR_Settings_Builder extends Settings_Builder {
     }
 
     public function custom_settings_data(){
+        EmailVerification::catch_email_verification();
+
         $settings_data = [
             'nonce' => wp_create_nonce('sbr-admin'),
             'apiKeys' => get_option('sbr_apikeys', []),
@@ -79,8 +82,15 @@ class SBR_Settings_Builder extends Settings_Builder {
             'isDevUrl' => SBR_Upgrader::is_dev_url(  home_url() ),
             'builderUrl'           => admin_url( 'admin.php?page=sbr'),
             'collectionsList' => DB::get_collections_list(),
-            'bulkHistorySources'    => get_option('sbr_bulk_sources', [])
+            'bulkHistorySources'    => get_option('sbr_bulk_sources', []),
+            'freeRetrieverData'     => Util::get_free_retriever_data(),
+            'emailVerificationURL'    => EmailVerification::build_email_verification_url(),
+            'isEmailVerified'    => EmailVerification::check_verified()
         ];
+
+        if (!empty($_GET['sbr_email_token']) && !empty($_GET['verified_email'])) {
+            $settings_data['openSourceModal'] = true;
+        }
         if( isset( $_GET['manualsource'] ) && $_GET['manualsource'] == true){
 			$settings_data['manualSourcePopupInit'] = true;
 		}

@@ -13,6 +13,7 @@ use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\FeedCache;
 use SmashBalloon\Reviews\Common\SBR_Settings;
 use SmashBalloon\Reviews\Common\Util;
+use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 
 class SBR_Feed_Builder extends Feed_Builder {
 
@@ -76,6 +77,8 @@ class SBR_Feed_Builder extends Feed_Builder {
     }
 
     public function custom_builder_data(){
+        EmailVerification::catch_email_verification();
+
         $builder_data = [
             'nonce' => wp_create_nonce('sbr-admin'),
             'feedsList' => DB::get_feeds_list(),
@@ -98,8 +101,16 @@ class SBR_Feed_Builder extends Feed_Builder {
             'collectionsPageUrl' => admin_url('admin.php?page=sbr-collections'),
             'aboutPageUrl' => admin_url('admin.php?page=sbr-about'),
             'builderUrl'           => admin_url( 'admin.php?page=sbr'),
-            'bulkHistorySources'    => get_option('sbr_bulk_sources', [])
+            'bulkHistorySources'    => get_option('sbr_bulk_sources', []),
+            'freeRetrieverData'     => Util::get_free_retriever_data(),
+            'emailVerificationURL'    => EmailVerification::build_email_verification_url(admin_url( 'admin.php?page=sbr')),
+            'isEmailVerified'    => EmailVerification::check_verified()
         ];
+
+        if (!empty($_GET['sbr_email_token']) && !empty($_GET['verified_email'])) {
+            $builder_data['openSourceModal'] = true;
+        }
+
         if( isset( $_GET['manualsource'] ) && $_GET['manualsource'] == true){
 			$builder_data['manualSourcePopupInit'] = true;
 		}

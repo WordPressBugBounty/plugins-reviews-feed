@@ -29,10 +29,13 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('ComposerAutoloaderInit06d359bbdede9127093cf77802891f8f', 'SmashBalloon\Reviews\Vendor\ComposerAutoloaderInit06d359bbdede9127093cf77802891f8f');
+humbug_phpscoper_expose_class('FlattedString', 'SmashBalloon\Reviews\Vendor\FlattedString');
+humbug_phpscoper_expose_class('Flatted', 'SmashBalloon\Reviews\Vendor\Flatted');
+humbug_phpscoper_expose_class('ComposerAutoloaderInit41d301e656f53a290eea87b24671c5ef', 'SmashBalloon\Reviews\Vendor\ComposerAutoloaderInit41d301e656f53a290eea87b24671c5ef');
 
 // Function aliases. For more information see:
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases
+if (!function_exists('composerRequire41d301e656f53a290eea87b24671c5ef')) { function composerRequire41d301e656f53a290eea87b24671c5ef() { return \SmashBalloon\Reviews\Vendor\composerRequire41d301e656f53a290eea87b24671c5ef(...func_get_args()); } }
 if (!function_exists('dbDelta')) { function dbDelta() { return \SmashBalloon\Reviews\Vendor\dbDelta(...func_get_args()); } }
 
 return $loader;

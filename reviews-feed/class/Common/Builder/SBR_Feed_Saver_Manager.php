@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Reviews Feed Saver Manager
  *
@@ -22,8 +23,8 @@ use SmashBalloon\Reviews\Common\Helpers\Data_Encryption;
 
 class SBR_Feed_Saver_Manager
 {
-
 	use SBR_Feed_Templates_Settings;
+
 	/**
 	 * AJAX hooks for various feed data related functionality
 	 *
@@ -61,6 +62,10 @@ class SBR_Feed_Saver_Manager
 		add_action('wp_ajax_sbr_import_full_collection', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'import_full_collection'));
 		add_action('wp_ajax_sbr_import_reviews_collection', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'import_reviews_collection'));
 
+
+		add_action('wp_ajax_sbr_clear_error_logs', array('SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler', 'clear_all_error_ajax'));
+
+
 	}
 
 	/**
@@ -86,8 +91,7 @@ class SBR_Feed_Saver_Manager
 		if (!empty($settings_data['feed_id'])) {
 			$feed_id = sanitize_text_field($settings_data['feed_id']);
 			unset($settings_data['feed_id']);
-		}
-		elseif (isset($settings_data['feed_id'])) {
+		} elseif (isset($settings_data['feed_id'])) {
 			unset($settings_data['feed_id']);
 		}
 		unset($settings_data['action']);
@@ -106,7 +110,7 @@ class SBR_Feed_Saver_Manager
 		if ($is_new_feed) {
 			$settings_data['sources'] = json_decode(stripslashes($settings_data['sources']));
 			$is_collection = false;
-			foreach ($settings_data['sources']  as $s_source) {
+			foreach ($settings_data['sources'] as $s_source) {
 				if (!is_array($s_source) && strpos($s_source, 'collection') !== false) {
 					$is_collection = true;
 				}
@@ -115,7 +119,8 @@ class SBR_Feed_Saver_Manager
 				$settings_data['filterCharCountMin'] = 0;
 			}
 
-			$settings_data['feed_name'] = self::create_feed_name(stripslashes($settings_data['feed_name']));
+			$new_name = self::create_feed_name(stripslashes($settings_data['feed_name']));
+			$settings_data['feed_name'] = !empty($new_name) ? $new_name : 'Reviews Feed';
 			$settings_data = SBR_Feed_Saver_Manager::get_feed_settings_by_feed_templates($settings_data);
 		}
 
@@ -147,8 +152,7 @@ class SBR_Feed_Saver_Manager
 			if ($is_new_feed) {
 				echo wp_json_encode($return);
 				wp_die();
-			}
-			else {
+			} else {
 				$feed_cache = new FeedCache($feed_id);
 				if (isset($_POST['get_posts']) && $_POST['get_posts'] == true) {
 					$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($settings_data, $feed_id, $feed_cache) : new \SmashBalloon\Reviews\Common\Feed($settings_data, $feed_id, $feed_cache);
@@ -242,7 +246,7 @@ class SBR_Feed_Saver_Manager
 			$feed_cache = new FeedCache($feed_id, 30000);
 			$feed_cache->clear('posts');
 			$feed_cache->clear('header');
-			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings , $feed_id, $feed_cache) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, $feed_cache);
+			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings, $feed_id, $feed_cache) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, $feed_cache);
 			$feed->init();
 
 			$feed->get_set_cache();
@@ -272,7 +276,7 @@ class SBR_Feed_Saver_Manager
 			}
 			$return['posts'] = $posts;
 			$return['sourcesList'] = SBR_Sources::get_sources_list([
-                'id' => !empty($preview_settings['sources']) && isset($preview_settings['sources']) ? $preview_settings['sources'] : [],
+				'id' => !empty($preview_settings['sources']) && isset($preview_settings['sources']) ? $preview_settings['sources'] : [],
 			]);
 
 			echo sbr_json_encode(
@@ -305,7 +309,7 @@ class SBR_Feed_Saver_Manager
 			$preview_settings['numPostTablet'] = 100;
 			$preview_settings['numPostMobile'] = 100;
 
-			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings , $feed_id, new FeedCache($feed_id, 30000)) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, new FeedCache($feed_id, 30000));
+			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings, $feed_id, new FeedCache($feed_id, 30000)) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, new FeedCache($feed_id, 30000));
 			$feed->init();
 			$posts = $feed->get_posts_for_moderation();
 
@@ -336,7 +340,6 @@ class SBR_Feed_Saver_Manager
 		$return = [];
 
 		if (isset($_POST['provider']) && isset($_POST['providerIdUrl'])) {
-
 			if (isset($_POST['apiKey']) && !empty($_POST['apiKey']) && $_POST['apiKey'] !== null) {
 				$data = array(
 					'provider' => sanitize_text_field($_POST['provider']),
@@ -345,6 +348,7 @@ class SBR_Feed_Saver_Manager
 				);
 				$return = self::process_source_apikey($data);
 			}
+			$return['freeRetrieverData'] = Util::get_free_retriever_data();
 			echo sbr_json_encode(
 				$return
 			);
@@ -382,7 +386,7 @@ class SBR_Feed_Saver_Manager
 
 		echo sbr_json_encode(
 			[
-	            'sourcesCount' => SBR_Sources::get_sources_count(),
+				'sourcesCount' => SBR_Sources::get_sources_count(),
 				'sourcesList' => SBR_Sources::get_sources_list()
 			]
 		);
@@ -408,8 +412,7 @@ class SBR_Feed_Saver_Manager
 			isset($_POST['pageType']) && ! empty($_POST['pageType']) &&
 			isset($_POST['pageId']) && ! empty($_POST['pageId']) &&
 			isset($_POST['pageToken']) && ! empty($_POST['pageToken'])
-		)
-		{
+		) {
 			$encryption = new Data_Encryption();
 			$access_token = $_POST['pageToken'];
 			\SmashBalloon\Reviews\Pro\Integrations\Providers\Facebook::connect_manual_source($_POST['pageId'], $access_token);
@@ -450,15 +453,15 @@ class SBR_Feed_Saver_Manager
 					case 'google':
 						$google = new Google($relay);
 						$info = $google->removeSource($relay_args);
-					break;
+						break;
 					case 'yelp':
 						$yelp = new Yelp($relay);
 						$info = $yelp->removeSource($relay_args);
-					break;
+						break;
 					case 'tripadvisor':
 						$tripadvisor = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TripAdvisor($relay);
 						$info = $tripadvisor->removeSource($relay_args);
-					break;
+						break;
 					case 'trustpilot':
 						$trustpilot = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TrustPilot($relay);
 						$info = $trustpilot->removeSource($relay_args);
@@ -469,11 +472,11 @@ class SBR_Feed_Saver_Manager
 						break;
 				}
 			}
-
 		}
 		echo sbr_json_encode([
-            'sourcesCount' => SBR_Sources::get_sources_count(),
-			'sourcesList' => SBR_Sources::get_sources_list()
+			'sourcesCount' => SBR_Sources::get_sources_count(),
+			'sourcesList' => SBR_Sources::get_sources_list(),
+			'freeRetrieverData'     => Util::get_free_retriever_data()
 		]);
 		wp_die();
 	}
@@ -486,8 +489,8 @@ class SBR_Feed_Saver_Manager
 	 *
 	 * @since 1.0
 	 */
-	 public static function import_feed_settings()
-	 {
+	public static function import_feed_settings()
+	{
 		check_ajax_referer('sbr-admin', 'nonce');
 
 		if (!sbr_current_user_can('manage_reviews_feed_options')) {
@@ -528,12 +531,12 @@ class SBR_Feed_Saver_Manager
 		return is_array($apikeys) && isset($apikeys[$provider]) && !empty($apikeys[$provider]);
 	}
 
-	public static function limit_provider_api_calls($provider)
+	public static function limit_provider_api_calls($provider, $provider_id)
 	{
-		$providers_to_limit = [
-			'google'
-		];
-		return ! self::check_provider_apikey($provider) && in_array($provider, $providers_to_limit);
+		$retriever = Util::sbr_is_pro()
+			? new \SmashBalloon\Reviews\Pro\Utils\FreeRetriever()
+			: new \SmashBalloon\Reviews\Common\Utils\FreeRetriever();
+		return !$retriever->check_api_call($provider, $provider_id);
 	}
 
 
@@ -542,7 +545,7 @@ class SBR_Feed_Saver_Manager
 		$apikeys_limit = get_option('sbr_apikeys_limit', []);
 		if ($action === 'add') {
 			if (!in_array($provider, $apikeys_limit, true)) {
-				array_push($apikeys_limit,  $provider);
+				array_push($apikeys_limit, $provider);
 			}
 		}
 		if ($action === 'delete') {
@@ -583,21 +586,20 @@ class SBR_Feed_Saver_Manager
 					break;
 				case 'wordpress.org':
 						$wordpressorg_args = self::get_place_id_wordpressorg($data['providerIdUrl']);
-						$relay_args['place_id'] = $wordpressorg_args['type'] .'/'. $wordpressorg_args['slug'];
+						$relay_args['place_id'] = $wordpressorg_args['type'] . '/' . $wordpressorg_args['slug'];
 						$relay_args['type'] = $wordpressorg_args['type'];
 						$relay_args['slug'] = $wordpressorg_args['slug'];
 					break;
 				default:
 					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id($data['providerIdUrl']) : 'XXX';
+					$relay_args['check_api_key'] = true;
 					break;
 			}
-
-
 
 			//Check if we need to add the API Key
 			if (isset($data['apiKey']) && !empty($data['apiKey']) && !is_null($data['apiKey']) && $data['apiKey'] !== 'null') {
 				$relay_args['api_key'] = $data['apiKey'];
-			}elseif (isset($api_keys[$provider]) && !empty($api_keys[$provider]) && $api_keys[$provider] !== null) {
+			} elseif (isset($api_keys[$provider]) && !empty($api_keys[$provider]) && $api_keys[$provider] !== null) {
 				$relay_args['api_key'] = $api_keys[$provider];
 			}
 
@@ -622,29 +624,33 @@ class SBR_Feed_Saver_Manager
 					$settings = wp_parse_args(get_option('sbr_settings', []), sbr_plugin_settings_defaults());
 					$relay_args['language'] = $settings['localization'];
 					$info = $google->getSourcesInfo($relay_args);
-				break;
+					break;
 				case 'yelp':
 					$yelp = new Yelp($relay);
 					$info = $yelp->getSourcesInfo($relay_args);
-				break;
+					break;
 				case 'tripadvisor':
 					$tripadvisor = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TripAdvisor($relay);
 					$info = $tripadvisor->getSourcesInfo($relay_args);
-				break;
+					break;
 				case 'trustpilot':
 					$trustpilot = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TrustPilot($relay);
 					$info = $trustpilot->getSourcesInfo($relay_args);
-				break;
+					break;
 				case 'wordpress.org':
 					$wordpressorg = new \SmashBalloon\Reviews\Pro\Integrations\Providers\WordpressOrg($relay);
 					$info = $wordpressorg->getSourcesInfo($relay_args);
-				break;
+					break;
 			}
 			if ($info !== false) {
 				$info = json_decode($info, true);
 				//Checks if there is an error
-				if (isset($info['error'])) {
-					if ($info['error'] === 'sourceLimitExceeded') {
+				if (!empty($info['error'])
+					|| (isset($info['success']) && false === $info['success'])
+				) {
+					if (!empty($info['error'])
+						&& $info['error'] === 'sourceLimitExceeded'
+					) {
 						SBR_Feed_Saver_Manager::update_api_limit($provider, 'add');
 					}
 					$info['apiKeyLimits'] = get_option('sbr_apikeys_limit', []);
@@ -657,7 +663,13 @@ class SBR_Feed_Saver_Manager
 				 * OR
 				 * Return an error which if it's invalid location
 				 */
-				$checkValidKey = (isset($info['info']['error']) && $info['info']['error'] !== 'invalidKey') || isset($info['info']['id']);
+				$checkValidKey = (
+						!empty($info['info']['error']) && $info['info']['error'] !== 'invalidKey'
+					)
+					|| !empty($info['info']['id'])
+					|| !empty($info['info']['successId']);
+
+
 				if (isset($data['apiKey']) && $data['apiKey'] !== null && $data['apiKey'] !== 'null' && $checkValidKey) {
 					self::update_provider_apikey($provider, $data['apiKey']);
 					$return['apikey'] = 'valid';
@@ -675,7 +687,9 @@ class SBR_Feed_Saver_Manager
 				}
 				if (isset($info['info']['id'])) {
 					$info['info']['provider'] = $provider;
-					$info['info']['name'] = htmlspecialchars_decode(html_entity_decode($info['info']['name']));
+
+					$info['info']['name'] = htmlspecialchars_decode(html_entity_decode($info['info']['name'], ENT_QUOTES | ENT_HTML5), ENT_QUOTES | ENT_HTML5);
+
 					if (isset($info['info']['reviews'])) {
 						$reviews_list = $info['info']['reviews'];
 						unset($info['info']['reviews']);
@@ -686,7 +700,12 @@ class SBR_Feed_Saver_Manager
 					$return['newAddedSource'] = $info['info'];
 					SBR_Feed_Saver_Manager::update_api_limit($provider, 'delete');
 
-					if (Util::sbr_is_pro() && in_array($provider, $providers_bulk)) {
+					if (
+						Util::sbr_is_pro()
+						&& in_array($provider, $providers_bulk)
+						&& !empty($data['apiKey'])
+						&& $data['apiKey'] !== "null"
+					) {
 						$bulk_reviews = new \SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_Reviews_Update();
 						$bulk_reviews->schedule_task([
 							'source_account_id' => $info['info']['id'],
@@ -696,43 +715,54 @@ class SBR_Feed_Saver_Manager
 							$return['bulkStarted']      = true;
 						}
 					}
-
 				}
 				$return['apiKeys']      = get_option('sbr_apikeys', []);
 				$return['sourcesList']  = SBR_Sources::get_sources_list();
-			} else {
-				$return['error'] = 'unknown';
 			}
 		}
 
 		$return['apiKeyLimits'] = get_option('sbr_apikeys_limit', []);
 		$return['pluginNotices'] = Util::get_plugin_notices();
-        $return['sourcesCount'] = SBR_Sources::get_sources_count();
+		$return['sourcesCount'] = SBR_Sources::get_sources_count();
 
 		return $return;
 	}
 
-	public static function update_api_key($data)
+	public static function update_api_key()
 	{
-		if ( ! sbr_current_user_can( 'manage_reviews_feed_options' ) || ! check_ajax_referer( 'sbr-admin', 'nonce', false ) ) {
+		if (! sbr_current_user_can('manage_reviews_feed_options') || ! check_ajax_referer('sbr-admin', 'nonce', false)) {
 			wp_send_json_error([
 				"error" => "Unauthorized Access",
 				"message" => "You are not allowed to perform this action."
 			]);
 		}
-
+		$return = [];
 		if (isset($_POST['provider']) && isset($_POST['apiKey'])) {
-			$data = array(
-				'provider' => sanitize_text_field($_POST['provider']),
-				'apiKey' => sanitize_text_field($_POST['apiKey']),
-			);
-			$return = self::process_source_apikey($data);
+			$provider = sanitize_text_field($_POST['provider']);
+			$apiKey = sanitize_text_field($_POST['apiKey']);
+
+			//Delete API Key from Plugin
+			if (!empty($_POST['removeApiKey'])
+				&& $_POST['removeApiKey'] === "true"
+			) {
+				self::update_provider_apikey($provider, null);
+				$return = [
+					'apiKeys' => get_option('sbr_apikeys', []),
+					'apikey'  => 'deleted'
+				];
+			} else {
+				$data = array(
+					'provider' => $provider,
+					'apiKey' => $apiKey
+				);
+				$return = self::process_source_apikey($data);
+			}
 		}
+		$return['freeRetrieverData'] = Util::get_free_retriever_data();
 		echo sbr_json_encode(
 			$return
 		);
 		wp_die();
-
 	}
 
 	/**
@@ -867,11 +897,13 @@ class SBR_Feed_Saver_Manager
 	//WordPress Org Theme/Plugin Source
 	public static function get_place_id_wordpressorg($place_url)
 	{
-		$broken_up = explode('/',
-				parse_url(
-					trim($place_url, '/'),
-					PHP_URL_PATH
-				));
+		$broken_up = explode(
+			'/',
+			parse_url(
+				trim($place_url, '/'),
+				PHP_URL_PATH
+			)
+		);
 
 		$slug = $broken_up[count($broken_up) - 1];
 		$type = strpos($place_url, 'theme') !== false ? 'theme' : 'plugin';
@@ -1052,9 +1084,6 @@ class SBR_Feed_Saver_Manager
 			do_action('litespeed_purge_all');
 		}
 
-		if (Util::sbr_is_pro()) {
-			\SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_Reviews_Update::schedule_needed_sources_history();
-		}
 	}
 
 	public static function sanitize_settings($raw_settings)
@@ -1083,7 +1112,6 @@ class SBR_Feed_Saver_Manager
 						}
 					}
 				}
-
 			} else {
 				$sanitized_values[$key] = sanitize_text_field($value);
 			}
@@ -1134,15 +1162,15 @@ class SBR_Feed_Saver_Manager
 
 			$single_post_cache->set_provider_id($provider['id']);
 
-			if (in_array($provider['provider'], $providers_lang,  true)) {
+			if (in_array($provider['provider'], $providers_lang, true)) {
 				$single_post_cache->set_lang($lang);
 			}
 
-	        $single_post_cache->check_api_media();
+			$single_post_cache->check_api_media();
 
 			if (! $single_post_cache->db_record_exists()) {
 				$single_post_cache->resize_avatar(150);
-				if (in_array($provider['provider'], $providers_no_media,  true)) {
+				if (in_array($provider['provider'], $providers_no_media, true)) {
 					$single_post_cache->set_storage_data('images_done', 1);
 				}
 				$single_post_cache->store();
@@ -1184,7 +1212,7 @@ class SBR_Feed_Saver_Manager
 			echo sbr_json_encode(
 				[
 					'newCollection' => $collection_info,
-            		'sourcesCount' => SBR_Sources::get_sources_count(),
+					'sourcesCount' => SBR_Sources::get_sources_count(),
 					'sourcesList'   => SBR_Sources::get_sources_list()
 				]
 			);
@@ -1258,15 +1286,15 @@ class SBR_Feed_Saver_Manager
 		}
 
 		if (isset($sanitized_review['media'])) {
-	        $aggregator = new PostAggregator();
+			$aggregator = new PostAggregator();
 			$single_post_cache->resize_images(array(640, 150));
 			$single_post_data = $single_post_cache->get_post_data();
-            $single_post_storage_data = $single_post_cache->get_storage_data();
-            $single_post_data = $aggregator->add_local_image_urls($single_post_data, $single_post_storage_data);
-            $single_post_cache->update(
+			$single_post_storage_data = $single_post_cache->get_storage_data();
+			$single_post_data = $aggregator->add_local_image_urls($single_post_data, $single_post_storage_data);
+			$single_post_cache->update(
 				[
-                    array('images_done', 1, '%d'),
-                    array('json_data', wp_json_encode($single_post_data), '%s')
+					array('images_done', 1, '%d'),
+					array('json_data', wp_json_encode($single_post_data), '%s')
 				]
 			);
 		}
@@ -1296,7 +1324,7 @@ class SBR_Feed_Saver_Manager
 		}
 
 		if (
-				isset($_POST['id'], $_POST['collection_name'], $_POST['provider_id'],$_POST['provider'])
+				isset($_POST['id'], $_POST['collection_name'], $_POST['provider_id'], $_POST['provider'])
 				&& !empty($_POST['collection_name'])
 				&& !empty($_POST['provider_id'])
 				&& !empty($_POST['provider'])
@@ -1312,7 +1340,7 @@ class SBR_Feed_Saver_Manager
 				'provider' 		=> $provider
 			];
 			$db = new DB();
-        	$results = $db->get_single_source($collection_info_search);
+			$results = $db->get_single_source($collection_info_search);
 			if (sizeof($results) === 0) {
 				wp_send_json_error(
 					[
@@ -1331,7 +1359,7 @@ class SBR_Feed_Saver_Manager
 			echo sbr_json_encode(
 				[
 					'newCollectionData' => $collection_db,
-		            'sourcesCount' => SBR_Sources::get_sources_count(),
+					'sourcesCount' => SBR_Sources::get_sources_count(),
 					'sourcesList'   => SBR_Sources::get_sources_list()
 				]
 			);
@@ -1432,7 +1460,6 @@ class SBR_Feed_Saver_Manager
 				]
 			);
 			wp_die();
-
 		}
 	}
 
@@ -1561,7 +1588,7 @@ class SBR_Feed_Saver_Manager
 			}
 			echo sbr_json_encode(
 				[
-		            'sourcesCount' => SBR_Sources::get_sources_count(),
+					'sourcesCount' => SBR_Sources::get_sources_count(),
 					'sourcesList' => SBR_Sources::get_sources_list()
 				]
 			);
@@ -1619,7 +1646,6 @@ class SBR_Feed_Saver_Manager
 			);
 		}
 		wp_die();
-
 	}
 
 
@@ -1727,7 +1753,6 @@ class SBR_Feed_Saver_Manager
 		}
 
 		wp_die();
-
 	}
 
 

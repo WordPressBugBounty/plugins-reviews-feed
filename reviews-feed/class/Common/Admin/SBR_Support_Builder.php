@@ -10,6 +10,7 @@ namespace SmashBalloon\Reviews\Common\Admin;
 use Smashballoon\Customizer\V2\Support_Builder;
 use SmashBalloon\Reviews\Common\Builder\Config\Proxy;
 use SmashBalloon\Reviews\Common\Customizer\DB;
+use SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler;
 use SmashBalloon\Reviews\Common\Util;
 
 class SBR_Support_Builder extends Support_Builder
@@ -53,7 +54,8 @@ class SBR_Support_Builder extends Support_Builder
             'collectionsPageUrl' => admin_url('admin.php?page=sbr-collections'),
             'adminNoticeContent' => apply_filters('sbr_admin_notices_filter', 1),
 			'tempUser' => \SmashBalloon\Reviews\Common\Admin\SBR_Support_Tool::check_temporary_user_exists(),
-            'builderUrl'           => admin_url( 'admin.php?page=sbr')
+            'builderUrl'           => admin_url( 'admin.php?page=sbr'),
+			'errorsList'           => SBR_Error_Handler::get_errors()
         ];
 
         return $aboutus_data;
@@ -147,6 +149,7 @@ class SBR_Support_Builder extends Support_Builder
         $output .= Util::get_api_settings_info();
         $output .= Util::get_feeds_settings_info();
         $output .= Util::get_posts_table_info();
+        $output .= Util::get_settings_page_errors();
 
         return $output;
     }
