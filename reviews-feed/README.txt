@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.7
-Stable tag: 2.0
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -198,6 +198,9 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.1.0 =
+* New - Added integration with the new Google Places API.
+
 = 2.0 =
 * New - Get an initial set of reviews without an API key after verifying an email address. Our Pro version will also update your sources without an API key. You can still add an API key for more frequent updates and unlimited sources.
 * Tweak - Added additional logging to troubleshoot certain feed issues.

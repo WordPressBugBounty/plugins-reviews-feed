@@ -82,6 +82,8 @@ class SBRelay
 			unset($data['language']);
 		}
 
+		$data = $this->apply_new_google_args($endpoint, $data);
+
 		$args = [
 			'method' => $method,
 			'headers' => $headers,
@@ -138,5 +140,31 @@ class SBRelay
 	public function setAccessToken(?string $access_token): void
 	{
 		$this->access_token = $access_token;
+	}
+
+	/**
+	 * Summary of apply_new_google_args
+	 *
+	 * @param mixed $endpoint
+	 * @param mixed $data
+	 *
+	 * @return array
+	 */
+	public function apply_new_google_args($endpoint, $data)
+	{
+		if (strpos($endpoint, 'google') !== false) {
+
+			$api_keys = get_option('sbr_apikeys', []);
+
+			if (
+				!empty($api_keys['googleApiType'])
+				&& !empty($data['place_id'])
+				&& $data['place_id'] !== 'XXX'
+			) {
+				$data['api_type'] = $api_keys['googleApiType']; // Only add google type if we are getting new source or new reviews
+			}
+		}
+
+		return $data;
 	}
 }

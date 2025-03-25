@@ -672,6 +672,9 @@ class SBR_Feed_Saver_Manager
 
 				if (isset($data['apiKey']) && $data['apiKey'] !== null && $data['apiKey'] !== 'null' && $checkValidKey) {
 					self::update_provider_apikey($provider, $data['apiKey']);
+
+					self::check_google_api_type($provider, $info);
+
 					$return['apikey'] = 'valid';
 					SBR_Feed_Saver_Manager::update_api_limit($provider, 'delete');
 					$info['apiKeyLimits'] = get_option('sbr_apikeys_limit', []);
@@ -766,6 +769,24 @@ class SBR_Feed_Saver_Manager
 	}
 
 	/**
+	 * Summary of check_google_api_type
+	 *
+	 * @param mixed $provider
+	 * @param mixed $info
+	 *
+	 * @return void
+	 */
+	public static function check_google_api_type($provider, $info)
+	{
+		if (
+			$provider === 'google'
+			&& !empty($info['info']['api_type'])
+		) {
+			self::update_provider_apikey('googleApiType', $info['info']['api_type']);
+		}
+	}
+
+	/**
 	* Add Or Update API Key
 	* for a value
 	*
@@ -784,6 +805,9 @@ class SBR_Feed_Saver_Manager
 		}
 		if (empty($apikey) && isset($api_keys[$provider])) {
 			unset($api_keys[$provider]);
+			if ($provider === 'google') {
+				unset($api_keys['googleApiType']);
+			}
 		}
 
 		update_option('sbr_apikeys', $api_keys);
