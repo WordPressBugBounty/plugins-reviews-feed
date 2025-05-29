@@ -42,6 +42,7 @@ class SB_Utils
      */
     public static function get_wp_pages()
     {
+        #$e = new \SmashBalloon\Reviews\Pro\Services\UsageTrackingService(new \SmashBalloon\Reviews\Common\Customizer\DB());
         $pagesList = get_pages();
         $pagesResult = array();
         if (\is_array($pagesList)) {

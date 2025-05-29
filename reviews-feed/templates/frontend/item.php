@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 $item_classes = $this->item_classes( $post );
-$no_icon = ['wpforms', 'formidable'];
+$no_icon = ['wpforms', 'formidable', 'edd'];
 ?>
 <div class="sb-post-item-wrap sb-new <?php echo esc_attr( $item_classes ); ?>">
 	<div class="sb-post-item">

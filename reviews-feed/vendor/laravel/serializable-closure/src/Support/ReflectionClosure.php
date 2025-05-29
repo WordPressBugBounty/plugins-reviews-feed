@@ -746,7 +746,7 @@ class ReflectionClosure extends ReflectionFunction
         return $this->isScopeRequired;
     }
     /**
-     * The the hash of the current file name.
+     * The hash of the current file name.
      *
      * @return string
      */

@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'sb_rf_b33e3d135e5d9e47d845c576147bda89' => $vendorDir . '/php-di/php-di/src/functions.php',
+    'sb_rf_b1eb330aa001ae4915f07005b4e993c2' => $vendorDir . '/smashballoon/framework/Utilities/functions.php',
 );

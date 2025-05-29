@@ -298,6 +298,9 @@ class Native implements Serializable
                     if (\PHP_VERSION >= 7.4 && !$property->isInitialized($data)) {
                         continue;
                     }
+                    if (\PHP_VERSION >= 8.1 && $property->isReadOnly()) {
+                        continue;
+                    }
                     $item = $property->getValue($data);
                     if ($item instanceof SerializableClosure || $item instanceof UnsignedSerializableClosure || $item instanceof SelfReference && $item->hash === $this->code['self']) {
                         $this->code['objects'][] = ['instance' => $data, 'property' => $property, 'object' => $item instanceof SelfReference ? $this : $item];
@@ -383,6 +386,9 @@ class Native implements Serializable
                     }
                     $property->setAccessible(\true);
                     if (\PHP_VERSION >= 7.4 && !$property->isInitialized($instance)) {
+                        continue;
+                    }
+                    if (\PHP_VERSION >= 8.1 && $property->isReadOnly() && $property->class !== $reflection->name) {
                         continue;
                     }
                     $value = $property->getValue($instance);

@@ -1145,7 +1145,7 @@ class Util
         return $retriever->get_settings();
     }
 
-     /**
+    /**
      * Get Feeds Settings
      *
      * @since 1.0
@@ -1164,6 +1164,21 @@ class Util
         $output .= '</br>';
 
         return $output;
+    }
+
+    /**
+     * Get Local Images/Avatar
+     * Upload folder name
+     *
+     * @since 2.0
+     *
+     * @return string
+     */
+    public static function get_upload_folder_name()
+    {
+        $upload = wp_upload_dir();
+    	$folder = trailingslashit($upload['basedir']) . trailingslashit('sbr-feed-images');
+        return $folder;
     }
 
 

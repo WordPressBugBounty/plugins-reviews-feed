@@ -2,6 +2,7 @@
 
 namespace SmashBalloon\Reviews\Common;
 
+use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Recommended_Blocks;
 use SmashBalloon\Reviews\Common\Admin\MenuService;
 use SmashBalloon\Reviews\Common\Admin\SBR_Admin_Notice;
 use SmashBalloon\Reviews\Common\Admin\SBR_Collections_Builder;
@@ -26,6 +27,7 @@ use SmashBalloon\Reviews\Common\Settings\SBR_Settings_Builder;
 use SmashBalloon\Reviews\Common\Admin\SBR_About_Builder;
 use SmashBalloon\Reviews\Common\Admin\SBR_Support_Builder;
 use SmashBalloon\Reviews\Common\Tooltip_Wizard;
+use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
 
 class ServiceContainer extends ServiceProvider
 {
@@ -50,14 +52,15 @@ class ServiceContainer extends ServiceProvider
         SBR_Support_Builder::class,
         SBR_Admin_Notice::class,
         SBR_Plugin_Insltaller::class,
-        SBR_Blocks::class,
+        SB_Reviews_Blocks::class,
+        SB_Recommended_Blocks::class,
         Tooltip_Wizard::class,
         SBR_Notifications::class,
         SBR_New_User::class,
         SBR_Upgrader::class,
         SBR_Collections_Builder::class,
         SBR_Support_Tool::class,
-        Error_Reporter::class
+        Error_Reporter::class,
     ];
 
     public function register(): void

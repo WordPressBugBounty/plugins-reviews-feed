@@ -1,5 +1,16 @@
 "use strict";
 (function () {
+    const extractFeedId = (value) => {
+        if (value !== undefined &&
+            value !== null &&
+            typeof value === 'string'
+        ) {
+            let newValue = value.replaceAll('feed', '').replaceAll('=', '').replaceAll('"', '');
+            value = parseInt(newValue);
+        }
+        return value;
+    }
+
     var _wp = wp,
         _wp$serverSideRender = _wp.serverSideRender,
         createElement = wp.element.createElement,
@@ -8,6 +19,7 @@
         InspectorControls = _ref.InspectorControls,
         _wp$components = wp.components,
         TextareaControl = _wp$components.TextareaControl,
+        SelectControl = _wp$components.SelectControl,
         Button = _wp$components.Button,
         PanelBody = _wp$components.PanelBody,
         Placeholder = _wp$components.Placeholder,
@@ -85,19 +97,24 @@
                 key: "sbr-gutenberg-setting-selector-inspector-controls"
             }, React.createElement(PanelBody, {
                 title: sbr_block_editor.i18n.addSettings
-            }, React.createElement(TextareaControl, {
-                key: "sbr-gutenberg-settings",
-                className: "sbr-gutenberg-settings",
-                label: sbr_block_editor.i18n.shortcodeSettings,
-                help: sbr_block_editor.i18n.example + ": 'feed=\"1\"",
-                value: shortcodeSettings,
-                onChange: setState
-            }), React.createElement(Button, {
-                key: "sbr-gutenberg-preview",
-                className: "sbr-gutenberg-preview",
-                onClick: previewClick,
-                isDefault: true
-            }, sbr_block_editor.i18n.preview)))];
+            },
+            React.createElement(
+                SelectControl,
+                {
+                    key: "sbr-gutenberg-settings",
+                    className: "sbr-gutenberg-settings",
+                    label: sbr_block_editor.i18n.selectFeedLabel,
+                    options: sbr_block_editor.feedsListOption,
+                    value : extractFeedId(shortcodeSettings),
+                    onChange: (valueID) => {
+                        setState(valueID)
+                        previewClick()
+                    }
+                }
+            ),
+        )
+        )
+        ];
 
             if (noNewChanges) {
                 afterRender();

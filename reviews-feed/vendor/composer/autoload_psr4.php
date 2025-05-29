@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'Smashballoon\\Stubs\\' => array($vendorDir . '/smashballoon/stubs/src'),
     'Smashballoon\\Customizer\\V2\\' => array($vendorDir . '/smashballoon/customizer/app/V2'),
+    'SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\' => array($vendorDir . '/smashballoon/framework'),
     'SmashBalloon\\Reviews\\Vendor\\Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
     'SmashBalloon\\Reviews\\Vendor\\PhpDocReader\\' => array($vendorDir . '/php-di/phpdoc-reader/src/PhpDocReader'),
     'SmashBalloon\\Reviews\\Vendor\\Laravel\\SerializableClosure\\' => array($vendorDir . '/laravel/serializable-closure/src'),

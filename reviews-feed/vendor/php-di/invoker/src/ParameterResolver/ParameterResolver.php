@@ -1,12 +1,11 @@
 <?php
 
+
 namespace SmashBalloon\Reviews\Vendor\Invoker\ParameterResolver;
 
 use ReflectionFunctionAbstract;
 /**
  * Resolves the parameters to use to call the callable.
- *
- * @author Matthieu Napoli <matthieu@mnapoli.fr>
  * @internal
  */
 interface ParameterResolver
@@ -22,7 +21,6 @@ interface ParameterResolver
      * @param ReflectionFunctionAbstract $reflection Reflection object for the callable.
      * @param array $providedParameters Parameters provided by the caller.
      * @param array $resolvedParameters Parameters resolved (indexed by parameter position).
-     *
      * @return array
      */
     public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters);

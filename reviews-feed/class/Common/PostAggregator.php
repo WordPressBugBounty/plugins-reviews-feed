@@ -72,9 +72,11 @@ class PostAggregator {
             }
 
             if( $post_json !== null ){
-				$time = date('m_d_Y', $post_json['time'] );
-                $search_value = $post_json['source']['id'] . '-' . $post_json['rating'] . '-' . $time . '-' . $post_json['reviewer']['name']. '-' . $post_json['provider']['name'];
-                if( !in_array( $search_value, $posts_db ) ){
+				$search_value = $post_json['source']['id'] . '-' . $post_json['rating'] . '-' . $post_json['reviewer']['name'] . '-' . $post_json['provider']['name'];
+				//IF EDD CHECK WITH TIME TOO SINCE A USER CAN POST MULTIPLE REVIEWS
+				$search_value .= $post_json['provider']['name'] === 'edd' ? $post_json['time'] : '';
+
+				if( !in_array( $search_value, $posts_db ) ){
                     array_push($posts_db, $search_value );
                     array_push($posts_list_result, $post );
                 }
@@ -95,9 +97,11 @@ class PostAggregator {
         foreach ($results  as $post) {
             $post_json =  isset($post['json_data']) ? json_decode( $post['json_data'], true ) : null;
             if( $post_json !== null ){
-				$time = date('m_d_Y', $post_json['time'] );
-                $search_value = $post['provider_id']  . '-' . $post_json['rating'] . '-' . $time . '-' . $post_json['reviewer']['name']. '-' . $post_json['provider']['name'];
-                if( in_array( $search_value, $posts_db ) ){
+				$search_value = $post_json['source']['id'] . '-' . $post_json['rating'] . '-' . $post_json['reviewer']['name'] . '-' . $post_json['provider']['name'];
+				//IF EDD CHECK WITH TIME TOO SINCE A USER CAN POST MULTIPLE REVIEWS
+				$search_value .= $post_json['provider']['name'] === 'edd' ? $post_json['time'] : '';
+
+				if( in_array( $search_value, $posts_db ) ){
                     array_push($posts_id_todelete, $post['id'] );
                 }else{
                     array_push($posts_db, $search_value );

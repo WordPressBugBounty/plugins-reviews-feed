@@ -1,0 +1,62 @@
+{
+  "name": "sb-customizer",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@wordpress/i18n": "^4.0.0",
+    "memize": "^1.1.0",
+    "file-loader": "^6.2.0",
+    "html-react-parser": "^4.2.0",
+    "react": "^18.2.0",
+    "react-color": "^2.19.3",
+    "react-dom": "^18.2.0",
+    "react-draggable": "^4.4.5",
+    "react-input-slider": "^6.0.1",
+    "react-owl-carousel": "^2.3.3",
+    "react-responsive-masonry": "^2.1.5",
+    "react-scripts": "5.0.1",
+    "react-sortablejs": "^6.1.4",
+    "sortablejs": "^1.15.0",
+    "url-loader": "^4.1.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build && npm run build-rename",
+    "test": "react-app-rewired test",
+    "eject": "react-scripts eject",
+    "build-rename": "npm run build-rename-js && npm run build-rename-js-map && npm run build-rename-css && npm run build-rename-css-map",
+    "build-rename-js": "renamer --find \"/main.*.(\\d+)..*/\" --replace 'main.js' build/static/js/*.js",
+    "build-rename-js-map": "renamer --find \"/main.*.(\\d+)..*/\" --replace 'main.js.map' build/static/js/*.map",
+    "build-rename-css": "renamer --find \"/.*.(\\d+)..*/\" --replace 'main.css' build/static/css/*.css",
+    "build-rename-css-map": "renamer --find \"/.*.(\\d+)..*/\" --replace 'main.css.map' build/static/css/*.map"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@automattic/babel-plugin-replace-textdomain": "^1.0.33",
+    "@types/sortablejs": "^1.13.0",
+    "customize-cra": "^1.0.0",
+    "react-app-rewired": "^2.2.1",
+    "renamer": "^4.0.0"
+  }
+}

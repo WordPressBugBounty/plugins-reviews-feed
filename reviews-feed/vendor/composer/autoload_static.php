@@ -4,10 +4,11 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit41d301e656f53a290eea87b24671c5ef
+class ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa
 {
     public static $files = array (
         'sb_rf_b33e3d135e5d9e47d845c576147bda89' => __DIR__ . '/..' . '/php-di/php-di/src/functions.php',
+        'sb_rf_b1eb330aa001ae4915f07005b4e993c2' => __DIR__ . '/..' . '/smashballoon/framework/Utilities/functions.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -15,6 +16,7 @@ class ComposerStaticInit41d301e656f53a290eea87b24671c5ef
         array (
             'Smashballoon\\Stubs\\' => 19,
             'Smashballoon\\Customizer\\V2\\' => 27,
+            'SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\' => 51,
             'SmashBalloon\\Reviews\\Vendor\\Psr\\Container\\' => 42,
             'SmashBalloon\\Reviews\\Vendor\\PhpDocReader\\' => 41,
             'SmashBalloon\\Reviews\\Vendor\\Laravel\\SerializableClosure\\' => 56,
@@ -32,6 +34,10 @@ class ComposerStaticInit41d301e656f53a290eea87b24671c5ef
         'Smashballoon\\Customizer\\V2\\' => 
         array (
             0 => __DIR__ . '/..' . '/smashballoon/customizer/app/V2',
+        ),
+        'SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/smashballoon/framework',
         ),
         'SmashBalloon\\Reviews\\Vendor\\Psr\\Container\\' => 
         array (
@@ -66,9 +72,9 @@ class ComposerStaticInit41d301e656f53a290eea87b24671c5ef
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit41d301e656f53a290eea87b24671c5ef::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit41d301e656f53a290eea87b24671c5ef::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit41d301e656f53a290eea87b24671c5ef::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa::$classMap;
 
         }, null, ClassLoader::class);
     }

@@ -399,7 +399,7 @@ class SinglePostCache {
 	}
 
 
-	 /**
+	/**
 	 * Used to update or insert Single Post Data
 	 *
 	 *

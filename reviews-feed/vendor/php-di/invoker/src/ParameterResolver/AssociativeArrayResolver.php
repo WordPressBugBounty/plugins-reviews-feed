@@ -1,5 +1,6 @@
 <?php
 
+
 namespace SmashBalloon\Reviews\Vendor\Invoker\ParameterResolver;
 
 use ReflectionFunctionAbstract;
@@ -10,13 +11,11 @@ use ReflectionFunctionAbstract;
  * in the parameter named `$foo`.
  *
  * Parameters that are not indexed by a string are ignored.
- *
- * @author Matthieu Napoli <matthieu@mnapoli.fr>
  * @internal
  */
 class AssociativeArrayResolver implements ParameterResolver
 {
-    public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters)
+    public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters) : array
     {
         $parameters = $reflection->getParameters();
         // Skip parameters already resolved

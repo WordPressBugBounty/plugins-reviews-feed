@@ -29,13 +29,12 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('FlattedString', 'SmashBalloon\Reviews\Vendor\FlattedString');
-humbug_phpscoper_expose_class('Flatted', 'SmashBalloon\Reviews\Vendor\Flatted');
-humbug_phpscoper_expose_class('ComposerAutoloaderInit41d301e656f53a290eea87b24671c5ef', 'SmashBalloon\Reviews\Vendor\ComposerAutoloaderInit41d301e656f53a290eea87b24671c5ef');
+humbug_phpscoper_expose_class('ComposerAutoloaderInit63ea58230ae075bdfb6a07208dd316aa', 'SmashBalloon\Reviews\Vendor\ComposerAutoloaderInit63ea58230ae075bdfb6a07208dd316aa');
 
 // Function aliases. For more information see:
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases
-if (!function_exists('composerRequire41d301e656f53a290eea87b24671c5ef')) { function composerRequire41d301e656f53a290eea87b24671c5ef() { return \SmashBalloon\Reviews\Vendor\composerRequire41d301e656f53a290eea87b24671c5ef(...func_get_args()); } }
+if (!function_exists('composerRequire63ea58230ae075bdfb6a07208dd316aa')) { function composerRequire63ea58230ae075bdfb6a07208dd316aa() { return \SmashBalloon\Reviews\Vendor\composerRequire63ea58230ae075bdfb6a07208dd316aa(...func_get_args()); } }
 if (!function_exists('dbDelta')) { function dbDelta() { return \SmashBalloon\Reviews\Vendor\dbDelta(...func_get_args()); } }
+if (!function_exists('do_action')) { function do_action() { return \SmashBalloon\Reviews\Vendor\do_action(...func_get_args()); } }
 
 return $loader;

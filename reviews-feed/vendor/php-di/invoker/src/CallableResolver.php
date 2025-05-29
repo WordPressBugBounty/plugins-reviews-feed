@@ -1,21 +1,21 @@
 <?php
 
+
 namespace SmashBalloon\Reviews\Vendor\Invoker;
 
+use Closure;
 use SmashBalloon\Reviews\Vendor\Invoker\Exception\NotCallableException;
 use SmashBalloon\Reviews\Vendor\Psr\Container\ContainerInterface;
 use SmashBalloon\Reviews\Vendor\Psr\Container\NotFoundExceptionInterface;
+use ReflectionException;
+use ReflectionMethod;
 /**
  * Resolves a callable from a container.
- *
- * @author Matthieu Napoli <matthieu@mnapoli.fr>
  * @internal
  */
 class CallableResolver
 {
-    /**
-     * @var ContainerInterface
-     */
+    /** @var ContainerInterface */
     private $container;
     public function __construct(ContainerInterface $container)
     {
@@ -25,12 +25,10 @@ class CallableResolver
      * Resolve the given callable into a real PHP callable.
      *
      * @param callable|string|array $callable
-     *
      * @return callable Real PHP callable.
-     *
-     * @throws NotCallableException
+     * @throws NotCallableException|ReflectionException
      */
-    public function resolve($callable)
+    public function resolve($callable) : callable
     {
         if (\is_string($callable) && \strpos($callable, '::') !== \false) {
             $callable = \explode('::', $callable, 2);
@@ -43,20 +41,19 @@ class CallableResolver
     }
     /**
      * @param callable|string|array $callable
-     * @return callable
-     * @throws NotCallableException
+     * @return callable|mixed
+     * @throws NotCallableException|ReflectionException
      */
     private function resolveFromContainer($callable)
     {
         // Shortcut for a very common use case
-        if ($callable instanceof \Closure) {
+        if ($callable instanceof Closure) {
             return $callable;
         }
-        $isStaticCallToNonStaticMethod = \false;
         // If it's already a callable there is nothing to do
         if (\is_callable($callable)) {
-            $isStaticCallToNonStaticMethod = $this->isStaticCallToNonStaticMethod($callable);
-            if (!$isStaticCallToNonStaticMethod) {
+            // TODO with PHP 8 that should not be necessary to check this anymore
+            if (!$this->isStaticCallToNonStaticMethod($callable)) {
                 return $callable;
             }
         }
@@ -82,10 +79,7 @@ class CallableResolver
                 if ($this->container->has($callable[0])) {
                     throw $e;
                 }
-                if ($isStaticCallToNonStaticMethod) {
-                    throw new NotCallableException(\sprintf('Cannot call %s::%s() because %s() is not a static method and "%s" is not a container entry', $callable[0], $callable[1], $callable[1], $callable[0]));
-                }
-                throw new NotCallableException(\sprintf('Cannot call %s on %s because it is not a class nor a valid container entry', $callable[1], $callable[0]));
+                throw new NotCallableException(\sprintf('Cannot call %s() on %s because it is not a class nor a valid container entry', $callable[1], $callable[0]));
             }
         }
         // Unrecognized stuff, we let it fail later
@@ -95,13 +89,16 @@ class CallableResolver
      * Check if the callable represents a static call to a non-static method.
      *
      * @param mixed $callable
-     * @return bool
+     * @throws ReflectionException
      */
-    private function isStaticCallToNonStaticMethod($callable)
+    private function isStaticCallToNonStaticMethod($callable) : bool
     {
         if (\is_array($callable) && \is_string($callable[0])) {
-            list($class, $method) = $callable;
-            $reflection = new \ReflectionMethod($class, $method);
+            [$class, $method] = $callable;
+            if (!\method_exists($class, $method)) {
+                return \false;
+            }
+            $reflection = new ReflectionMethod($class, $method);
             return !$reflection->isStatic();
         }
         return \false;

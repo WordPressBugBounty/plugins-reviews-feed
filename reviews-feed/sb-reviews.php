@@ -3,7 +3,7 @@
 Plugin Name: Reviews Feed
 Plugin URI: https://smashballoon.com/reviews-feed
 Description: Reviews Feeds allows you to display completely customizable Reviews feeds from many different providers.
-Version: 2.1.0
+Version: 2.1.1
 Author: Smash Balloon
 Author URI: https://smashballoon.com/
 Text Domain: reviews-feed
@@ -25,7 +25,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 if (!defined('SBRVER')) {
-	define('SBRVER', '2.1.0');
+	define('SBRVER', '2.1.1');
 }
 
 if (!defined('SBR_PLUGIN_DIR')) {

@@ -63,7 +63,6 @@ if (!defined('SBR_SETTINGSPAGE_TABS_NAMESPACE')) {
 	define('SBR_SETTINGSPAGE_TABS_NAMESPACE',  'SmashBalloon\Reviews\Common\Settings\Tabs\\');
 }
 
-
 //Relay Backend Name Space
 if (!defined('SBR_RELAY_BASE_URL')) {
  	define('SBR_RELAY_BASE_URL', 'https://reviews.smashballoon.com/api/v1.0/');

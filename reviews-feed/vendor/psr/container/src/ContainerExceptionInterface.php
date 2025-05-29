@@ -1,14 +1,12 @@
 <?php
 
-/**
- * @license http://www.opensource.org/licenses/mit-license.php MIT (see the LICENSE file)
- */
 namespace SmashBalloon\Reviews\Vendor\Psr\Container;
 
+use Throwable;
 /**
  * Base interface representing a generic exception in a container.
  * @internal
  */
-interface ContainerExceptionInterface
+interface ContainerExceptionInterface extends Throwable
 {
 }

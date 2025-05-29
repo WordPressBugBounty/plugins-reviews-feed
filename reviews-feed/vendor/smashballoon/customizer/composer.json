@@ -1,0 +1,27 @@
+{
+    "name": "smashballoon\/customizer",
+    "description": "The SmashBalloon customizer library.",
+    "type": "library",
+    "minimum-stability": "stable",
+    "version": "2.1.0",
+    "autoload": {
+        "psr-4": {
+            "Smashballoon\\Customizer\\V2\\": "app\/V2"
+        }
+    },
+    "authors": [
+        {
+            "name": "SmashBalloon"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:awesomemotive\/sb-stubs.git"
+        }
+    ],
+    "require": {
+        "smashballoon\/stubs": "dev-master",
+        "php-di\/php-di": "^6.1.0"
+    }
+}

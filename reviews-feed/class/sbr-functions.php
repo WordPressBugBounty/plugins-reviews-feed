@@ -1,4 +1,5 @@
 <?php
+use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
 use SmashBalloon\Reviews\Common\Util;
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
@@ -378,23 +379,48 @@ function sbr_container_id( $feed_id ) {
 	return 'sb-reviews-container-' . $feed_id;
 }
 
-function sbr_scripts_enqueue() {
+function sbr_scripts_enqueue($enqueue = false)
+{
 	//Register the script to make it available
+	$assets_url = trailingslashit(SBR_PLUGIN_URL);
 	$settings = get_option('sbr_settings', []);
-    $min = '.min';
-    $min = '';
-	wp_enqueue_style( 'sbr_styles', trailingslashit( SBR_PLUGIN_URL ) . 'assets/css/sbr-styles'.$min.'.css', array(), SBRVER );
-	if ( ! empty( $settings['enqueue_js_in_header'] ) ) {
-		wp_enqueue_script( 'sbr_scripts', trailingslashit( SBR_PLUGIN_URL ) . 'assets/js/sbr-feed'.$min.'.js', array( 'jquery' ), SBRVER, false );
+	$min = !empty($_GET['sb_debug']) ? '' : '.min';
+
+	wp_enqueue_style(
+		'sbr_styles',
+		$assets_url . 'assets/css/sbr-styles' . $min . '.css',
+		[],
+		SBRVER
+	);
+
+	if (!empty($settings['enqueue_js_in_header'])) {
+		wp_enqueue_script(
+			'sbr_scripts',
+			$assets_url . 'assets/js/sbr-feed' . $min . '.js',
+			['jquery'],
+			SBRVER,
+			false
+		);
 	} else {
-		wp_register_script( 'sbr_scripts', trailingslashit( SBR_PLUGIN_URL ) . 'assets/js/sbr-feed'.$min.'.js', array( 'jquery' ), SBRVER, true );
+		wp_register_script(
+			'sbr_scripts',
+			$assets_url . 'assets/js/sbr-feed' . $min . '.js',
+			['jquery'],
+			SBRVER,
+			true
+		);
 	}
 
 	$data = array(
-		'adminAjaxUrl'  => admin_url( 'admin-ajax.php' ),
+		'adminAjaxUrl'  => admin_url('admin-ajax.php'),
 	);
 	//Pass option to JS file
-	wp_localize_script('sbr_scripts', 'sbrOptions', $data );
+	wp_localize_script('sbr_scripts', 'sbrOptions', $data);
+
+	if ($enqueue || SB_Reviews_Blocks::is_gb_editor()) {
+		wp_enqueue_style('sbr_styles');
+		wp_enqueue_script('sbr_scripts');
+	}
 }
 add_action( 'wp_enqueue_scripts', 'sbr_scripts_enqueue', 2 );
 
