@@ -1335,7 +1335,12 @@ class SBR_Feed_Saver_Manager
 			$single_post_cache->set_lang($lang);
 		}
 
-		$single_post_cache->check_api_media();
+		if (
+			Util::sbr_is_pro()
+			&& method_exists($single_post_cache, 'check_api_media')
+		) {
+			$single_post_cache->check_api_media();
+		}
 
 		if (! $single_post_cache->db_record_exists()) {
 			$single_post_cache->resize_avatar(150);

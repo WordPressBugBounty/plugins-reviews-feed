@@ -366,8 +366,10 @@ class Feed
 			$single_post_cache = new SinglePostCache($single_review);
 			$single_post_cache->set_provider_id($provider_id);
 
-			$single_post_cache->set_lang( $this->get_db_lang( $provider_id ) );
-			$single_post_cache->check_api_media();
+			$single_post_cache->set_lang($this->get_db_lang($provider_id));
+			if (Util::sbr_is_pro() && method_exists($single_post_cache, 'check_api_media')) {
+				$single_post_cache->check_api_media();
+			}
 
 			if (! $single_post_cache->db_record_exists()) {
 				$single_post_cache->resize_avatar(150);

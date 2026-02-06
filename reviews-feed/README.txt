@@ -2,13 +2,13 @@
 Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
-Tested up to: 6.7
-Stable tag: 2.1.0
+Tested up to: 6.9
+Stable tag: 2.4.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Display Yelp and Google reviews from real customers for any business in a clean, customizable feed on your site.
+No API key required. Display Yelp and Google reviews for any business in a clean, customizable feed on your site.
 
 == Description ==
 
@@ -21,6 +21,8 @@ If a Google business listing has a physical location, you can display your lates
 Showing Google rating and Yelp reviews on your website is one of the best ways to convince site visitors to do business with you and boost your conversions. Customer testimonials are crucial to building positive brand trust for online businesses.
 
 Our plugin makes it easy to set up an automatically updating feed of Yelp and Google reviews. After installing the plugin, create a feed by visiting the Reviews Feed menu item that appears in your dashboard. Configure a source of reviews for your feed, customize the look and feel, then use a shortcode to display your reviews feed anywhere on your site. It takes less than a minute to get started.
+
+In our free version, an API key is required only if you would like ongoing updates to your reviews feed. If you don't have an API key, you can still display up to 10 of the latest reviews for a single business without needing an API key. Simply verify your email address to unlock this feature!
 
 = Features =
 * Super **simple to set up**
@@ -35,6 +37,7 @@ Our plugin makes it easy to set up an automatically updating feed of Yelp and Go
 * Prompt site visitors to leave a review on Google or Yelp with a button in the header
 * Display your Yelp and Google reviews in chronological order or reverse chronological order.
 * Automatically show new reviews, collected daily when you enter you own API keys (free and easy to get)
+* **New!** Display up to 10 of the latest **free Google reviews** or **free Yelp reviews** for a single business without needing an API key. Simply verify your email address to unlock this feature!
 * Handy block for easily adding your reviews feed to posts and pages using the block editor
 
 = Benefits =
@@ -60,6 +63,9 @@ In order to maintain the free version of the plugin on an ongoing basis, and to 
 * Even more advanced customization options than the free version
 * Block reviews by specific users
 * Integrate with WPML (WordPress Multilingual) to show translated Google reviews in the chosen site language
+* **Unlock more reviews and automatic updates without API keys!** The Pro version allows you to display up to 50 initial reviews from Google and Yelp and receive weekly automatic updates from multiple sources - all without needing to add an API key.
+* **Collect and display user-submitted reviews!** Seamlessly integrate with WPForms and Formidable Forms to collect customer reviews directly through your forms and display them in your review feeds.
+* **NEW! Display WooCommerce product reviews!** Showcase reviews from your WooCommerce store by selecting individual products, categories, or tags.
 
 [Find out more about the Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-pro-upsell&utm_content=FindOutMore).
 
@@ -152,7 +158,7 @@ This is a feature of the [Pro version](https://smashballoon.com/reviews-feed/?ut
 This is a feature of the [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-mod-mode&utm_content=ProVersion) of the plugin, which lets you easily show specific reviews or hide certain ratings from your feed.
 = Are other review providers available besides Yelp and Google? =
 
-Our [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-more-providers&utm_content=ProVersion) offers support for Facebook reviews and Trustpilot Reviews in the “Plus” tier and additionally TripAdvisor reviews and WordPress.org reviews in the “Elite” tier. Support for other review providers is coming soon!
+Our [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-more-providers&utm_content=ProVersion) offers support for Facebook reviews, Trustpilot reviews, and WooCommerce product reviews in the "Plus" tier, and additionally TripAdvisor reviews and WordPress.org reviews in the "Elite" tier.
 
 == Screenshots ==
 
@@ -198,13 +204,29 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.4.2 =
+* Tweak: Plugin hardening and miscellaneous fixes.
+
+= 2.4.1 =
+* Tweak: Add official support for WordPress 6.9.
+
+= 2.4.0 =
+* New: Full PHP 8.4 compatibility with all deprecation warnings resolved.
+* New: Pagination for feeds and sources lists in the admin for better management of large numbers of items.
+* Tweak: Plugin hardening and miscellaneous fixes.
+* Fix: Fixed spelling errors in code.
+* Fix: Various bug fixes and performance improvements.
+
+= 2.1.1 =
+* Fix - Fixed the issue that would cause the _load_textdomain_just_in_time deprecation warning.
+
 = 2.1.0 =
 * New - Added integration with the new Google Places API.
 
 = 2.0 =
-* New - Get an initial set of reviews without an API key after verifying an email address. Our Pro version will also update your sources without an API key. You can still add an API key for more frequent updates and unlimited sources.
-* Tweak - Added additional logging to troubleshoot certain feed issues.
-* Fix - Additional plugin hardening.
+* New: Get an initial set of reviews without an API key after verifying an email address. Our Pro version will also update your sources without an API key. You can still add an API key for more frequent updates and unlimited sources.
+* Tweak: Added additional logging to troubleshoot certain feed issues.
+* Fix: Additional plugin hardening.
 
 = 1.2.0 =
 * Important: The minimum PHP version is now 7.4.
