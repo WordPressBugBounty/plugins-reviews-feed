@@ -1,7 +1,9 @@
 <?php
+
 /**
  * Summary of namespace SmashBalloon\Reviews\Common\Helpers
  */
+
 namespace SmashBalloon\Reviews\Common\Helpers;
 
 /**
@@ -75,12 +77,21 @@ class SBR_Error_Handler
 		$current_errors = self::get_errors();
 		$exists = 'not_defined';
 		foreach ($current_errors as $key => $error_elm) {
+			// Skip malformed error entries
+			if (! isset($error_elm['type'], $error_elm['id'], $error['type'], $error['id'])) {
+				continue;
+			}
+
 			if (
+				empty($error_elm['type']) ||
+				empty($error_elm['id']) ||
+				empty($error['type']) ||
+				empty($error['id']) ||
 				$error_elm['type'] === $error['type'] &&
 				$error_elm['id'] === $error['id'] &&
 				(
 					(
-						!empty($error_elm['provider']) &&
+						! empty($error_elm['provider']) &&
 						$error_elm['provider'] === $error['provider']
 					) || empty($error_elm['provider'])
 				)
@@ -146,11 +157,6 @@ class SBR_Error_Handler
 			wp_send_json_error();
 		}
 		self::clear_all_errors();
-		echo sbr_json_encode(
-			[
-				'success' => true
-			]
-		);
-		wp_die();
+		wp_send_json_success();
 	}
 }

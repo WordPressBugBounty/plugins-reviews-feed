@@ -4,15 +4,15 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa
+class ComposerStaticInit84e16c3d027f83f5f9e0fadd381733a6
 {
     public static $files = array (
-        'sb_rf_b33e3d135e5d9e47d845c576147bda89' => __DIR__ . '/..' . '/php-di/php-di/src/functions.php',
         'sb_rf_b1eb330aa001ae4915f07005b4e993c2' => __DIR__ . '/..' . '/smashballoon/framework/Utilities/functions.php',
+        'sb_rf_a5f44a166aafa87e1c96130802135926' => __DIR__ . '/..' . '/smashballoon/framework/Packages/php-di/src/functions.php',
     );
 
     public static $prefixLengthsPsr4 = array (
-        'S' => 
+        'S' =>
         array (
             'Smashballoon\\Stubs\\' => 19,
             'Smashballoon\\Customizer\\V2\\' => 27,
@@ -27,39 +27,39 @@ class ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa
     );
 
     public static $prefixDirsPsr4 = array (
-        'Smashballoon\\Stubs\\' => 
+        'Smashballoon\\Stubs\\' =>
         array (
             0 => __DIR__ . '/..' . '/smashballoon/stubs/src',
         ),
-        'Smashballoon\\Customizer\\V2\\' => 
+        'Smashballoon\\Customizer\\V2\\' =>
         array (
             0 => __DIR__ . '/..' . '/smashballoon/customizer/app/V2',
         ),
-        'SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\' => 
+        'SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\' =>
         array (
             0 => __DIR__ . '/..' . '/smashballoon/framework',
         ),
-        'SmashBalloon\\Reviews\\Vendor\\Psr\\Container\\' => 
+        'SmashBalloon\\Reviews\\Vendor\\Psr\\Container\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
         ),
-        'SmashBalloon\\Reviews\\Vendor\\PhpDocReader\\' => 
+        'SmashBalloon\\Reviews\\Vendor\\PhpDocReader\\' =>
         array (
             0 => __DIR__ . '/..' . '/php-di/phpdoc-reader/src/PhpDocReader',
         ),
-        'SmashBalloon\\Reviews\\Vendor\\Laravel\\SerializableClosure\\' => 
+        'SmashBalloon\\Reviews\\Vendor\\Laravel\\SerializableClosure\\' =>
         array (
             0 => __DIR__ . '/..' . '/laravel/serializable-closure/src',
         ),
-        'SmashBalloon\\Reviews\\Vendor\\Invoker\\' => 
+        'SmashBalloon\\Reviews\\Vendor\\Invoker\\' =>
         array (
             0 => __DIR__ . '/..' . '/php-di/invoker/src',
         ),
-        'SmashBalloon\\Reviews\\Vendor\\DI\\' => 
+        'SmashBalloon\\Reviews\\Vendor\\DI\\' =>
         array (
-            0 => __DIR__ . '/..' . '/php-di/php-di/src',
+            0 => __DIR__ . '/..' . '/smashballoon/framework/Packages/php-di/src',
         ),
-        'SmashBalloon\\Reviews\\' => 
+        'SmashBalloon\\Reviews\\' =>
         array (
             0 => __DIR__ . '/../..' . '/class',
         ),
@@ -72,9 +72,9 @@ class ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit63ea58230ae075bdfb6a07208dd316aa::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit84e16c3d027f83f5f9e0fadd381733a6::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit84e16c3d027f83f5f9e0fadd381733a6::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit84e16c3d027f83f5f9e0fadd381733a6::$classMap;
 
         }, null, ClassLoader::class);
     }

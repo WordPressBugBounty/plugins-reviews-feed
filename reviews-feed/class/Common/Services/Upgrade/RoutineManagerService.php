@@ -12,25 +12,25 @@ use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\ClearReviewsDuplicateR
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\NewUserRatingRoutine;
 
 class RoutineManagerService extends ServiceProvider{
-    /**
-     * a list of upgrade routines to be executed,
-     * keep the correct order, newer is always at the end of the list.
-     * @var UpgradeRoutine[]
-     */
-    private $routines = [
-        V1Routine::class,
-        RegisterWebsiteRoutine::class,
-	    LanguageCacheUpgradeRoutine::class,
-	    ClearReviewsDuplicateRoutine::class,
-        NewUserRatingRoutine::class
-    ];
+	/**
+	 * a list of upgrade routines to be executed,
+	 * keep the correct order, newer is always at the end of the list.
+	 * @var UpgradeRoutine[]
+	 */
+	private $routines = [
+		V1Routine::class,
+		RegisterWebsiteRoutine::class,
+		LanguageCacheUpgradeRoutine::class,
+		ClearReviewsDuplicateRoutine::class,
+		NewUserRatingRoutine::class
+	];
 
-    public function register()
-    {
-        $container = Container::get_instance();
+	public function register()
+	{
+		$container = Container::get_instance();
 
-        foreach ($this->routines as $routine) {
-            $container->get( $routine )->register();
-        }
-    }
+		foreach ($this->routines as $routine) {
+			$container->get($routine)->register();
+		}
+	}
 }

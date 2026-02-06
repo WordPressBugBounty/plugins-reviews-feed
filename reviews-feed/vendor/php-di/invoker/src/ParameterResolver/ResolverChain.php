@@ -8,7 +8,6 @@ use ReflectionFunctionAbstract;
  * Dispatches the call to other resolvers until all parameters are resolved.
  *
  * Chain of responsibility pattern.
- * @internal
  */
 class ResolverChain implements ParameterResolver
 {
@@ -18,12 +17,12 @@ class ResolverChain implements ParameterResolver
     {
         $this->resolvers = $resolvers;
     }
-    public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters) : array
+    public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters): array
     {
         $reflectionParameters = $reflection->getParameters();
         foreach ($this->resolvers as $resolver) {
             $resolvedParameters = $resolver->getParameters($reflection, $providedParameters, $resolvedParameters);
-            $diff = \array_diff_key($reflectionParameters, $resolvedParameters);
+            $diff = array_diff_key($reflectionParameters, $resolvedParameters);
             if (empty($diff)) {
                 // Stop traversing: all parameters are resolved
                 return $resolvedParameters;
@@ -34,15 +33,15 @@ class ResolverChain implements ParameterResolver
     /**
      * Push a parameter resolver after the ones already registered.
      */
-    public function appendResolver(ParameterResolver $resolver) : void
+    public function appendResolver(ParameterResolver $resolver): void
     {
         $this->resolvers[] = $resolver;
     }
     /**
      * Insert a parameter resolver before the ones already registered.
      */
-    public function prependResolver(ParameterResolver $resolver) : void
+    public function prependResolver(ParameterResolver $resolver): void
     {
-        \array_unshift($this->resolvers, $resolver);
+        array_unshift($this->resolvers, $resolver);
     }
 }

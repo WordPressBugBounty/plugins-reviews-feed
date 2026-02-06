@@ -10,12 +10,11 @@ namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Notificati
 use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Notification\Notices\AdminNotice;
 use function SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_map_notice_hooks;
 use function SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_plugin_type;
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
 }
 /**
  * Get all notices and display error warning or success notices
- * @internal
  */
 class SBNotices
 {
@@ -79,7 +78,7 @@ class SBNotices
      */
     public static function instance($plugin_slug = '')
     {
-        if (\is_null(self::$instance)) {
+        if (is_null(self::$instance)) {
             self::$instance = new self($plugin_slug);
         }
         return self::$instance;
@@ -91,8 +90,8 @@ class SBNotices
     {
         $this->plugin_slug = $plugin_slug;
         $this->plugin_type = sb_get_plugin_type($this->plugin_slug);
-        $plugin_slug = \str_replace('-', '_', $plugin_slug);
-        $this->plugin = \str_replace('_pro', '', $plugin_slug);
+        $plugin_slug = str_replace('-', '_', $plugin_slug);
+        $this->plugin = str_replace('_pro', '', $plugin_slug);
         $this->notice_option = sanitize_key('sb_' . $this->plugin . '_notices');
         $this->group_notice_option = sanitize_key('sb_' . $this->plugin . '_group_notices');
         $this->notices = get_option($this->notice_option, []);
@@ -187,39 +186,39 @@ class SBNotices
                     unset($notices[$key]);
                 }
                 // Check if critical error is present then unset 'information' notices.
-                if ($has_admin_errors && \in_array($notice['type'], ['information', 'warning'], \true)) {
+                if ($has_admin_errors && in_array($notice['type'], ['information', 'warning'], \true)) {
                     unset($notices[$key]);
                 }
                 // Check start and end date, and unset if expired.
                 if ($notice['start_date'] && $notice['end_date']) {
-                    if (\strtotime($notice['start_date']) > \time() || \strtotime($notice['end_date']) < \time()) {
+                    if (strtotime($notice['start_date']) > time() || strtotime($notice['end_date']) < time()) {
                         unset($notices[$key]);
                     }
                 }
                 // Check page and unset if not match.
                 if (isset($notice['page']) && !empty($notice['page'])) {
                     $page = $notice['page'];
-                    if (!\is_array($page)) {
+                    if (!is_array($page)) {
                         $page = [$page];
                     }
-                    if (!\in_array($this->screen, $page, \true)) {
+                    if (!in_array($this->screen, $page, \true)) {
                         unset($notices[$key]);
                     }
                 }
                 // If page has exclude then unset if match.
                 if (isset($notice['page_exclude']) && !empty($notice['page_exclude'])) {
                     $page_exclude = $notice['page_exclude'];
-                    if (!\is_array($page_exclude)) {
+                    if (!is_array($page_exclude)) {
                         $page_exclude = [$page_exclude];
                     }
-                    if (\in_array($this->screen, $page_exclude, \true)) {
+                    if (in_array($this->screen, $page_exclude, \true)) {
                         unset($notices[$key]);
                     }
                 }
                 // Check capability and unset if not match.
                 if (isset($notice['capability']) && !empty($notice['capability'])) {
                     $capability = $notice['capability'];
-                    if (!\is_array($capability)) {
+                    if (!is_array($capability)) {
                         $capability = [$capability];
                     }
                     if (!current_user_can($capability[0])) {
@@ -234,9 +233,9 @@ class SBNotices
                 }
             }
             // Notices are duplicate so unset them.
-            $notices = \array_unique($notices, \SORT_REGULAR);
+            $notices = array_unique($notices, \SORT_REGULAR);
             // Sort notices as per priority value.
-            \uasort($notices, function ($a, $b) {
+            uasort($notices, function ($a, $b) {
                 if (isset($a['priority']) && isset($b['priority'])) {
                     return $a['priority'] - $b['priority'];
                 }
@@ -273,7 +272,7 @@ class SBNotices
         if (empty($id) || empty($args['title']) && empty($args['message'])) {
             return;
         }
-        $type = \in_array($type, ['error', 'warning', 'information'], \true) ? $type : 'error';
+        $type = in_array($type, ['error', 'warning', 'information'], \true) ? $type : 'error';
         $notices = $this->get_notices();
         // Check if notice already exists.
         if (isset($notices[$id])) {
@@ -318,7 +317,7 @@ class SBNotices
             if ($is_group_notice) {
                 $group_id = $notices[$id]['group'];
                 if (isset($group_notices[$group_id])) {
-                    $group_notices[$group_id] = \array_diff($group_notices[$group_id], [$id]);
+                    $group_notices[$group_id] = array_diff($group_notices[$group_id], [$id]);
                     $this->set_group_notices($group_notices);
                     update_option($this->group_notice_option, $group_notices);
                 }
@@ -360,7 +359,7 @@ class SBNotices
                 }
                 if (isset($notice['capability']) && !empty($notice['capability'])) {
                     $capability = $notice['capability'];
-                    if (!\is_array($capability)) {
+                    if (!is_array($capability)) {
                         $capability = [$capability];
                     }
                     if (!current_user_can($capability[0])) {

@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Contracts;
 
-/** @internal */
 interface Serializable
 {
     /**

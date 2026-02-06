@@ -9,11 +9,10 @@ use Smashballoon\Stubs\Services\ServiceProvider;
  *
  * @since 1.0
  */
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly
 }
-/** @internal */
 class Settings_Builder extends ServiceProvider
 {
     public static function instance()
@@ -74,7 +73,7 @@ class Settings_Builder extends ServiceProvider
         } else {
             wp_enqueue_style('sb-customizer-style', SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css', \false, \false);
         }
-        $settings_data = \array_merge($settings_data, $this->custom_settings_data());
+        $settings_data = array_merge($settings_data, $this->custom_settings_data());
         //Data comming from the Actual plugin
         wp_enqueue_script('sb-customizer-app', $settings_js_file, array('wp-i18n', 'jquery'), \false, \true);
         wp_localize_script('sb-customizer-app', 'sb_customizer', $settings_data);
@@ -93,15 +92,15 @@ class Settings_Builder extends ServiceProvider
         $settings_page_data = [];
         $index = $tab_index = 0;
         /* Require Directly Tab Classes files */
-        foreach (\scandir($this->settingspage_tabs_path) as $filename) {
+        foreach (scandir($this->settingspage_tabs_path) as $filename) {
             $path = $this->settingspage_tabs_path . '/' . $filename;
-            if (\is_file($path)) {
+            if (is_file($path)) {
                 require $path;
-                $tab_name = $this->settingspage_tabs_namespace . \str_replace('.php', '', $filename);
-                if (\class_exists($tab_name) && \is_subclass_of($tab_name, \Smashballoon\Customizer\V2\SB_SettingsPage_Tab::class)) {
+                $tab_name = $this->settingspage_tabs_namespace . str_replace('.php', '', $filename);
+                if (class_exists($tab_name) && is_subclass_of($tab_name, \Smashballoon\Customizer\V2\SB_SettingsPage_Tab::class)) {
                     $tab_class = new $tab_name();
                     $tab_content = $tab_class->get_tab();
-                    $tab_index = $this->tabs_order !== null ? \array_search($tab_content['id'], $this->tabs_order) : $index;
+                    $tab_index = $this->tabs_order !== null ? array_search($tab_content['id'], $this->tabs_order) : $index;
                     $settings_page_data[$tab_index] = $tab_content;
                     $index++;
                 }

@@ -7,7 +7,6 @@
  */
 namespace Smashballoon\Customizer\V2;
 
-/** @internal */
 class Feed_Saver
 {
     /**
@@ -172,7 +171,7 @@ class Feed_Saver
             return \false;
         }
         $settings_array = self::format_settings($this->sanitized_and_sorted_data['feed_settings']);
-        $this->sanitized_and_sorted_data['feeds'][] = array('key' => 'settings', 'values' => array(\json_encode($settings_array)));
+        $this->sanitized_and_sorted_data['feeds'][] = array('key' => 'settings', 'values' => array(json_encode($settings_array)));
         if (!empty($this->feed_name)) {
             $this->sanitized_and_sorted_data['feeds'][] = array('key' => 'feed_name', 'values' => array($this->feed_name));
         }
@@ -200,11 +199,11 @@ class Feed_Saver
         $args = array('id' => $this->insert_id);
         $settings_array = self::format_settings($this->sanitized_and_sorted_data['feed_settings']);
         if ($this->is_legacy) {
-            $to_save_json = \json_encode($settings_array);
+            $to_save_json = json_encode($settings_array);
             update_option('sbi_legacy_feed_settings', $to_save_json, \false);
             return \true;
         }
-        $this->sanitized_and_sorted_data['feeds'][] = array('key' => 'settings', 'values' => array(\json_encode($settings_array)));
+        $this->sanitized_and_sorted_data['feeds'][] = array('key' => 'settings', 'values' => array(json_encode($settings_array)));
         $this->sanitized_and_sorted_data['feeds'][] = array('key' => 'feed_name', 'values' => array(sanitize_text_field($this->feed_name)));
         $success = $this->db->feeds_update($this->sanitized_and_sorted_data['feeds'], $args);
         return $success;
@@ -223,7 +222,7 @@ class Feed_Saver
     {
         $settings_array = array();
         foreach ($raw_settings as $single_setting) {
-            if (\count($single_setting['values']) > 1) {
+            if (count($single_setting['values']) > 1) {
                 $settings_array[$single_setting['key']] = $single_setting['values'];
             } else {
                 $settings_array[$single_setting['key']] = isset($single_setting['values'][0]) ? $single_setting['values'][0] : '';
@@ -246,11 +245,11 @@ class Feed_Saver
         } else {
             $args = array('id' => $this->insert_id);
             $settings_db_data = $this->db->feeds_query($args);
-            if (\false === $settings_db_data || \sizeof($settings_db_data) === 0) {
+            if (\false === $settings_db_data || sizeof($settings_db_data) === 0) {
                 return \false;
             }
             $this->feed_db_data = array('id' => $settings_db_data[0]['id'], 'feed_name' => $settings_db_data[0]['feed_name'], 'feed_title' => $settings_db_data[0]['feed_title'], 'status' => $settings_db_data[0]['status'], 'last_modified' => $settings_db_data[0]['last_modified'], 'feed_style' => isset($settings_db_data[0]['feed_style']) ? $settings_db_data[0]['feed_style'] : '');
-            $return = \json_decode($settings_db_data[0]['settings'], \true);
+            $return = json_decode($settings_db_data[0]['settings'], \true);
             $return['feed_name'] = $settings_db_data[0]['feed_name'];
             $return['feed_style'] = isset($settings_db_data[0]['feed_style']) ? $settings_db_data[0]['feed_style'] : '';
         }
@@ -318,7 +317,7 @@ class Feed_Saver
      */
     public function get_feed_settings_preview($settings_db_data)
     {
-        if (\false === $settings_db_data || \sizeof($settings_db_data) === 0) {
+        if (\false === $settings_db_data || sizeof($settings_db_data) === 0) {
             return \false;
         }
         $return = $settings_db_data;
@@ -328,7 +327,7 @@ class Feed_Saver
         }
         $sources = array();
         foreach ($return['sources'] as $single_source) {
-            \array_push($sources, $single_source['account_id']);
+            array_push($sources, $single_source['account_id']);
         }
         $args = array('id' => $sources);
         $source_query = $this->db->source_query($args);
@@ -354,18 +353,20 @@ class Feed_Saver
      */
     public static function settings_defaults($return_array = \true)
     {
-        $defaults = array();
-        $defaults = self::filter_defaults($defaults);
-        // some settings are comma separated and not arrays when the feed is created
-        if ($return_array) {
-            $settings_with_multiples = array('sources');
-            foreach ($settings_with_multiples as $multiple_key) {
-                if (isset($defaults[$multiple_key])) {
-                    $defaults[$multiple_key] = \explode(',', $defaults[$multiple_key]);
+        {
+            $defaults = array();
+            $defaults = self::filter_defaults($defaults);
+            // some settings are comma separated and not arrays when the feed is created
+            if ($return_array) {
+                $settings_with_multiples = array('sources');
+                foreach ($settings_with_multiples as $multiple_key) {
+                    if (isset($defaults[$multiple_key])) {
+                        $defaults[$multiple_key] = explode(',', $defaults[$multiple_key]);
+                    }
                 }
             }
+            return $defaults;
         }
-        return $defaults;
     }
     /**
      * Provides backwards compatibility for extensions
@@ -394,7 +395,7 @@ class Feed_Saver
         foreach ($data as $key => $value) {
             $data_type = $this->get_data_type($key);
             $sanitized_values = array();
-            if (\is_array($value)) {
+            if (is_array($value)) {
                 foreach ($value as $item) {
                     $type = $this->is_boolean($item) ? 'boolean' : $data_type['sanitization'];
                     $sanitized_values[] = $this->sanitize($type, $item);
@@ -450,7 +451,7 @@ class Feed_Saver
      */
     private function is_boolean($value)
     {
-        return $value === 'true' || $value === 'false' || \is_bool($value);
+        return $value === 'true' || $value === 'false' || is_bool($value);
     }
     private function cast_boolean($value)
     {

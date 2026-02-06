@@ -1,14 +1,12 @@
 <?php
+
 namespace SmashBalloon\Reviews\Common;
-
-
 
 /**
  * Class Email_Notification
  */
 class Email_Notification
 {
-
 	/**
 	 * Sends a notification email to the admin(s) of the site.
 	 *

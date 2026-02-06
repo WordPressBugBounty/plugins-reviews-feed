@@ -8,13 +8,12 @@
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Notification\Notices;
 
 use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Notification\Notices\NoticeFields;
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly.
 }
 /**
  * Abstract Notice class.
- * @internal
  */
 abstract class Notice
 {
@@ -179,7 +178,7 @@ abstract class Notice
      *
      * @return void
      */
-    public abstract function display();
+    abstract public function display();
     /**
      * Replace fields in notice.
      *
@@ -192,7 +191,7 @@ abstract class Notice
     {
         if (!empty($fields)) {
             foreach ($fields as $key => $value) {
-                $notice = \str_replace('{' . $key . '}', $value, $notice);
+                $notice = str_replace('{' . $key . '}', $value, $notice);
             }
             $notice = wp_kses($notice, NoticeFields::$allowed_tags);
         }

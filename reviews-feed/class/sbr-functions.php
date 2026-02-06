@@ -1,15 +1,17 @@
 <?php
+
 use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
 use SmashBalloon\Reviews\Common\Util;
+
 if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+	exit; // Exit if accessed directly
 }
 
-function sbr_json_encode( $thing ){
+function sbr_json_encode($thing)
+{
 	if (function_exists('wp_json_encode')) {
 		return wp_json_encode($thing);
-	}
-	else {
+	} else {
 		return json_encode($thing);
 	}
 }
@@ -20,7 +22,8 @@ function sbr_json_encode( $thing ){
  *
  * @since 1.0
  */
-function sbr_current_user_can( $cap ){
+function sbr_current_user_can($cap)
+{
 	if ($cap === 'manage_reviews_feed_options') {
 		$cap = current_user_can('manage_reviews_feed_options') ? 'manage_reviews_feed_options' : 'manage_options';
 	}
@@ -35,7 +38,8 @@ function sbr_current_user_can( $cap ){
  *
  * @return array
  */
-function sbr_get_database_settings(){
+function sbr_get_database_settings()
+{
 	global $sbr_settings;
 
 	$defaults = sbr_settings_defaults();
@@ -52,7 +56,8 @@ function sbr_get_database_settings(){
  *
  * @return array
  */
-function sbr_settings_defaults(){
+function sbr_settings_defaults()
+{
 	return [
 		//Template
 		'feedTemplate' => 'default',
@@ -185,9 +190,9 @@ function sbr_settings_defaults(){
 		'dateColor'   => '#434960',
 
 		'dateFormat'    => '1',
-		'dateCustomFormat'  =>'',
-		'dateBeforeText'  =>'',
-		'dateAfterText'  =>'',
+		'dateCustomFormat'  => '',
+		'dateBeforeText'  => '',
+		'dateAfterText'  => '',
 		'datePadding' => [],
 		'dateMargin' => [],
 		'authorImageBorderRadius' => 50,
@@ -241,54 +246,62 @@ function sbr_settings_defaults(){
 		'moderationAllowList' => [],
 		'moderationBlockList' => [],
 
-        //Translation
-        'localization'=> 'default',
+		//Translation
+		'localization' => 'default',
+		'trustpilotLanguage' => 'all',
 
 		//Filter By Length
-        'filterCharCountMin'=> 28,
-        'filterCharCountMax'=> '',
+		'filterCharCountMin' => 0,
+		'filterCharCountMax' => '',
+
+		//Carousel Breakpoints
+		'carouselBreakpointDesktop' => 850,
+		'carouselBreakpointTablet' => 520
 	];
 }
 
 
-function sbr_plugin_settings_defaults(){
+function sbr_plugin_settings_defaults()
+{
 	return [
-        'localization' => '',
-        'optimize_images' => true,
+		'localization' => '',
+		'optimize_images' => true,
 		'usagetracking' => true,
 		'enqueue_js_in_header' => false,
 		'admin_error_notices' => true,
 		'feed_issue_reports' => true,
-        'translations' => [
-            'second' => __('second', 'reviews-feed'),
-            'seconds' => __('seconds', 'reviews-feed'),
-            'minute' => __('minute', 'reviews-feed'),
-            'minutes' => __('minutes', 'reviews-feed'),
-            'hour' => __('hour', 'reviews-feed'),
-            'hours' => __('hours', 'reviews-feed'),
-            'day' => __('day', 'reviews-feed'),
-            'days' => __('days', 'reviews-feed'),
-            'week' => __('week', 'reviews-feed'),
-            'weeks' => __('weeks', 'reviews-feed'),
-            'month' => __('month', 'reviews-feed'),
-            'months' => __('months', 'reviews-feed'),
-            'year' => __('year', 'reviews-feed'),
-            'years' => __('year', 'reviews-feed'),
-            'ago' => __('ago', 'reviews-feed'),
-            'writeReview' => __('Write a Review', 'reviews-feed'),
-            'reviewsHeader' => __('Over %s Reviews', 'reviews-feed'),
-        ]
+		'translations' => [
+			'second' => __('second', 'reviews-feed'),
+			'seconds' => __('seconds', 'reviews-feed'),
+			'minute' => __('minute', 'reviews-feed'),
+			'minutes' => __('minutes', 'reviews-feed'),
+			'hour' => __('hour', 'reviews-feed'),
+			'hours' => __('hours', 'reviews-feed'),
+			'day' => __('day', 'reviews-feed'),
+			'days' => __('days', 'reviews-feed'),
+			'week' => __('week', 'reviews-feed'),
+			'weeks' => __('weeks', 'reviews-feed'),
+			'month' => __('month', 'reviews-feed'),
+			'months' => __('months', 'reviews-feed'),
+			'year' => __('year', 'reviews-feed'),
+			'years' => __('year', 'reviews-feed'),
+			'ago' => __('ago', 'reviews-feed'),
+			'writeReview' => __('Write a Review', 'reviews-feed'),
+			'reviewsHeader' => __('Over %s Reviews', 'reviews-feed'),
+		]
 	];
 }
-function sbr_activate( $network_wide ) {
+function sbr_activate($network_wide)
+{
 	global $wp_roles;
 	$wp_roles->add_cap('administrator', 'manage_reviews_feed_options');
 }
 
-register_activation_hook( __FILE__, 'sby_activate' );
+register_activation_hook(__FILE__, 'sby_activate');
 
 
-function sbr_get_feed_template_part( $part, $settings = array() ) {
+function sbr_get_feed_template_part($part, $settings = array())
+{
 	$file 		= '';
 
 	/**
@@ -298,18 +311,18 @@ function sbr_get_feed_template_part( $part, $settings = array() ) {
 	 *
 	 * @since 1.0
 	 */
-	$settings_custom_templates = ! empty( $settings['customtemplates'] ) && $settings['customtemplates'];
-	$using_custom_templates_in_theme = apply_filters( 'sbr_use_theme_templates', $settings_custom_templates );
-	$generic_path = trailingslashit( SBR_PLUGIN_DIR ) . 'templates/frontend/';
+	$settings_custom_templates = ! empty($settings['customtemplates']) && $settings['customtemplates'];
+	$using_custom_templates_in_theme = apply_filters('sbr_use_theme_templates', $settings_custom_templates);
+	$generic_path = trailingslashit(SBR_PLUGIN_DIR) . 'templates/frontend/';
 
-    //For Templates that are different Free Or Pro
-    $special_path = $generic_path . ( Util::sbr_is_pro() ? 'pro' : 'lite'  ) . '/';
+	//For Templates that are different Free Or Pro
+	$special_path = $generic_path . ( Util::sbr_is_pro() ? 'pro' : 'lite'  ) . '/';
 
-	if ( $using_custom_templates_in_theme ) {
-		$custom_header_template = locate_template( 'sbr/header.php', false, false );
-		$custom_item_template = locate_template( 'sbr/item.php', false, false );
-		$custom_footer_template = locate_template( 'sbr/footer.php', false, false );
-		$custom_feed_template = locate_template( 'sbr/feed.php', false, false );
+	if ($using_custom_templates_in_theme) {
+		$custom_header_template = locate_template('sbr/header.php', false, false);
+		$custom_item_template = locate_template('sbr/item.php', false, false);
+		$custom_footer_template = locate_template('sbr/footer.php', false, false);
+		$custom_feed_template = locate_template('sbr/feed.php', false, false);
 	} else {
 		$custom_header_template = false;
 		$custom_item_template = false;
@@ -317,55 +330,55 @@ function sbr_get_feed_template_part( $part, $settings = array() ) {
 		$custom_feed_template = false;
 	}
 
-	if ( $part === 'header' ) {
-		if ( $custom_header_template ) {
+	if ($part === 'header') {
+		if ($custom_header_template) {
 			$file = $custom_header_template;
 		} else {
 			#$file = $generic_path . 'header.php';
-            $file = $special_path . 'header.php';
+			$file = $special_path . 'header.php';
 		}
-	} elseif ( $part === 'item' ) {
-		if ( $custom_item_template ) {
+	} elseif ($part === 'item') {
+		if ($custom_item_template) {
 			$file = $custom_item_template;
 		} else {
 			$file = $generic_path . 'item.php';
 		}
-	} elseif ( $part === 'footer' ) {
-		if ( $custom_footer_template ) {
+	} elseif ($part === 'footer') {
+		if ($custom_footer_template) {
 			$file = $custom_footer_template;
 		} else {
 			#$file = $generic_path . 'footer.php';
-            $file = $special_path . 'footer.php';
-        }
-	} elseif ( $part === 'feed' ) {
-		if ( $custom_feed_template ) {
+			$file = $special_path . 'footer.php';
+		}
+	} elseif ($part === 'feed') {
+		if ($custom_feed_template) {
 			$file = $custom_feed_template;
 		} else {
 			#$file = $generic_path . 'feed.php';
-            $file = $special_path . 'feed.php';
-        }
-	} elseif ( $part === 'post-elements/author' ) {
-		if ( $custom_feed_template ) {
+			$file = $special_path . 'feed.php';
+		}
+	} elseif ($part === 'post-elements/author') {
+		if ($custom_feed_template) {
 			$file = $custom_feed_template;
 		} else {
 			#$file = $generic_path . 'post-elements/author.php';
-            $file = $special_path . 'post-elements/author.php';
-        }
-	} elseif ( $part === 'post-elements/media' ) {
-		if ( $custom_feed_template ) {
+			$file = $special_path . 'post-elements/author.php';
+		}
+	} elseif ($part === 'post-elements/media') {
+		if ($custom_feed_template) {
 			$file = $custom_feed_template;
 		} else {
 			#$file = $generic_path . 'post-elements/media.php';
-            $file = $special_path . 'post-elements/media.php';
+			$file = $special_path . 'post-elements/media.php';
 		}
-	} elseif ( $part === 'post-elements/rating' ) {
-		if ( $custom_feed_template ) {
+	} elseif ($part === 'post-elements/rating') {
+		if ($custom_feed_template) {
 			$file = $custom_feed_template;
 		} else {
 			$file = $generic_path . 'post-elements/rating.php';
 		}
-	} elseif ( $part === 'post-elements/text' ) {
-		if ( $custom_feed_template ) {
+	} elseif ($part === 'post-elements/text') {
+		if ($custom_feed_template) {
 			$file = $custom_feed_template;
 		} else {
 			$file = $generic_path . 'post-elements/text.php';
@@ -375,7 +388,8 @@ function sbr_get_feed_template_part( $part, $settings = array() ) {
 	return $file;
 }
 
-function sbr_container_id( $feed_id ) {
+function sbr_container_id($feed_id)
+{
 	return 'sb-reviews-container-' . $feed_id;
 }
 
@@ -422,16 +436,18 @@ function sbr_scripts_enqueue($enqueue = false)
 		wp_enqueue_script('sbr_scripts');
 	}
 }
-add_action( 'wp_enqueue_scripts', 'sbr_scripts_enqueue', 2 );
+add_action('wp_enqueue_scripts', 'sbr_scripts_enqueue', 2);
 
-function sbr_esc_html_with_br( $text ) {
-	return str_replace( array( '&lt;br /&gt;', '&lt;br&gt;' ), '<br>', esc_html( nl2br( $text ) ) );
+function sbr_esc_html_with_br($text)
+{
+	return str_replace(array( '&lt;br /&gt;', '&lt;br&gt;' ), '<br>', esc_html(nl2br($text)));
 }
 
 
 
 
-function sbr_get_fb_connection_urls( $is_settings = false ) {
+function sbr_get_fb_connection_urls($is_settings = false)
+{
 	$urls            	= array();
 	$admin_url_state 	= $is_settings ?
 							admin_url('admin.php?page=sbr-settings') :
@@ -461,81 +477,86 @@ function sbr_get_fb_connection_urls( $is_settings = false ) {
 	return $urls;
 }
 
-function check_license_valid(){
+function check_license_valid()
+{
 	$sbr_settings = get_option('sbr_settings', []);
 	return isset($sbr_settings['license_key'])
-	       && !empty($sbr_settings['license_key'])
-	       && isset($sbr_settings['license_status'])
-	       && !empty($sbr_settings['license_status'])
-	       && $sbr_settings['license_status'] !== 'invalid';
+		   && !empty($sbr_settings['license_key'])
+		   && isset($sbr_settings['license_status'])
+		   && !empty($sbr_settings['license_status'])
+		   && $sbr_settings['license_status'] !== 'invalid';
 }
 
-function sbr_plugin_action_links( $links ){
-	$settings_link = check_license_valid() ? admin_url( 'admin.php?page=sbr-settings' ) : admin_url( 'admin.php?page=sbr' );
-    $support_link = check_license_valid() ? admin_url('admin.php?page=sbr-support') : admin_url('admin.php?page=sbr');
+function sbr_plugin_action_links($links)
+{
+	$settings_link = check_license_valid() ? admin_url('admin.php?page=sbr-settings') : admin_url('admin.php?page=sbr');
+	$support_link = check_license_valid() ? admin_url('admin.php?page=sbr-support') : admin_url('admin.php?page=sbr');
 	$links = array_merge(
 		array(
-			'<a href="' . esc_url( $settings_link ) . '">' . __('Settings', 'reviews-feed') . '</a>'
-		), $links);
+			'<a href="' . esc_url($settings_link) . '">' . __('Settings', 'reviews-feed') . '</a>'
+		),
+		$links
+	);
 
-    if( !Util::sbr_is_pro() ){
-        $links = array_merge(
-            array(
-                '<a href="https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=plugins-page&utm_medium=upgrade-link&utm_content=UpgradeToPro" target="_blank" style="font-weight:bold; color: #50a56d;">' . __('Upgrade to Pro', 'reviews-feed') . '</a>'
-            ),
-            $links
-        );
-    }else{
-        $links = array_merge(
-            array(
-                '<a href="' . esc_url($support_link) . '">' . __('Support', 'reviews-feed') . '</a>'
-            ),
-            $links
-        );
-    }
+	if (!Util::sbr_is_pro()) {
+		$links = array_merge(
+			array(
+				'<a href="https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=plugins-page&utm_medium=upgrade-link&utm_content=UpgradeToPro" target="_blank" style="font-weight:bold; color: #50a56d;">' . __('Upgrade to Pro', 'reviews-feed') . '</a>'
+			),
+			$links
+		);
+	} else {
+		$links = array_merge(
+			array(
+				'<a href="' . esc_url($support_link) . '">' . __('Support', 'reviews-feed') . '</a>'
+			),
+			$links
+		);
+	}
 
 	return $links;
-
 }
 add_action('plugin_action_links_' . SBR_PLUGIN_BASENAME, 'sbr_plugin_action_links');
 
 
-add_action( 'current_screen', 'sbr_check_current_screen' );
+add_action('current_screen', 'sbr_check_current_screen');
 
-function sbr_check_current_screen() {
+function sbr_check_current_screen()
+{
 	if (Util::currentPageIs('sbr')) {
 		add_action('admin_enqueue_scripts', 'dequeue_smash_plugins_style');
 	}
 }
 
-function dequeue_smash_plugins_style() {
+function dequeue_smash_plugins_style()
+{
 	wp_dequeue_style('cff_custom_wp_admin_css');
 	wp_deregister_style('cff_custom_wp_admin_css');
 
-    wp_dequeue_style('feed-global-style');
-    wp_deregister_style('feed-global-style');
+	wp_dequeue_style('feed-global-style');
+	wp_deregister_style('feed-global-style');
 
 	wp_dequeue_style('sb_instagram_admin_css');
 	wp_deregister_style('sb_instagram_admin_css');
 
-    wp_dequeue_style('ctf_admin_styles');
+	wp_dequeue_style('ctf_admin_styles');
 	wp_deregister_style('ctf_admin_styles');
-
 }
 
-function sbr_custom_menu(){
-    if(Util::sbr_is_pro() === false){
-        $cap = current_user_can('manage_reviews_feed_options') ? 'manage_reviews_feed_options' : 'manage_options';
-        $cap = apply_filters('sbr_settings_pages_capability', $cap);
-        add_submenu_page(
-            'sbr',
-            __('Upgrade to Pro', 'reviews-feed'),
-            __('<div class="sb-pro-upgradelink-bg"></div><strong class="sb-pro-upgradelink">Upgrade to Pro</strong>', 'reviews-feed'),
-            $cap,
-            'https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=menu-link&utm_medium=upgrade-link&utm_content=UpgradeToPro',
-            ''
-        );
-    }
+function sbr_custom_menu()
+{
+	if (Util::sbr_is_pro() === false) {
+		$cap = current_user_can('manage_reviews_feed_options') ? 'manage_reviews_feed_options' : 'manage_options';
+		$cap = apply_filters('sbr_settings_pages_capability', $cap);
+		add_submenu_page(
+			'sbr',
+			__('Upgrade to Pro', 'reviews-feed'),
+			__('<div class="sb-pro-upgradelink-bg"></div><strong class="sb-pro-upgradelink">Upgrade to Pro</strong>', 'reviews-feed'),
+			$cap,
+			'https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=menu-link&utm_medium=upgrade-link&utm_content=UpgradeToPro',
+			''
+		);
+	}
 }
 
 add_action('admin_menu', 'sbr_custom_menu', 40);
@@ -543,31 +564,32 @@ add_action('admin_menu', 'sbr_custom_menu', 40);
 
 function sbr_text_domain()
 {
-    load_plugin_textdomain('reviews-feed', false, dirname(SBR_PLUGIN_BASENAME) . '/languages');
+	load_plugin_textdomain('reviews-feed', false, dirname(SBR_PLUGIN_BASENAME) . '/languages');
 }
 add_action('init', 'sbr_text_domain');
 
-function sbr_get_current_time() {
-    $current_time = time();
+function sbr_get_current_time()
+{
+	$current_time = time();
 
-    // where to do tests
-     //$current_time = strtotime( 'November 25, 2020' );
+	// where to do tests
+	 //$current_time = strtotime( 'November 25, 2020' );
 
-    return $current_time;
+	return $current_time;
 }
 
 
-function sbr_recursive_parse_args( $args, $defaults ) {
-    $new_args = (array) $defaults;
+function sbr_recursive_parse_args($args, $defaults)
+{
+	$new_args = (array) $defaults;
 
-    foreach ( $args as $key => $value ) {
-    	if ( is_array( $value ) && isset( $new_args[ $key ] ) ) {
-        	$new_args[ $key ] = sbr_recursive_parse_args( $value, $new_args[ $key ] );
-        }
-        else {
-        	$new_args[ $key ] = $value;
-        }
-    }
+	foreach ($args as $key => $value) {
+		if (is_array($value) && isset($new_args[ $key ])) {
+			$new_args[ $key ] = sbr_recursive_parse_args($value, $new_args[ $key ]);
+		} else {
+			$new_args[ $key ] = $value;
+		}
+	}
 	return $new_args;
 }
 
@@ -593,7 +615,7 @@ function sbr_encrypt_decrypt($action, $string)
 	if ($action === 'encrypt') {
 		$output = openssl_encrypt($string, $encrypt_method, $key, 0, $iv);
 		$output = base64_encode($output);
-	} else if ($action === 'decrypt') {
+	} elseif ($action === 'decrypt') {
 		$output = openssl_decrypt(base64_decode($string), $encrypt_method, $key, 0, $iv);
 	}
 
@@ -645,7 +667,11 @@ function sbr_get_media_providers()
 function sbr_get_no_media_providers()
 {
 	return [
-		'facebook'
+		'facebook',
+		'woocommerce',
+		'airbnb',
+		'booking',
+		'aliexpress'
 	];
 }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class CFF_Error_Reporter
  *
@@ -20,7 +21,6 @@ if (!defined('ABSPATH')) {
 
 class Error_Reporter extends ServiceProvider
 {
-
 	/**
 	 * @var array
 	 */
@@ -249,7 +249,7 @@ class Error_Reporter extends ServiceProvider
 		$update = false;
 		if (!empty($this->errors[$type])) {
 			$this->errors[$type] = array();
-			$this->add_action_log('Cleared ' . $type .' error.');
+			$this->add_action_log('Cleared ' . $type . ' error.');
 			$update = true;
 		}
 
@@ -494,7 +494,7 @@ class Error_Reporter extends ServiceProvider
 		$footer_link = admin_url('admin.php?page=sbr-style&tab=misc&flag=emails');
 		$bold = __('There\'s an Issue with a Reviews Feed on Your Website', 'reviews-feed');
 		$details = '<p>' . __('A Custom Reviews Feed on your website is currently unable to connect to Facebook to retrieve new posts. Don\'t worry, your feed is still being displayed using a cached version, but is no longer able to display new posts.', 'reviews-feed') . '</p>';
-		$details .= '<p>' . sprintf(__('This is caused by an issue with your Facebook account connecting to the Facebook API. For information on the exact issue and directions on how to resolve it, please visit the %sCustom Facebook Feed settings page%s on your website.', 'reviews-feed'), '<a href="' . esc_url($link) . '">', '</a>'). '</p>';
+		$details .= '<p>' . sprintf(__('This is caused by an issue with your Facebook account connecting to the Facebook API. For information on the exact issue and directions on how to resolve it, please visit the %sCustom Facebook Feed settings page%s on your website.', 'reviews-feed'), '<a href="' . esc_url($link) . '">', '</a>') . '</p>';
 		$message_content = '<h6 style="padding:0;word-wrap:normal;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;font-weight:bold;line-height:130%;font-size: 16px;color:#444444;text-align:inherit;margin:0 0 20px 0;Margin:0 0 20px 0;">' . $bold . '</h6>' . $details;
 
 		$educator = new SBR_Education();
@@ -570,7 +570,6 @@ class Error_Reporter extends ServiceProvider
 	 */
 	public function critical_error_notice()
 	{
-
 	}
 
 }

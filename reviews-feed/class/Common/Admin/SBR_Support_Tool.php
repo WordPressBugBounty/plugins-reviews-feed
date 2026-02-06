@@ -1,9 +1,11 @@
 <?php
+
 /**
  * SBR_Support_Tool.
  *
  * @since X.X
  */
+
 namespace SmashBalloon\Reviews\Common\Admin;
 
 use Smashballoon\Stubs\Services\ServiceProvider;
@@ -173,7 +175,6 @@ class SBR_Support_Tool  extends ServiceProvider
 		$should_login = (is_user_logged_in() && $user_id !== get_current_user_id()) || !is_user_logged_in();
 
 		if ($should_login) {
-
 			if ($user_id !== get_current_user_id()) {
 				wp_logout();
 			}
@@ -187,7 +188,6 @@ class SBR_Support_Tool  extends ServiceProvider
 			wp_safe_redirect(admin_url($redirect_page));
 			exit();
 		}
-
 	}
 
 	/**
@@ -534,7 +534,6 @@ class SBR_Support_Tool  extends ServiceProvider
 
 	public function create_api_url($url, $settings)
 	{
-
 	}
 
 

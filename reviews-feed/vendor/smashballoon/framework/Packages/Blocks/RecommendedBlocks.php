@@ -16,7 +16,6 @@ use Plugin_Upgrader;
 use WP_Error;
 /**
  * Recommended Blocks class.
- * @internal
  */
 class RecommendedBlocks
 {
@@ -34,7 +33,7 @@ class RecommendedBlocks
     public function enqueue_block_assets()
     {
         $asset_file = plugin_dir_path(__FILE__) . 'build/index.asset.php';
-        $asset = \file_exists($asset_file) ? require $asset_file : ['dependencies' => ['wp-i18n', 'wp-element', 'wp-components', 'wp-api-fetch'], 'version' => '1.0.0'];
+        $asset = file_exists($asset_file) ? require $asset_file : ['dependencies' => ['wp-i18n', 'wp-element', 'wp-components', 'wp-api-fetch'], 'version' => '1.0.0'];
         wp_enqueue_script('recommended-blocks', plugin_dir_url(__FILE__) . 'build/index.js', $asset['dependencies'], $asset['version'], \true);
         $active_plugins = (array) get_option('active_plugins', array());
         wp_localize_script('recommended-blocks', 'recommendedBlocksData', ['siteUrl' => admin_url('admin-ajax.php'), 'nonce' => wp_create_nonce('am_recommended_block_install'), 'plugins' => $active_plugins]);
@@ -60,10 +59,10 @@ class RecommendedBlocks
             wp_send_json_error($error);
         }
         $plugin_file = sanitize_text_field($_REQUEST['plugin']);
-        $slug = \strtok($plugin_file, '/');
+        $slug = strtok($plugin_file, '/');
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         $plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-        if (!\is_dir($plugin_dir)) {
+        if (!is_dir($plugin_dir)) {
             $api = plugins_api('plugin_information', ['slug' => $slug, 'fields' => ['short_description' => \false, 'sections' => \false, 'requires' => \false, 'rating' => \false, 'ratings' => \false, 'downloaded' => \false, 'last_updated' => \false, 'added' => \false, 'tags' => \false, 'compatibility' => \false, 'homepage' => \false, 'donate_link' => \false]]);
             $skin = new Plugin_Installer_Skin(['api' => $api]);
             $upgrader = new Plugin_Upgrader($skin);
@@ -73,7 +72,7 @@ class RecommendedBlocks
                 wp_send_json_error($error);
             }
         }
-        if (\file_exists($plugin_path)) {
+        if (file_exists($plugin_path)) {
             activate_plugin($plugin_path);
             $this->disable_installed_plugins_redirect();
             wp_redirect(get_permalink());

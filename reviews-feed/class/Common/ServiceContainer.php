@@ -11,6 +11,7 @@ use SmashBalloon\Reviews\Common\Admin\SBR_Notifications;
 use SmashBalloon\Reviews\Common\Admin\SBR_Plugin_Insltaller;
 use SmashBalloon\Reviews\Common\Admin\SBR_Support_Tool;
 use SmashBalloon\Reviews\Common\Builder\SBR_Feed_Builder;
+use SmashBalloon\Reviews\Common\Builder\SBR_New_Providers_Manager;
 use SmashBalloon\Reviews\Common\Integrations\Providers\Google;
 use SmashBalloon\Reviews\Common\Integrations\Providers\Yelp;
 use SmashBalloon\Reviews\Common\Services\CLIService;
@@ -31,42 +32,42 @@ use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
 
 class ServiceContainer extends ServiceProvider
 {
-
-    protected $services = [
+	protected $services = [
 		Reviews_Post::class,
-        MenuService::class,
-        RoutineManagerService::class,
-        //Customizer Services
-        \Smashballoon\Customizer\V2\ServiceContainer::class,
-	    FeedCacheUpdateService::class,
-	    SettingsManagerService::class,
-	    ShortcodeService::class,
-        Google::class,
-        Yelp::class,
-        CLIService::class,
-        SBR_Feed_Saver_Manager::class,
-        SBR_Feed_Builder::class,
+		MenuService::class,
+		RoutineManagerService::class,
+		//Customizer Services
+		\Smashballoon\Customizer\V2\ServiceContainer::class,
+		FeedCacheUpdateService::class,
+		SettingsManagerService::class,
+		ShortcodeService::class,
+		Google::class,
+		Yelp::class,
+		CLIService::class,
+		SBR_Feed_Saver_Manager::class,
+		SBR_New_Providers_Manager::class,
+		SBR_Feed_Builder::class,
 		Clear_Cache::class,
-        SBR_Settings_Builder::class,
-        SBR_About_Builder::class,
-        SBR_Support_Builder::class,
-        SBR_Admin_Notice::class,
-        SBR_Plugin_Insltaller::class,
-        SB_Reviews_Blocks::class,
-        SB_Recommended_Blocks::class,
-        Tooltip_Wizard::class,
-        SBR_Notifications::class,
-        SBR_New_User::class,
-        SBR_Upgrader::class,
-        SBR_Collections_Builder::class,
-        SBR_Support_Tool::class,
-        Error_Reporter::class,
-    ];
+		SBR_Settings_Builder::class,
+		SBR_About_Builder::class,
+		SBR_Support_Builder::class,
+		SBR_Admin_Notice::class,
+		SBR_Plugin_Insltaller::class,
+		SB_Reviews_Blocks::class,
+		SB_Recommended_Blocks::class,
+		Tooltip_Wizard::class,
+		SBR_Notifications::class,
+		SBR_New_User::class,
+		SBR_Upgrader::class,
+		SBR_Collections_Builder::class,
+		SBR_Support_Tool::class,
+		Error_Reporter::class,
+	];
 
-    public function register(): void
-    {
-        foreach ($this->services as $service) {
-            Container::getInstance()->get($service)->register();
-        }
-    }
+	public function register(): void
+	{
+		foreach ($this->services as $service) {
+			Container::getInstance()->get($service)->register();
+		}
+	}
 }

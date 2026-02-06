@@ -13,7 +13,6 @@ use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Support\SelfReferenc
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\UnsignedSerializableClosure;
 use ReflectionObject;
 use UnitEnum;
-/** @internal */
 class Native implements Serializable
 {
     /**
@@ -79,7 +78,7 @@ class Native implements Serializable
      */
     public function __invoke()
     {
-        return \call_user_func_array($this->closure, \func_get_args());
+        return call_user_func_array($this->closure, func_get_args());
     }
     /**
      * Gets the closure.
@@ -111,11 +110,11 @@ class Native implements Serializable
         if ($scope = $reflector->getClosureScopeClass()) {
             $scope = $scope->name;
         }
-        $this->reference = \spl_object_hash($this->closure);
+        $this->reference = spl_object_hash($this->closure);
         $this->scope[$this->closure] = $this;
         $use = $reflector->getUseVariables();
         if (static::$transformUseVariables) {
-            $use = \call_user_func(static::$transformUseVariables, $reflector->getUseVariables());
+            $use = call_user_func(static::$transformUseVariables, $reflector->getUseVariables());
         }
         $code = $reflector->getCode();
         $this->mapByReference($use);
@@ -140,13 +139,13 @@ class Native implements Serializable
         if ($this->code['use']) {
             $this->scope = new ClosureScope();
             if (static::$resolveUseVariables) {
-                $this->code['use'] = \call_user_func(static::$resolveUseVariables, $this->code['use']);
+                $this->code['use'] = call_user_func(static::$resolveUseVariables, $this->code['use']);
             }
             $this->mapPointers($this->code['use']);
-            \extract($this->code['use'], \EXTR_OVERWRITE | \EXTR_REFS);
+            extract($this->code['use'], \EXTR_OVERWRITE | \EXTR_REFS);
             $this->scope = null;
         }
-        $this->closure = (include ClosureStream::STREAM_PROTO . '://' . $this->code['function']);
+        $this->closure = include ClosureStream::STREAM_PROTO . '://' . $this->code['function'];
         if ($this->code['this'] === $this) {
             $this->code['this'] = null;
         }
@@ -169,7 +168,7 @@ class Native implements Serializable
     {
         if ($data instanceof Closure) {
             $data = new static($data);
-        } elseif (\is_array($data)) {
+        } elseif (is_array($data)) {
             if (isset($data[self::ARRAY_RECURSIVE_KEY])) {
                 return;
             }
@@ -192,7 +191,7 @@ class Native implements Serializable
                 static::wrapClosures($value, $storage);
             }
             unset($value);
-        } elseif (\is_object($data) && !$data instanceof static && !$data instanceof UnitEnum) {
+        } elseif (is_object($data) && !$data instanceof static && !$data instanceof UnitEnum) {
             if (isset($storage[$data])) {
                 $data = $storage[$data];
                 return;
@@ -217,7 +216,7 @@ class Native implements Serializable
                         continue;
                     }
                     $value = $property->getValue($instance);
-                    if (\is_array($value) || \is_object($value)) {
+                    if (is_array($value) || is_object($value)) {
                         static::wrapClosures($value, $storage);
                     }
                     $property->setValue($data, $value);
@@ -249,7 +248,7 @@ class Native implements Serializable
         $scope = $this->scope;
         if ($data instanceof static) {
             $data =& $data->closure;
-        } elseif (\is_array($data)) {
+        } elseif (is_array($data)) {
             if (isset($data[self::ARRAY_RECURSIVE_KEY])) {
                 return;
             }
@@ -275,12 +274,12 @@ class Native implements Serializable
             foreach ($data as $key => &$value) {
                 if ($value instanceof SelfReference && $value->hash === $this->code['self']) {
                     $data->{$key} =& $this->closure;
-                } elseif (\is_array($value) || \is_object($value)) {
+                } elseif (is_array($value) || is_object($value)) {
                     $this->mapPointers($value);
                 }
             }
             unset($value);
-        } elseif (\is_object($data) && !$data instanceof Closure) {
+        } elseif (is_object($data) && !$data instanceof Closure) {
             if (isset($scope[$data])) {
                 return;
             }
@@ -304,7 +303,7 @@ class Native implements Serializable
                     $item = $property->getValue($data);
                     if ($item instanceof SerializableClosure || $item instanceof UnsignedSerializableClosure || $item instanceof SelfReference && $item->hash === $this->code['self']) {
                         $this->code['objects'][] = ['instance' => $data, 'property' => $property, 'object' => $item instanceof SelfReference ? $this : $item];
-                    } elseif (\is_array($item) || \is_object($item)) {
+                    } elseif (is_array($item) || is_object($item)) {
                         $this->mapPointers($item);
                         $property->setValue($data, $item);
                     }
@@ -332,7 +331,7 @@ class Native implements Serializable
             $instance = new static($data);
             $instance->scope = $this->scope;
             $data = $this->scope[$data] = $instance;
-        } elseif (\is_array($data)) {
+        } elseif (is_array($data)) {
             if (isset($data[self::ARRAY_RECURSIVE_KEY])) {
                 return;
             }
@@ -356,7 +355,7 @@ class Native implements Serializable
                 $this->mapByReference($value);
             }
             unset($value);
-        } elseif (\is_object($data) && !$data instanceof SerializableClosure && !$data instanceof UnsignedSerializableClosure) {
+        } elseif (is_object($data) && !$data instanceof SerializableClosure && !$data instanceof UnsignedSerializableClosure) {
             if (isset($this->scope[$data])) {
                 $data = $this->scope[$data];
                 return;
@@ -392,7 +391,7 @@ class Native implements Serializable
                         continue;
                     }
                     $value = $property->getValue($instance);
-                    if (\is_array($value) || \is_object($value)) {
+                    if (is_array($value) || is_object($value)) {
                         $this->mapByReference($value);
                     }
                     $property->setValue($data, $value);

@@ -66,17 +66,17 @@
         },
         {
             "name": "php-di\/invoker",
-            "version": "2.3.6",
-            "version_normalized": "2.3.6.0",
+            "version": "2.3.7",
+            "version_normalized": "2.3.7.0",
             "source": {
                 "type": "git",
                 "url": "https:\/\/github.com\/PHP-DI\/Invoker.git",
-                "reference": "59f15608528d8a8838d69b422a919fd6b16aa576"
+                "reference": "3c1ddfdef181431fbc4be83378f6d036d59e81e1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https:\/\/api.github.com\/repos\/PHP-DI\/Invoker\/zipball\/59f15608528d8a8838d69b422a919fd6b16aa576",
-                "reference": "59f15608528d8a8838d69b422a919fd6b16aa576",
+                "url": "https:\/\/api.github.com\/repos\/PHP-DI\/Invoker\/zipball\/3c1ddfdef181431fbc4be83378f6d036d59e81e1",
+                "reference": "3c1ddfdef181431fbc4be83378f6d036d59e81e1",
                 "shasum": ""
             },
             "require": {
@@ -86,9 +86,9 @@
             "require-dev": {
                 "athletic\/athletic": "~0.1.8",
                 "mnapoli\/hard-mode": "~0.3.0",
-                "phpunit\/phpunit": "^9.0"
+                "phpunit\/phpunit": "^9.0 || ^10 || ^11 || ^12"
             },
-            "time": "2025-01-17T12:49:27+00:00",
+            "time": "2025-08-30T10:22:22+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -112,7 +112,7 @@
             ],
             "support": {
                 "issues": "https:\/\/github.com\/PHP-DI\/Invoker\/issues",
-                "source": "https:\/\/github.com\/PHP-DI\/Invoker\/tree\/2.3.6"
+                "source": "https:\/\/github.com\/PHP-DI\/Invoker\/tree\/2.3.7"
             },
             "funding": [
                 {
@@ -121,85 +121,6 @@
                 }
             ],
             "install-path": "..\/php-di\/invoker"
-        },
-        {
-            "name": "php-di\/php-di",
-            "version": "6.4.x-dev",
-            "version_normalized": "6.4.9999999.9999999-dev",
-            "source": {
-                "type": "git",
-                "url": "https:\/\/github.com\/PHP-DI\/PHP-DI.git",
-                "reference": "ae0f1b3b03d8b29dff81747063cbfd6276246cc4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https:\/\/api.github.com\/repos\/PHP-DI\/PHP-DI\/zipball\/ae0f1b3b03d8b29dff81747063cbfd6276246cc4",
-                "reference": "ae0f1b3b03d8b29dff81747063cbfd6276246cc4",
-                "shasum": ""
-            },
-            "require": {
-                "laravel\/serializable-closure": "^1.0",
-                "php": ">=7.4.0",
-                "php-di\/invoker": "^2.0",
-                "php-di\/phpdoc-reader": "^2.0.1",
-                "psr\/container": "^1.0"
-            },
-            "provide": {
-                "psr\/container-implementation": "^1.0"
-            },
-            "require-dev": {
-                "doctrine\/annotations": "~1.10",
-                "friendsofphp\/php-cs-fixer": "^2.4",
-                "mnapoli\/phpunit-easymock": "^1.2",
-                "ocramius\/proxy-manager": "^2.11.2",
-                "phpstan\/phpstan": "^0.12",
-                "phpunit\/phpunit": "^9.5"
-            },
-            "suggest": {
-                "doctrine\/annotations": "Install it if you want to use annotations (version ~1.2)",
-                "ocramius\/proxy-manager": "Install it if you want to use lazy injection (version ~2.0)"
-            },
-            "time": "2022-04-09T16:46:38+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "files": [
-                    "src\/functions.php"
-                ],
-                "psr-4": {
-                    "SmashBalloon\\Reviews\\Vendor\\DI\\": "src\/"
-                }
-            },
-            "notification-url": "https:\/\/packagist.org\/downloads\/",
-            "license": [
-                "MIT"
-            ],
-            "description": "The dependency injection container for humans",
-            "homepage": "https:\/\/php-di.org\/",
-            "keywords": [
-                "PSR-11",
-                "container",
-                "container-interop",
-                "dependency injection",
-                "di",
-                "ioc",
-                "psr11"
-            ],
-            "support": {
-                "issues": "https:\/\/github.com\/PHP-DI\/PHP-DI\/issues",
-                "source": "https:\/\/github.com\/PHP-DI\/PHP-DI\/tree\/6.4.0"
-            },
-            "funding": [
-                {
-                    "url": "https:\/\/github.com\/mnapoli",
-                    "type": "github"
-                },
-                {
-                    "url": "https:\/\/tidelift.com\/funding\/github\/packagist\/php-di\/php-di",
-                    "type": "tidelift"
-                }
-            ],
-            "install-path": "..\/php-di\/php-di"
         },
         {
             "name": "php-di\/phpdoc-reader",
@@ -304,13 +225,13 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-customizer.git",
-                "reference": "937e437f2bb127fee87ca1ba9e85c3f2c7b21109"
+                "reference": "bf4672cfaaad46b1d73efd00efcbaef99006402c"
             },
             "require": {
-                "php-di\/php-di": "^6.1.0",
+                "smashballoon\/framework": "dev-master",
                 "smashballoon\/stubs": "dev-master"
             },
-            "time": "2025-05-17T10:48:49+00:00",
+            "time": "2026-02-02T20:28:23+00:00",
             "type": "library",
             "installation-source": "source",
             "autoload": {
@@ -333,31 +254,40 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-common.git",
-                "reference": "d16b5b43f5f4b2be3d1164945ae14bb36b951441"
+                "reference": "38fcaff41a0b3cf6a9e6c5db49b9810c0fa0db84"
             },
             "dist": {
                 "type": "zip",
-                "url": "https:\/\/api.github.com\/repos\/awesomemotive\/sb-common\/zipball\/d16b5b43f5f4b2be3d1164945ae14bb36b951441",
-                "reference": "d16b5b43f5f4b2be3d1164945ae14bb36b951441",
+                "url": "https:\/\/api.github.com\/repos\/awesomemotive\/sb-common\/zipball\/38fcaff41a0b3cf6a9e6c5db49b9810c0fa0db84",
+                "reference": "38fcaff41a0b3cf6a9e6c5db49b9810c0fa0db84",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.6"
+                "laravel\/serializable-closure": "^1.0",
+                "php": ">=7.4",
+                "php-di\/invoker": "^2.0",
+                "php-di\/phpdoc-reader": "^2.0.1",
+                "psr\/container": "^1.0"
+            },
+            "replace": {
+                "php-di\/php-di": "6.4.0"
             },
             "require-dev": {
                 "phpcompatibility\/php-compatibility": "^9.3",
                 "squizlabs\/php_codesniffer": "^3.7"
             },
-            "time": "2024-07-22T09:16:04+00:00",
+            "time": "2026-01-28T21:12:35+00:00",
             "default-branch": true,
             "type": "library",
             "installation-source": "dist",
             "autoload": {
                 "psr-4": {
-                    "SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\": ""
+                    "SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\": "",
+                    "SmashBalloon\\Reviews\\Vendor\\DI\\": "Packages\/php-di\/src\/"
                 },
                 "files": [
-                    "Utilities\/functions.php"
+                    "Utilities\/functions.php",
+                    "Packages\/php-di\/src\/functions.php"
                 ],
                 "exclude-from-classmap": [
                     "Packages\/Blocks\/blocks\/*"
@@ -419,6 +349,6 @@
             "install-path": "..\/smashballoon\/stubs"
         }
     ],
-    "dev": true,
+    "dev": false,
     "dev-package-names": []
 }

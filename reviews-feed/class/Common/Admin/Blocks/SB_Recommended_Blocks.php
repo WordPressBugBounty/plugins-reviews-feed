@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SB_Recommended_Blocks
  *
@@ -17,7 +18,6 @@ if (!defined('ABSPATH')) {
 
 class SB_Recommended_Blocks extends ServiceProvider
 {
-
 	/**
 	 * Register Reviews Block
 	 *
@@ -39,7 +39,7 @@ class SB_Recommended_Blocks extends ServiceProvider
 	 *
 	 * @return void
 	 */
-	function register_blocks()
+	public function register_blocks()
 	{
 		$recommended_blocks = new RecommendedBlocks();
 		$recommended_blocks->setup();

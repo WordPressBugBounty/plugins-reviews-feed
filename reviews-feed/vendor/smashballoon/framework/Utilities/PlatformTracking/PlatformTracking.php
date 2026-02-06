@@ -8,7 +8,6 @@ use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTrackin
 use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms\Kinsta;
 use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms\SiteGround;
 use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms\WPEngine;
-/** @internal */
 class PlatformTracking
 {
     /**

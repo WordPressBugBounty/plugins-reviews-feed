@@ -1,11 +1,16 @@
 <?php
+
 /**
- * Reviews Collections PAge
+ * Reviews Collections Page
  *
  * @since 1.0
  */
 
 namespace SmashBalloon\Reviews\Common\Admin;
+
+if (! defined('ABSPATH')) {
+	exit;
+}
 
 use Smashballoon\Customizer\V2\Collections_Builder;
 use SmashBalloon\Reviews\Common\Builder\Config\Proxy;
@@ -15,7 +20,6 @@ use SmashBalloon\Reviews\Common\Util;
 
 class SBR_Collections_Builder extends Collections_Builder
 {
-
 	protected $config_proxy;
 
 	/**
@@ -62,9 +66,9 @@ class SBR_Collections_Builder extends Collections_Builder
 			'collectionsPageUrl' => admin_url('admin.php?page=sbr-collections'),
 			'sourcesList' => SBR_Sources::get_sources_list(),
 			'sourcesCount' => SBR_Sources::get_sources_count(),
-			'builderUrl'           => admin_url( 'admin.php?page=sbr'),
-			'adminHomeURL'           => admin_url( 'admin.php'),
-			'editHomeURL'           => admin_url( 'edit.php'),
+			'builderUrl'           => admin_url('admin.php?page=sbr'),
+			'adminHomeURL'           => admin_url('admin.php'),
+			'editHomeURL'           => admin_url('edit.php'),
 		];
 		if (Util::sbr_is_pro()) {
 			$FormsManager = new \SmashBalloon\Reviews\Pro\Integrations\Forms\FormsManager();

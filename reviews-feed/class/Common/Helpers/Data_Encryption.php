@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class Data_Encryption
  *
@@ -11,7 +12,7 @@ namespace SmashBalloon\Reviews\Common\Helpers;
 
 //Exit if accessed directly
 if (!defined('ABSPATH')) {
-    exit;
+	exit;
 }
 
 
@@ -24,7 +25,6 @@ if (!defined('ABSPATH')) {
  */
 class Data_Encryption
 {
-
 	/**
 	 * Key to use for encryption.
 	 *

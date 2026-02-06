@@ -2,7 +2,6 @@
 
 namespace Smashballoon\Customizer\V2;
 
-/** @internal */
 class Feed_Locator
 {
     /**
@@ -27,21 +26,21 @@ class Feed_Locator
         $by_feed_id = '';
         $by_shortcode_atts = '';
         if (isset($args['html_location'])) {
-            $locations = \array_map('esc_sql', $args['html_location']);
-            $location_string = \implode("', '", $locations);
+            $locations = array_map('esc_sql', $args['html_location']);
+            $location_string = implode("', '", $locations);
         }
         if (isset($args['feed_id'])) {
-            $by_feed_id = \sprintf("AND feed_id = '%s'", $args['feed_id']);
+            $by_feed_id = sprintf("AND feed_id = '%s'", $args['feed_id']);
         }
         if (isset($args['shortcode_atts'])) {
-            $by_feed_id = \sprintf("AND shortcode_atts = '%s'", $args['shortcode_atts']);
+            $by_feed_id = sprintf("AND shortcode_atts = '%s'", $args['shortcode_atts']);
         }
         $page = 0;
         if (isset($args['page'])) {
             $page = (int) $args['page'] - 1;
             unset($args['page']);
         }
-        $offset = \max(0, $page * \Smashballoon\Customizer\V2\DB::RESULTS_PER_PAGE);
+        $offset = max(0, $page * \Smashballoon\Customizer\V2\DB::RESULTS_PER_PAGE);
         $limit = \Smashballoon\Customizer\V2\DB::RESULTS_PER_PAGE;
         $results = $wpdb->get_results("\n\t\t\tSELECT *\n\t\t\tFROM {$feed_locator_table_name}\n\t\t\tWHERE feed_id NOT LIKE '*%'\n\t\t  \tAND html_location IN ( '{$location_string}' )\n\t\t  \t{$by_feed_id}\n\t\t  \t{$group_by}\n\t\t  \tLIMIT {$limit}\n\t\t\tOFFSET {$offset};", ARRAY_A);
         return $results;
@@ -70,15 +69,15 @@ class Feed_Locator
         }
         $location_string = 'content';
         if (isset($args['html_location'])) {
-            $locations = \array_map('esc_sql', $args['html_location']);
-            $location_string = \implode("', '", $locations);
+            $locations = array_map('esc_sql', $args['html_location']);
+            $location_string = implode("', '", $locations);
         }
         $page = 0;
         if (isset($args['page'])) {
             $page = (int) $args['page'] - 1;
             unset($args['page']);
         }
-        $offset = \max(0, $page * \Smashballoon\Customizer\V2\DB::RESULTS_PER_PAGE);
+        $offset = max(0, $page * \Smashballoon\Customizer\V2\DB::RESULTS_PER_PAGE);
         if (isset($args['shortcode_atts'])) {
             $results = $wpdb->get_results($wpdb->prepare("\n\t\t\tSELECT *\n\t\t\tFROM {$feed_locator_table_name}\n\t\t\tWHERE shortcode_atts = %s\n\t\t  \tAND html_location IN ( '{$location_string}' )\n\t\t  \t{$group_by}\n\t\t  \tLIMIT %d\n\t\t\tOFFSET %d;", $args['shortcode_atts'], \Smashballoon\Customizer\V2\DB::RESULTS_PER_PAGE, $offset), ARRAY_A);
         } else {

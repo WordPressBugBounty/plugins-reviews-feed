@@ -2,7 +2,6 @@
 
 namespace Smashballoon\Customizer\V2;
 
-/** @internal */
 abstract class ProxyProvider
 {
     public function get_settings_class()

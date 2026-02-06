@@ -9,11 +9,10 @@ use Smashballoon\Stubs\Services\ServiceProvider;
  *
  * @since 1.0
  */
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly
 }
-/** @internal */
 class Support_Builder extends ServiceProvider
 {
     public static function instance()
@@ -71,7 +70,7 @@ class Support_Builder extends ServiceProvider
         } else {
             wp_enqueue_style('sb-customizer-style', SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css', \false, \false);
         }
-        $support_data = \array_merge($support_data, $this->custom_support_data());
+        $support_data = array_merge($support_data, $this->custom_support_data());
         //Data comming from the Actual plugin
         wp_enqueue_script('sb-customizer-app', $support_js_file, array('wp-i18n', 'jquery'), \false, \true);
         wp_localize_script('sb-customizer-app', 'sb_customizer', $support_data);

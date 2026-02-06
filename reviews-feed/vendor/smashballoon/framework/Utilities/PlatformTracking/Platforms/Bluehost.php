@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms;
 
-/** @internal */
 class Bluehost implements PlatformInterface
 {
     /**
@@ -17,7 +16,7 @@ class Bluehost implements PlatformInterface
      */
     public function filter_sb_hosting_platform($platform)
     {
-        if (\defined('BLUEHOST_PLUGIN_VERSION')) {
+        if (defined('BLUEHOST_PLUGIN_VERSION')) {
             $platform = 'bluehost';
         }
         return $platform;

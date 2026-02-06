@@ -2,7 +2,7 @@
 
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework;
 
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\sb_doing_it_wrong')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_doing_it_wrong')) {
     /**
      * Wrapper for _doing_it_wrong().
      *
@@ -11,7 +11,6 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
      * @param string $version Version the message was added in.
      *
      * @return void
-     * @internal
      */
     function sb_doing_it_wrong($function, $message, $version)
     {
@@ -19,14 +18,14 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
         $message .= ' Backtrace: ' . wp_debug_backtrace_summary();
         if (wp_doing_ajax()) {
             do_action('doing_it_wrong_run', $function, $message, $version);
-            \error_log("{$function} was called incorrectly. {$message}. This message was added in version {$version}.");
+            error_log("{$function} was called incorrectly. {$message}. This message was added in version {$version}.");
         } else {
             _doing_it_wrong($function, $message, $version);
         }
         // @codingStandardsIgnoreEnd
     }
 }
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\sb_locate_template')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_locate_template')) {
     /**
      * Locate a template and return the path for inclusion.
      *
@@ -41,7 +40,6 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
      * @param string $default_path Default path. (default: '').
      *
      * @return string Template path.
-     * @internal
      */
     function sb_locate_template($template_name, $template_path = '', $default_path = '')
     {
@@ -62,7 +60,7 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
         return apply_filters('sb_locate_template', $template, $template_name, $template_path);
     }
 }
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\sb_get_template')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_template')) {
     /**
      * Get other templates passing attributes and including the file.
      *
@@ -72,11 +70,10 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
      * @param string $default_path    Default path. (default: '').
      *
      * @return void
-     * @internal
      */
     function sb_get_template($template_name, $args = [], $template_path = '', $default_path = '')
     {
-        $cache_key = sanitize_key(\implode('-', ['template', $template_name, $template_path, $default_path]));
+        $cache_key = sanitize_key(implode('-', ['template', $template_name, $template_path, $default_path]));
         $template = (string) wp_cache_get($cache_key, 'smashballoon');
         if (!$template) {
             $template = sb_locate_template($template_name, $template_path, $default_path);
@@ -85,34 +82,33 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
         // Allow 3rd party plugin filter template file from their plugin.
         $filter_template = apply_filters('sb_get_template', $template, $template_name, $args, $template_path, $default_path);
         if ($filter_template !== $template) {
-            if (!\file_exists($filter_template)) {
+            if (!file_exists($filter_template)) {
                 // translators: %s template.
-                sb_doing_it_wrong(__FUNCTION__, \sprintf(__('%s does not exist.', 'sb-notices'), '<code>' . $template . '</code>'), '6.2.2');
+                sb_doing_it_wrong(__FUNCTION__, sprintf(__('%s does not exist.', 'sb-notices'), '<code>' . $template . '</code>'), '6.2.2');
                 return;
             }
             $template = $filter_template;
         }
         $action_args = ['template_name' => $template_name, 'template_path' => $template_path, 'located' => $template, 'args' => $args];
-        if (!empty($args) && \is_array($args)) {
+        if (!empty($args) && is_array($args)) {
             if (isset($args['action_args'])) {
                 sb_doing_it_wrong(__FUNCTION__, __('action_args should not be overwritten when calling sb_get_template.', 'sb-notices'), '1.0.0');
                 unset($args['action_args']);
             }
-            \extract($args);
+            extract($args);
         }
         do_action('sb_before_template_part', $action_args['template_name'], $action_args['template_path'], $action_args['located'], $action_args['args']);
         include $action_args['located'];
         do_action('sb_after_template_part', $action_args['template_name'], $action_args['template_path'], $action_args['located'], $action_args['args']);
     }
 }
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\sb_map_notice_hooks')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_map_notice_hooks')) {
     /**
      * Map notices hooks as per plugin name.
      *
      * @param string $plugin_name Plugin name.
      *
      * @return string $plugin_hook Plugin hook.
-     * @internal
      */
     function sb_map_notice_hooks($plugin_name)
     {
@@ -121,14 +117,13 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
         return $plugin_hook;
     }
 }
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\sb_get_plugin_type')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_plugin_type')) {
     /**
      * Check if the plugin is free or pro.
      *
      * @param string $plugin_name Plugin name.
      *
      * @return string $plugin_type Plugin type.
-     * @internal
      */
     function sb_get_plugin_type($plugin_name)
     {
@@ -137,21 +132,20 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\s
         return $plugin_type;
     }
 }
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\flatten_array')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\flatten_array')) {
     /**
      * Flatten a multidimensional array.
      * 
      * @param array $array Array to flatten.
      * 
      * @return array $result Flattened array.
-     * @internal
      */
     function flatten_array($array)
     {
         $result = [];
         foreach ($array as $value) {
-            if (\is_array($value)) {
-                $result = \array_merge($result, flatten_array($value));
+            if (is_array($value)) {
+                $result = array_merge($result, flatten_array($value));
             } else {
                 $result[] = $value;
             }
@@ -159,17 +153,16 @@ if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\f
         return $result;
     }
 }
-if (!\function_exists('SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\sb_get_active_plugins')) {
+if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_active_plugins')) {
     /**
      * Get active plugins.
      *
      * @return array $active_plugins Active plugins.
-     * @internal
      */
     function sb_get_active_plugins()
     {
         if (is_multisite()) {
-            $active_plugins = \array_keys((array) get_site_option('active_sitewide_plugins', array()));
+            $active_plugins = array_keys((array) get_site_option('active_sitewide_plugins', array()));
         } else {
             $active_plugins = (array) get_option('active_plugins', array());
         }

@@ -7,7 +7,6 @@ use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Exceptions\InvalidSi
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Serializers\Signed;
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Signers\Hmac;
-/** @internal */
 class SerializableClosure
 {
     /**
@@ -39,7 +38,7 @@ class SerializableClosure
         if (\PHP_VERSION_ID < 70400) {
             throw new PhpVersionNotSupportedException();
         }
-        return \call_user_func_array($this->serializable, \func_get_args());
+        return call_user_func_array($this->serializable, func_get_args());
     }
     /**
      * Gets the closure.

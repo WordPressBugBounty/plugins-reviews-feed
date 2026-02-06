@@ -1,13 +1,14 @@
 <?php
+
 /**
  * Class FeedCache
  *
  * @since 1.0
  */
+
 namespace SmashBalloon\Reviews\Common;
 
 class FeedCache {
-
 	public const CACHES_TABLE_NAME = 'sbr_feed_caches';
 
 	public const CACHE_KEY = 'sbr_feed_';
@@ -67,12 +68,13 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function __construct( $feed_id, $cache_time = 0 ) {
+	public function __construct($feed_id, $cache_time = 0)
+	{
 		$this->cache_time = (int) $cache_time;
-		$this->feed_id    = str_replace( '*', '', $feed_id );
+		$this->feed_id    = str_replace('*', '', $feed_id);
 		$this->suffix     = '';
 
-		if ( is_admin() ) {
+		if (is_admin()) {
 			$this->feed_id .= $this->maybe_customizer_suffix();
 		}
 	}
@@ -82,19 +84,20 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function retrieve_and_set() {
+	public function retrieve_and_set()
+	{
 		$expired         = true;
 		$existing_caches = $this->query_feed_caches();
 
-		foreach ( $existing_caches as $cache ) {
-			switch ( $cache['cache_key'] ) {
+		foreach ($existing_caches as $cache) {
+			switch ($cache['cache_key']) {
 				case 'posts':
 					$this->posts = $cache['cache_value'];
-					if ( strtotime( $cache['last_updated'] ) > time() - $this->cache_time ) {
+					if (strtotime($cache['last_updated']) > time() - $this->cache_time) {
 						$expired = false;
 					}
 
-					if ( empty( $cache['cache_value'] ) ) {
+					if (empty($cache['cache_value'])) {
 						$expired = true;
 					}
 
@@ -115,7 +118,7 @@ class FeedCache {
 		}
 
 		$this->is_expired = $expired;
-		if ( $this->cache_time < 1 ) {
+		if ($this->cache_time < 1) {
 			$this->is_expired = true;
 		}
 	}
@@ -129,11 +132,12 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function is_expired( $cache_type = 'posts' ) {
-		if ( $cache_type !== 'posts' ) {
-			$cache = $this->get( $cache_type );
+	public function is_expired($cache_type = 'posts')
+	{
+		if ($cache_type !== 'posts') {
+			$cache = $this->get($cache_type);
 
-			return ( empty( $cache ) || $this->is_expired );
+			return ( empty($cache) || $this->is_expired );
 		}
 
 		return $this->is_expired;
@@ -148,9 +152,10 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function get( $type ) {
+	public function get($type)
+	{
 		$return = array();
-		switch ( $type ) {
+		switch ($type) {
 			case 'posts':
 				$return = $this->posts;
 				break;
@@ -180,8 +185,9 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function set( $type, $cache_value ) {
-		switch ( $type ) {
+	public function set($type, $cache_value)
+	{
+		switch ($type) {
 			case 'posts':
 				$this->posts = $cache_value;
 				break;
@@ -216,27 +222,29 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function update_or_insert( $cache_type, $cache_value, $include_backup = true, $cron_update = true ) {
+	public function update_or_insert($cache_type, $cache_value, $include_backup = true, $cron_update = true)
+	{
 		$this->clear_wp_cache();
-		if ( $cache_type !== 'posts' && $cache_type !== 'header' ) {
+		if ($cache_type !== 'posts' && $cache_type !== 'header') {
 			$cron_update = false;
 		}
 
-		if ( strpos( $this->feed_id, '_CUSTOMIZER' ) !== false ) {
+		if (strpos($this->feed_id, '_CUSTOMIZER') !== false) {
 			$cron_update = false;
 		}
 
 		$cache_key = $cache_type . $this->suffix;
 
-		$this->set( $cache_key, $cache_value );
+		$this->set($cache_key, $cache_value);
 
-		if ( is_array( $cache_value ) || is_object( $cache_value ) ) {
-			$cache_value = wp_json_encode( $cache_value );
+		if (is_array($cache_value) || is_object($cache_value)) {
+			$cache_value = wp_json_encode($cache_value);
 		}
 
 		global $wpdb;
 		$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- Table name is safely constructed from $wpdb->prefix
 		$sql = $wpdb->prepare(
 			"
 			SELECT * FROM $cache_table_name
@@ -246,7 +254,8 @@ class FeedCache {
 			$cache_key
 		);
 
-		$existing = $wpdb->get_results( $sql, ARRAY_A );
+		$existing = $wpdb->get_results($sql, ARRAY_A);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 		$data     = array();
 		$where    = array();
 		$format   = array();
@@ -254,17 +263,17 @@ class FeedCache {
 		$data['cache_value'] = $cache_value;
 		$format[]            = '%s';
 
-		$data['last_updated'] = date( 'Y-m-d H:i:s' );
+		$data['last_updated'] = date('Y-m-d H:i:s');
 		$format[]             = '%s';
 
-		if ( ! empty( $existing[0] ) ) {
+		if (! empty($existing[0])) {
 			$where['feed_id'] = $this->feed_id;
 			$where_format[]   = '%s';
 
 			$where['cache_key'] = $cache_key;
 			$where_format[]     = '%s';
 
-			$affected = $wpdb->update( $cache_table_name, $data, $where, $format, $where_format );
+			$affected = $wpdb->update($cache_table_name, $data, $where, $format, $where_format);
 		} else {
 			$data['cache_key'] = $cache_key;
 			$format[]          = '%s';
@@ -275,7 +284,7 @@ class FeedCache {
 			$data['feed_id'] = $this->feed_id;
 			$format[]        = '%s';
 
-			$affected = $wpdb->insert( $cache_table_name, $data, $format );
+			$affected = $wpdb->insert($cache_table_name, $data, $format);
 		}
 
 		return $affected;
@@ -286,8 +295,9 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function after_new_posts_retrieved() {
-		$this->clear( 'all' );
+	public function after_new_posts_retrieved()
+	{
+		$this->clear('all');
 	}
 
 	/**
@@ -299,15 +309,17 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	public function clear( $type ) {
+	public function clear($type)
+	{
 		$this->clear_wp_cache();
 
 		global $wpdb;
 		$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
 
-		$feed_id = str_replace( array( '_CUSTOMIZER', '_CUSTOMIZER_MODMODE' ), '', $this->feed_id );
+		$feed_id = str_replace(array( '_CUSTOMIZER', '_CUSTOMIZER_MODMODE' ), '', $this->feed_id);
 
-		if ( $type === 'all' ) {
+		if ($type === 'all') {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
 			$affected = $wpdb->query(
 				$wpdb->prepare(
 					"UPDATE $cache_table_name
@@ -326,8 +338,10 @@ class FeedCache {
 					$feed_id . '_CUSTOMIZER'
 				)
 			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-			$mod_mode_where = esc_sql( $feed_id ) . '_CUSTOMIZER_MODMODE%';
+			$mod_mode_where = esc_sql($feed_id) . '_CUSTOMIZER_MODMODE%';
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
 			$affected       = $wpdb->query(
 				$wpdb->prepare(
 					"UPDATE $cache_table_name
@@ -336,8 +350,8 @@ class FeedCache {
 					$mod_mode_where
 				)
 			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		} else {
-
 			$data   = array( 'cache_value' => '' );
 			$format = array( '%s' );
 
@@ -347,22 +361,23 @@ class FeedCache {
 			$where['cache_key'] = $type . $this->suffix;
 			$where_format[]     = '%s';
 
-			$affected = $wpdb->update( $cache_table_name, $data, $where, $format, $where_format );
+			$affected = $wpdb->update($cache_table_name, $data, $where, $format, $where_format);
 
 			$where['feed_id'] = $feed_id . '_CUSTOMIZER';
 
-			$affected = $wpdb->update( $cache_table_name, $data, $where, $format, $where_format );
+			$affected = $wpdb->update($cache_table_name, $data, $where, $format, $where_format);
 
 			$where['feed_id'] = $feed_id . '_CUSTOMIZER_MODMODE';
 
-			$affected = $wpdb->update( $cache_table_name, $data, $where, $format, $where_format );
+			$affected = $wpdb->update($cache_table_name, $data, $where, $format, $where_format);
 		}
 
 		return $affected;
 	}
 
-	public function get_customizer_cache() {
-		if ( strpos( $this->feed_id, '_CUSTOMIZER' ) === false ) {
+	public function get_customizer_cache()
+	{
+		if (strpos($this->feed_id, '_CUSTOMIZER') === false) {
 			$feed_id = $this->feed_id . '_CUSTOMIZER';
 		} else {
 			$feed_id = $this->feed_id;
@@ -370,6 +385,7 @@ class FeedCache {
 		global $wpdb;
 		$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- Table name is safely constructed from $wpdb->prefix
 		$sql     = $wpdb->prepare(
 			"
 			SELECT * FROM $cache_table_name
@@ -377,14 +393,15 @@ class FeedCache {
 			AND cache_key = 'posts'",
 			$feed_id
 		);
-		$results = $wpdb->get_results( $sql, ARRAY_A );
+		$results = $wpdb->get_results($sql, ARRAY_A);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 
 		$return = array();
-		if ( ! empty( $results[0] ) ) {
+		if (! empty($results[0])) {
 			$return = $results[0]['cache_value'];
-			$return = json_decode( $return, true );
+			$return = json_decode($return, true);
 
-			$return = isset( $return['data'] ) ? $return['data'] : array();
+			$return = isset($return['data']) ? $return['data'] : array();
 		}
 
 		return $return;
@@ -397,12 +414,14 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	private function query_feed_caches() {
-		$feed_cache = wp_cache_get( $this->get_wp_cache_key() );
-		if ( false === $feed_cache ) {
+	private function query_feed_caches()
+	{
+		$feed_cache = wp_cache_get($this->get_wp_cache_key());
+		if (false === $feed_cache) {
 			global $wpdb;
 			$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
 
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- Table name is safely constructed from $wpdb->prefix
 			$sql = $wpdb->prepare(
 				"
 			SELECT * FROM $cache_table_name
@@ -410,9 +429,10 @@ class FeedCache {
 				$this->feed_id
 			);
 
-			$feed_cache = $wpdb->get_results( $sql, ARRAY_A );
+			$feed_cache = $wpdb->get_results($sql, ARRAY_A);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 
-			wp_cache_set( $this->get_wp_cache_key(), $feed_cache );
+			wp_cache_set($this->get_wp_cache_key(), $feed_cache);
 		}
 
 		return $feed_cache;
@@ -423,8 +443,9 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	private function clear_wp_cache() {
-		wp_cache_delete( $this->get_wp_cache_key() );
+	private function clear_wp_cache()
+	{
+		wp_cache_delete($this->get_wp_cache_key());
 	}
 
 	/**
@@ -434,7 +455,8 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	private function get_wp_cache_key() {
+	private function get_wp_cache_key()
+	{
 		return self::CACHE_KEY . $this->feed_id . '_' . $this->suffix;
 	}
 
@@ -447,16 +469,20 @@ class FeedCache {
 	 *
 	 * @since 6.0
 	 */
-	private function maybe_customizer_suffix() {
+	private function maybe_customizer_suffix()
+	{
 		$additional_suffix = '';
-		$in_customizer     = ! empty( $_POST['previewSettings'] ) || ( isset( $_GET['page'] ) && $_GET['page'] === 'sbr' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended -- Used only for cache key generation
+		$in_customizer     = ! empty($_POST['previewSettings']) || ( isset($_GET['page']) && $_GET['page'] === 'sbr' );
 
-		if ( $in_customizer ) {
+		if ($in_customizer) {
 			$additional_suffix .= '_CUSTOMIZER';
 
-			if ( ! empty( $_POST['moderationShoppableMode'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Used only for cache key generation
+			if (! empty($_POST['moderationShoppableMode'])) {
 				$additional_suffix .= '_MODMODE';
-				$offset             = ! empty( $_POST['moderationShoppableModeOffset'] ) ? intval( $_POST['moderationShoppableModeOffset'] ) : '';
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Used only for cache key generation
+				$offset             = ! empty($_POST['moderationShoppableModeOffset']) ? intval($_POST['moderationShoppableModeOffset']) : '';
 				$additional_suffix .= $offset;
 			}
 		}
@@ -464,7 +490,8 @@ class FeedCache {
 		return $additional_suffix;
 	}
 
-	public function update_last_updated() {
+	public function update_last_updated()
+	{
 		global $wpdb;
 		$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
 
@@ -472,7 +499,7 @@ class FeedCache {
 		$format       = array();
 		$where_format = array();
 
-		$data['last_updated'] = date( 'Y-m-d H:i:s' );
+		$data['last_updated'] = date('Y-m-d H:i:s');
 		$format[]             = '%s';
 
 		$where['feed_id'] = $this->feed_id;
@@ -481,13 +508,13 @@ class FeedCache {
 		$where['cache_key'] = 'posts';
 		$where_format[]     = '%s';
 
-		$affected = $wpdb->update( $cache_table_name, $data, $where, $format, $where_format );
+		$affected = $wpdb->update($cache_table_name, $data, $where, $format, $where_format);
 
 		$data         = array();
 		$format       = array();
 		$where_format = array();
 
-		$data['last_updated'] = date( 'Y-m-d H:i:s' );
+		$data['last_updated'] = date('Y-m-d H:i:s');
 		$format[]             = '%s';
 
 		$where['feed_id'] = $this->feed_id;
@@ -496,7 +523,7 @@ class FeedCache {
 		$where['cache_key'] = 'header';
 		$where_format[]     = '%s';
 
-		$affected = $wpdb->update( $cache_table_name, $data, $where, $format, $where_format );
+		$affected = $wpdb->update($cache_table_name, $data, $where, $format, $where_format);
 
 		return $affected;
 	}
@@ -508,19 +535,23 @@ class FeedCache {
 	 *
 	 * @return int
 	 */
-	public function get_cache_count($active = false) {
+	public function get_cache_count($active = false)
+	{
 		global $wpdb;
 		$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
 		$query            = "SELECT COUNT(DISTINCT feed_id, cache_key) as cache_count FROM $cache_table_name WHERE feed_id Not Like '%_CUSTOMIZER%'";
 
-		if ( $active === true ) {
+		if ($active === true) {
 			$query .= " AND feed_id Not Like '%_MODMODE%' AND last_updated >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
 		}
 
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- Query is safely constructed above
 		$sql    = $wpdb->prepare($query);
-		$caches = $wpdb->get_results( $sql );
+		$caches = $wpdb->get_results($sql);
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
-		if ( ! empty( $caches ) ) {
+		if (! empty($caches)) {
 			return $caches[0]->cache_count;
 		}
 

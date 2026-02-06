@@ -1,4 +1,8 @@
 <?php
+
+// phpcs:disable WordPress.DB.PreparedSQL, WordPress.DB.DirectDatabaseQuery
+// Note: Legacy file with dynamic table name queries. Table names are internal constants.
+
 /**
  * Reviews Sources Management
  *
@@ -12,7 +16,6 @@ use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\PostAggregator;
 
 class SBR_Sources{
-
 	/**
 	 * Add a new source as a row in the sbi_sources table
 	 *
@@ -22,10 +25,15 @@ class SBR_Sources{
 	 *
 	 * @since 1.0
 	 */
-	public static function insert($source_data){
+	public static function insert($source_data)
+	{
 		$db = new DB();
-		if (isset($source_data['id'])) {
+		// Only use 'id' as 'account_id' if account_id is not already set
+		if (isset($source_data['id']) && !isset($source_data['account_id'])) {
 			$source_data['account_id'] = $source_data['id'];
+		}
+		// Remove 'id' from data as the DB table uses 'account_id'
+		if (isset($source_data['id'])) {
 			unset($source_data['id']);
 		}
 		$data = $source_data;
@@ -42,30 +50,31 @@ class SBR_Sources{
 	 *
 	 * @since 6.0
 	 */
-	public static function exists_in_database($args){
+	public static function exists_in_database($args)
+	{
 		$db = new DB();
 		$results = $db->get_single_source($args);
 		return isset($results[0]);
 	}
 
 
-     /**
-     * Get Single Source
-     *
-     * @param array $args
-     *
-     * @return array
-     *
-     * @since 6.0
-     */
-    public static function get_single_source_info($args)
-    {
-        $db = new DB();
-        $results = $db->get_single_source($args);
-        return isset($results[0]) ? $results[0] : [];
-    }
+	 /**
+	 * Get Single Source
+	 *
+	 * @param array $args
+	 *
+	 * @return array
+	 *
+	 * @since 6.0
+	 */
+	public static function get_single_source_info($args)
+	{
+		$db = new DB();
+		$results = $db->get_single_source($args);
+		return isset($results[0]) ? $results[0] : [];
+	}
 
-    /**
+	/**
 	 * Used to update or insert connected accounts (sources)
 	 *
 	 * @param array $source_data
@@ -74,23 +83,25 @@ class SBR_Sources{
 	 *
 	 * @since 6.0
 	 */
-	public static function update_or_insert( $source_data ) {
-		if ( ! isset( $source_data['id'] ) ) {
+	public static function update_or_insert($source_data)
+	{
+		if (! isset($source_data['id'])) {
 			return false;
 		}
 
-		if ( isset( $source_data ) ) {
+		if (isset($source_data)) {
 			// data from an API request related to the source is saved as a JSON string
-			if ( is_object( $source_data ) || is_array( $source_data ) ) {
-				$source_data['info'] = sbr_json_encode( $source_data );
+			// Only wrap if 'info' is not already set (to avoid double-wrapping)
+			if (( is_object($source_data) || is_array($source_data) ) && ! isset($source_data['info'])) {
+				$source_data['info'] = sbr_json_encode($source_data);
 			}
 		}
 
-		if ( self::exists_in_database( $source_data ) ) {
-			$source_data['last_updated'] = date( 'Y-m-d H:i:s' );
-			self::update( $source_data, false );
+		if (self::exists_in_database($source_data)) {
+			$source_data['last_updated'] = date('Y-m-d H:i:s');
+			self::update($source_data, false);
 		} else {
-			self::insert( $source_data );
+			self::insert($source_data);
 		}
 
 		return true;
@@ -105,7 +116,8 @@ class SBR_Sources{
 	 *
 	 * @since 6.0
 	 */
-	public static function update( $source_data) {
+	public static function update($source_data)
+	{
 		$where = array(
 			'id' => $source_data['id'],
 			'provider' => $source_data['provider']
@@ -113,7 +125,7 @@ class SBR_Sources{
 
 		$data = $source_data;
 		$db = new DB();
-		return $db->source_update( $data, $where );
+		return $db->source_update($data, $where);
 	}
 
 
@@ -126,9 +138,10 @@ class SBR_Sources{
 	 *
 	 * @since 6.0
 	 */
-	public static function delete_source( $source_id) {
+	public static function delete_source($source_id)
+	{
 		$db = new DB();
-		return $db->delete_source( $source_id );
+		return $db->delete_source($source_id);
 	}
 
 	/**
@@ -138,22 +151,24 @@ class SBR_Sources{
 	 *
 	 * @since 1.0
 	 */
-	public static function get_sources_list( $args = [] ){
+	public static function get_sources_list($args = [])
+	{
 		$db = new DB();
-		return $db->source_query( $args );
+		return $db->source_query($args);
 	}
 
 	/**
 	 * Get Sources Count
 	 *
+	 * @param array $args Optional args including 'search' for filtering
 	 * @return int
 	 *
 	 * @since 1.0
 	 */
-	public static function get_sources_count()
+	public static function get_sources_count($args = array())
 	{
 		$db = new DB();
-		return $db->source_query_count();
+		return $db->source_query_count($args);
 	}
 
 
@@ -185,7 +200,8 @@ class SBR_Sources{
 			foreach ($collection['instances'] as $instance) {
 				array_push(
 					$feed_ids,
-					$instance['id'], $instance['id'] . '_CUSTOMIZER'
+					$instance['id'],
+					$instance['id'] . '_CUSTOMIZER'
 				);
 			}
 			unset($collection['instances']);
@@ -206,13 +222,12 @@ class SBR_Sources{
 		$info_collection['rating'] = $total_rating > 0 ? ceil($rating / $total_rating) : 0;
 
 
-		$collection['last_updated'] = date( 'Y-m-d H:i:s' );
+		$collection['last_updated'] = date('Y-m-d H:i:s');
 		$collection['id'] = $account_id;
 		$collection['info'] = json_encode($info_collection);
 		SBR_Sources::update($collection);
 
 		return $collection;
-
 	}
 
 	/**
@@ -228,12 +243,18 @@ class SBR_Sources{
 	{
 		global $wpdb;
 		$source_table = $wpdb->prefix . SBR_SOURCES_TABLE;
-		$provider_list = implode(',', $providers);
 
-		$sql = $wpdb->prepare("
-			SELECT * FROM $source_table
-			WHERE provider IN (%d);",
-			$provider_list
+		if (empty($providers)) {
+			return [];
+		}
+
+		// Build placeholders for each provider string (%s for strings, not %d)
+		$placeholders = implode(', ', array_fill(0, count($providers), '%s'));
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$sql = $wpdb->prepare(
+			"SELECT * FROM $source_table WHERE provider IN ($placeholders)",
+			...$providers
 		);
 		return $wpdb->get_results($sql, ARRAY_A);
 	}
@@ -252,11 +273,12 @@ class SBR_Sources{
 	{
 		global $wpdb;
 		$posts_table = $wpdb->prefix . SBR_POSTS_TABLE;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe constant
 		$sql = $wpdb->prepare(
-			"SELECT COUNT(*) FROM $posts_table
-			WHERE provider = %s AND provider_id = %s",
-			esc_sql($provider),
-			esc_sql($provider_id)
+			"SELECT COUNT(*) FROM $posts_table WHERE provider = %s AND provider_id = %s",
+			$provider,
+			$provider_id
 		);
 
 		return $wpdb->get_var($sql) > 0;
@@ -278,16 +300,15 @@ class SBR_Sources{
 		global $wpdb;
 		$posts_table = $wpdb->prefix . SBR_POSTS_TABLE;
 
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe constant
 		$sql = $wpdb->prepare(
 			"SELECT COUNT(*) FROM $posts_table
-			WHERE provider = %s
-			AND provider_id = %s
-			AND created_on > %s
-			",
-			esc_sql($provider),
-			esc_sql($provider_id),
-			date('Y-m-d', strtotime('-1 week', time()))
+			WHERE provider = %s AND provider_id = %s AND created_on > %s",
+			$provider,
+			$provider_id,
+			gmdate('Y-m-d', strtotime('-1 week', time()))
 		);
+
 		return $wpdb->get_var($sql) > 0;
 	}
 }

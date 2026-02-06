@@ -2,6 +2,8 @@
     "name": "smashballoon\/framework",
     "description": "WordPress plugin framework. Developed by SmashBalloon Team.",
     "type": "library",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "authors": [
         {
             "name": "Smashballoon",
@@ -13,17 +15,26 @@
     },
     "autoload": {
         "psr-4": {
-            "SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\": ""
+            "SmashBalloon\\Reviews\\Vendor\\Smashballoon\\Framework\\": "",
+            "SmashBalloon\\Reviews\\Vendor\\DI\\": "Packages\/php-di\/src\/"
         },
         "files": [
-            "Utilities\/functions.php"
+            "Utilities\/functions.php",
+            "Packages\/php-di\/src\/functions.php"
         ],
         "exclude-from-classmap": [
             "Packages\/Blocks\/blocks\/*"
         ]
     },
+    "replace": {
+        "php-di\/php-di": "6.4.0"
+    },
     "require": {
-        "php": ">=5.6"
+        "php": ">=7.4",
+        "psr\/container": "^1.0",
+        "php-di\/invoker": "^2.0",
+        "php-di\/phpdoc-reader": "^2.0.1",
+        "laravel\/serializable-closure": "^1.0"
     },
     "require-dev": {
         "squizlabs\/php_codesniffer": "^3.7",

@@ -3,7 +3,6 @@
 namespace SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Signers;
 
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Contracts\Signer;
-/** @internal */
 class Hmac implements Signer
 {
     /**
@@ -30,7 +29,7 @@ class Hmac implements Signer
      */
     public function sign($serialized)
     {
-        return ['serializable' => $serialized, 'hash' => \base64_encode(\hash_hmac('sha256', $serialized, $this->secret, \true))];
+        return ['serializable' => $serialized, 'hash' => base64_encode(hash_hmac('sha256', $serialized, $this->secret, \true))];
     }
     /**
      * Verify the given signature.
@@ -40,6 +39,6 @@ class Hmac implements Signer
      */
     public function verify($signature)
     {
-        return \hash_equals(\base64_encode(\hash_hmac('sha256', $signature['serializable'], $this->secret, \true)), $signature['hash']);
+        return hash_equals(base64_encode(hash_hmac('sha256', $signature['serializable'], $this->secret, \true)), $signature['hash']);
     }
 }

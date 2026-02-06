@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms;
 
-/** @internal */
 class GoDadddy implements PlatformInterface
 {
     /**
@@ -17,7 +16,7 @@ class GoDadddy implements PlatformInterface
      */
     public function filter_sb_hosting_platform($platform)
     {
-        if (!empty(\getenv('WPAAS_POD'))) {
+        if (!empty(getenv('WPAAS_POD'))) {
             $platform = 'godaddy';
         }
         return $platform;

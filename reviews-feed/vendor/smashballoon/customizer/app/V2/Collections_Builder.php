@@ -9,11 +9,10 @@ use Smashballoon\Stubs\Services\ServiceProvider;
  *
  * @since 1.0
  */
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly
 }
-/** @internal */
 class Collections_Builder extends ServiceProvider
 {
     public static function instance()
@@ -72,7 +71,7 @@ class Collections_Builder extends ServiceProvider
         } else {
             wp_enqueue_style('sb-customizer-style', SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css', \false, \false);
         }
-        $collections_data = \array_merge($collections_data, $this->custom_collections_data());
+        $collections_data = array_merge($collections_data, $this->custom_collections_data());
         //Data comming from the Actual plugin
         wp_enqueue_script('sb-customizer-app', $collections_js_file, null, \false, \true);
         wp_localize_script('sb-customizer-app', 'sb_customizer', $collections_data);

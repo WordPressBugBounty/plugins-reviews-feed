@@ -1,27 +1,32 @@
 <?php
+
 /**
  * Class FeedDisplay
  *
  * @since 1.0
  */
+
 namespace SmashBalloon\Reviews\Common;
 
+use SmashBalloon\Reviews\Common\Integrations\SBR_GDPR;
 
 class FeedDisplay {
 	protected $feed;
 	protected $parser;
 	protected $translations;
 
-	public function __construct( Feed $feed, Parser $parser ) {
+	public function __construct(Feed $feed, Parser $parser)
+	{
 		$this->feed = $feed;
 		$this->parser = $parser;
 		$settings = sbr_recursive_parse_args(get_option('sbr_settings', []), sbr_plugin_settings_defaults());
 		$this->translations = $settings['translations'];
 	}
 
-	public function with_wrap() {
+	public function with_wrap()
+	{
 		$header_data = ! $this->feed->is_single_manual_review() ? $this->feed->get_header_data() : [];
-		$header_data = is_array( $header_data ) ? $header_data : [];
+		$header_data = is_array($header_data) ? $header_data : [];
 		$posts = $this->feed->get_post_set_page();
 		$feed_id = $this->feed->get_feed_id();
 
@@ -29,116 +34,78 @@ class FeedDisplay {
 		$settings = $this->feed->get_settings();
 		$parser = $this->parser;
 
-		wp_enqueue_script( 'sbr_scripts' );
+		wp_enqueue_script('sbr_scripts');
 
 		ob_start();
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS output is sanitized
 		echo $this->custom_styles();
 
-		include sbr_get_feed_template_part( 'feed', $settings );
+		include sbr_get_feed_template_part('feed', $settings);
 		$html = ob_get_contents();
 		ob_get_clean();
 		return $html;
 	}
 
-	public function items_only( $page = 1 ) {
-		$posts = $this->feed->get_post_set_page( $page );
+	public function items_only($page = 1)
+	{
+		$posts = $this->feed->get_post_set_page($page);
 		$feed_id = $this->feed->get_feed_id();
 		$shortcode_atts = '{}';
 		$settings = $this->feed->get_settings();
 		$parser = $this->parser;
 
 		ob_start();
-		$this->posts_loop( $posts, $settings );
+		$this->posts_loop($posts, $settings);
 		$html = ob_get_contents();
 		ob_get_clean();
 		return $html;
 	}
 
-	public function custom_styles() {
+	public function custom_styles()
+	{
 		$settings = $this->feed->get_settings();
 		$feed_id = $this->feed->get_feed_id();
 
 		ob_start();
 		?>
-        <style>
-            <?php echo '#' . sbr_container_id($feed_id); ?>{
-                --column-gutter : <?php echo isset( $settings['horizontalSpacing'] ) ? $settings['horizontalSpacing'] : 0  ?>px;
-            }
-            <?php echo $this->feed->get_feed_style(); ?>
-        </style>
+		<style>
+			<?php echo '#' . esc_attr(sbr_container_id($feed_id)); ?>{
+				--column-gutter : <?php echo isset($settings['horizontalSpacing']) ? absint($settings['horizontalSpacing']) : 0  ?>px;
+			}
+			<?php
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS output is sanitized
+			echo $this->feed->get_feed_style();
+			?>
+		</style>
 		<?php
 		$html = ob_get_contents();
 		ob_get_clean();
 		return $html;
 	}
-	public function render_post_elements( $post ) {
+	public function render_post_elements($post)
+	{
 		$settings = $this->feed->get_settings();
 		$allowed_files = array( 'author', 'text', 'rating' );
 
-		foreach ( $settings['postElements'] as $file_name ) {
-			if ( in_array( $file_name, $allowed_files, true ) ) {
-				include sbr_get_feed_template_part( 'post-elements/' . $file_name, $settings );
+		foreach ($settings['postElements'] as $file_name) {
+			if (in_array($file_name, $allowed_files, true)) {
+				include sbr_get_feed_template_part('post-elements/' . $file_name, $settings);
 			}
 		}
 	}
 
-	public function should_show( $element, $item = '' ) {
+	public function should_show($element, $item = '')
+	{
 		$settings = $this->feed->get_settings();
-		if ( $element === 'header' ) {
-			if ( empty( $item ) ) {
-				return ! empty( $settings['showHeader'] );
+		if ($element === 'header') {
+			if (empty($item)) {
+				return ! empty($settings['showHeader']);
 			}
-			if ( in_array( $item, (array) $settings['headerContent'], true ) ) {
+			if (in_array($item, (array) $settings['headerContent'], true)) {
 				return true;
 			}
-		} elseif ( $element === 'author' ) {
-			if ( in_array( $item, (array) $settings['authorContent'], true ) ) {
-				return true;
-			}
-		}
-
-        return false;
-	}
-
-	public function get_header_heading_content() {
-		if( $this->feed->is_init_wpml() ){
-			return __( 'Reviews', 'reviews-feed' );
-		}
-
-		$settings = $this->feed->get_settings();
-		if ( ! empty( $settings['headerHeadingContent'] ) ) {
-			return $settings['headerHeadingContent'];
-		}
-
-		return __( 'Reviews', 'reviews-feed' );
-	}
-
-	public function get_header_button_text( ) {
-		return isset( $this->translations['writeReview'] ) && !$this->feed->is_init_wpml() ? $this->translations['writeReview'] : __( 'Write a Review', 'reviews-feed' );
-	}
-
-
-	public function get_review_link( $header_data ) {
-		$settings = $this->feed->get_settings();
-		if ( ! empty( $settings['headerButtonLinkTo'] ) && $settings['headerButtonLinkTo'] === 'external' && ! empty( $settings['headerButtonExternalLink'] ) ) {
-			$link = str_replace( array( 'https://', 'http://' ), '', $settings['headerButtonExternalLink'] );
-			return 'https://' . $link;
-		}
-		$header_data = isset( $header_data[0] ) ? $header_data[0] : $header_data;
-		$source_data = isset( $settings['sources'][0] ) ? $settings['sources'][0] : [];
-
-		return $this->parser->get_review_url(
-			$header_data,
-			$source_data
-		);
-	}
-
-	public function is_truncated_yelp_review( $post ) {
-		$text = $this->parser->get_text( $post );
-
-		if ( ! empty( $post['provider']['name'] ) && $post['provider']['name'] === 'yelp' ) {
-
-			if ( substr( $text, -3 ) === '...' ) {
+		} elseif ($element === 'author') {
+			if (in_array($item, (array) $settings['authorContent'], true)) {
 				return true;
 			}
 		}
@@ -146,38 +113,91 @@ class FeedDisplay {
 		return false;
 	}
 
-	public function more_link( $post ) {
-		if ( ! $this->is_truncated_yelp_review( $post ) ) {
+	public function get_header_heading_content()
+	{
+		if ($this->feed->is_init_wpml()) {
+			return __('Reviews', 'reviews-feed');
+		}
+
+		$settings = $this->feed->get_settings();
+		if (! empty($settings['headerHeadingContent'])) {
+			return $settings['headerHeadingContent'];
+		}
+
+		return __('Reviews', 'reviews-feed');
+	}
+
+	public function get_header_button_text()
+	{
+		return isset($this->translations['writeReview']) && !$this->feed->is_init_wpml() ? $this->translations['writeReview'] : __('Write a Review', 'reviews-feed');
+	}
+
+
+	public function get_review_link($header_data)
+	{
+		$settings = $this->feed->get_settings();
+		if (! empty($settings['headerButtonLinkTo']) && $settings['headerButtonLinkTo'] === 'external' && ! empty($settings['headerButtonExternalLink'])) {
+			$link = str_replace(array( 'https://', 'http://' ), '', $settings['headerButtonExternalLink']);
+			return 'https://' . $link;
+		}
+		$header_data = isset($header_data[0]) ? $header_data[0] : $header_data;
+		$source_data = isset($settings['sources'][0]) ? $settings['sources'][0] : [];
+
+		return $this->parser->get_review_url(
+			$header_data,
+			$source_data
+		);
+	}
+
+	public function is_truncated_yelp_review($post)
+	{
+		$text = $this->parser->get_text($post);
+
+		if (! empty($post['provider']['name']) && $post['provider']['name'] === 'yelp') {
+			if (substr($text, -3) === '...') {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function more_link($post)
+	{
+		if (! $this->is_truncated_yelp_review($post)) {
 			return '';
 		}
 
-		if ( ! empty( $post['source']['url'] ) ) {
+		if (! empty($post['source']['url'])) {
 			return $post['source']['url'];
 		}
-
+		return '';
 	}
 
-	public function get_review_text( $post ) {
-		if ( ! $this->is_truncated_yelp_review( $post ) ) {
-			return $this->parser->get_text( $post );
+	public function get_review_text($post)
+	{
+		if (! $this->is_truncated_yelp_review($post)) {
+			return $this->parser->get_text($post);
 		}
-		$text = $this->parser->get_text( $post );
+		$text = $this->parser->get_text($post);
 
 		// remove ellipsis
-		return substr( $text, 0, -3 );
+		return substr($text, 0, -3);
 	}
 
-	public function posts_loop( $posts, $settings ) {
+	public function posts_loop($posts, $settings)
+	{
 		if (isset($settings['sortRandomEnabled']) && $settings['sortRandomEnabled'] === true) {
 			shuffle($posts);
 		}
-		foreach ( $posts as $post ) {
-			include sbr_get_feed_template_part( 'item', $settings );
+		foreach ($posts as $post) {
+			include sbr_get_feed_template_part('item', $settings);
 		}
 	}
 
-	public function star_rating_display( $post, $settings ) {
-		$star_rating = intval( $this->parser->get_rating($post) );
+	public function star_rating_display($post, $settings)
+	{
+		$star_rating = intval($this->parser->get_rating($post));
 		$return = '';
 		for ($i = 0; $i < 5; $i++) {
 			$iconClass = $star_rating - $i < 1 ? ' sb-item-rating-icon-dimmed' : '';
@@ -189,52 +209,54 @@ class FeedDisplay {
 			} else {
 				$return .= '<span class="sb-item-rating-icon ' . $iconClass . '">' . DisplayElements::get_star_icon() . '</span>';
 			}
-
 		}
 
 		return $return;
 	}
 
-	public function overall_star_rating_display( $business, $settings ) {
-		$star_rating = floatval( $this->parser->get_average_rating( $business ) );
+	public function overall_star_rating_display($business, $settings)
+	{
+		$star_rating = floatval($this->parser->get_average_rating($business));
 		$return = '';
-		for ( $i = 0; $i < 5 ; $i++ ) {
+		for ($i = 0; $i < 5; $i++) {
 			$iconClass = $star_rating - $i < 1 ? ' sb-item-rating-icon-dimmed' : '';
-			if($star_rating - $i < 1 && $star_rating - $i >= 0.5){
+			if ($star_rating - $i < 1 && $star_rating - $i >= 0.5) {
 				$return .= '<span class="sb-feed-item-icon sb-feed-item-icon-half">
                     <span class="sb-feed-header-icon sb-item-rating-icon-dimmed">' . DisplayElements::get_star_icon() . '</span>
                     <span class="sb-item-rating-icon-halfdimmed">' . DisplayElements::get_star_icon() . '</span>
                 </span>';
-			}else{
+			} else {
 				$return .= '<span class="sb-feed-header-icon ' . $iconClass . '">' . DisplayElements::get_star_icon() . '</span>';
 			}
-
 		}
 
 
 		return $return;
 	}
 
-	public function provider_icon_url( $post, $settings ) {
-		$provider = $this->parser->get_provider_name( $post ) ;
-		if ( ! empty( $provider ) ) {
-			return trailingslashit( SBR_PLUGIN_URL ) . 'assets/icons/' . $provider . '-provider.svg';
+	public function provider_icon_url($post, $settings)
+	{
+		$provider = $this->parser->get_provider_name($post) ;
+		if (! empty($provider)) {
+			return trailingslashit(SBR_PLUGIN_URL) . 'assets/icons/' . $provider . '-provider.svg';
 		}
 	}
 
-	public function date( $post, $translations ) {
+	// phpcs:disable Generic.Metrics.CyclomaticComplexity.MaxExceeded -- Date formatting requires many conditional checks
+	public function date($post, $translations)
+	{
 
-		if( ! isset( $post['time'] ) || $post['time'] === null || !$post['time'] ){
+		if (! isset($post['time']) || $post['time'] === null || !$post['time']) {
 			return '';
 		}
 
 		$settings = $this->feed->get_settings();
-		$timestamp = $this->parser->get_time( $post );
+		$timestamp = $this->parser->get_time($post);
 
 		$now = time();
 		$date_formats = self::get_date_formats();
 
-		if ( intval( $settings['dateFormat'] ) === 1 ) {
+		if (intval($settings['dateFormat']) === 1) {
 			$second 	= $this->feed->is_init_wpml() ? __('second', 'reviews-feed') : $translations['second'];
 			$seconds 	= $this->feed->is_init_wpml() ? __('seconds', 'reviews-feed') : $translations['seconds'];
 			$minute 	= $this->feed->is_init_wpml() ? __('minute', 'reviews-feed') : $translations['minute'];
@@ -273,22 +295,21 @@ class FeedDisplay {
 				$periods[$j] = $periods_plural[$j];
 			}
 			$date_str = "$difference $periods[$j] {$tense}";
-
 		} else {
-            if( $settings['dateFormat'] !== 'custom'  ){
-                $date_str = date_i18n( $date_formats[ intval( $settings['dateFormat']) ], $timestamp );
-            }
+			if ($settings['dateFormat'] !== 'custom') {
+				$date_str = date_i18n($date_formats[ intval($settings['dateFormat']) ], $timestamp);
+			}
 		}
 		$before_padding = '';
-		if ( ! empty( $settings['dateBeforeText'] ) ) {
+		if (! empty($settings['dateBeforeText'])) {
 			$before_padding = ' ';
 		}
 		$after_padding = '';
-		if ( ! empty( $settings['dateAfterText'] ) ) {
+		if (! empty($settings['dateAfterText'])) {
 			$after_padding = ' ';
 		}
 
-		if ( $settings['dateFormat'] === 'custom'  && !empty( $settings['dateCustomFormat'] ) ) {
+		if ($settings['dateFormat'] === 'custom'  && !empty($settings['dateCustomFormat'])) {
 			$custom_date = $settings['dateCustomFormat'];
 			$custom_date = str_replace("{hide-start}", "<k>", $custom_date);
 			$custom_date = str_replace("{hide-end}", "</k>", $custom_date);
@@ -297,17 +318,19 @@ class FeedDisplay {
 
 		return $settings['dateBeforeText'] . $before_padding . $date_str . $after_padding . $settings['dateAfterText'];
 	}
+	// phpcs:enable Generic.Metrics.CyclomaticComplexity.MaxExceeded
 
-	public static function get_date_formats(){
+	public static function get_date_formats()
+	{
 		return [
 			2 => 'F jS, g:i a',
 			3 => 'F jS',
-			4=> 'D F jS',
+			4 => 'D F jS',
 			5 => 'l F jS',
 			6 => 'D M jS, Y',
-			7=> 'l F jS, Y',
-			8=> 'l F jS, Y - g:i a',
-			9=> "l M jS, 'y",
+			7 => 'l F jS, Y',
+			8 => 'l F jS, Y - g:i a',
+			9 => "l M jS, 'y",
 			10 => 'm.d.y',
 			18 => 'm.d.y - G:i',
 			11 => 'm/d/y',
@@ -322,87 +345,97 @@ class FeedDisplay {
 		];
 	}
 
-	public function feed_classes() {
+	public function feed_classes()
+	{
 		$settings = $this->feed->get_settings();
 		$classes = array();
-		if ( $settings['layout'] === 'masonry' ) {
-			$classes[] = 'sb-cols-' . absint( $settings[ $settings['layout'] . "DesktopColumns"] );
-			$classes[] = 'sb-colstablet-' . absint( $settings[ $settings['layout'] . "TabletColumns"] );
-			$classes[] = 'sb-colsmobile-' . absint( $settings[ $settings['layout'] . "MobileColumns"] );
+		if ($settings['layout'] === 'masonry') {
+			$classes[] = 'sb-cols-' . absint($settings[ $settings['layout'] . "DesktopColumns"]);
+			$classes[] = 'sb-colstablet-' . absint($settings[ $settings['layout'] . "TabletColumns"]);
+			$classes[] = 'sb-colsmobile-' . absint($settings[ $settings['layout'] . "MobileColumns"]);
 		}
 
 		if ($settings['layout'] === 'grid') {
 			$classes[] = 'sb-grid-wrapper';
 		}
 
-		return implode( ' ', $classes );
+		return implode(' ', $classes);
 	}
 
-	public function item_classes( $post ) {
+	public function item_classes($post)
+	{
 		$classes = array();
 
-		$id = $this->parser->get_id( $post );
+		$id = $this->parser->get_id($post);
 		$classes[] = 'sbr-item-' . $id;
 
-		if ( ! empty( $post['provider']['name'] ) ) {
+		if (! empty($post['provider']['name'])) {
 			$classes[] = 'sbr-provider-' . $post['provider']['name'];
 		}
 
-		return implode( ' ', $classes );
+		return implode(' ', $classes);
 	}
 
-	public function should_show_header() {
+	public function should_show_header()
+	{
 		$settings = $this->feed->get_settings();
-
 	}
 
-	public function misc_atts() {
+	public function misc_atts()
+	{
 		$atts = '';
 		$settings = $this->feed->get_settings();
 		$misc_atts = array();
 
 		$misc_atts['num'] = array(
-			'desktop' => absint( $settings['numPostDesktop'] ),
-			'tablet' => absint( $settings['numPostTablet'] ),
-			'mobile' => absint( $settings['numPostMobile'] ),
+			'desktop' => absint($settings['numPostDesktop']),
+			'tablet' => absint($settings['numPostTablet']),
+			'mobile' => absint($settings['numPostMobile']),
 		);
 
-		$misc_atts['flagLastPage'] = $this->feed->is_last_page( 1 );
+		$misc_atts['flagLastPage'] = $this->feed->is_last_page(1);
 		$misc_atts['contentLength'] = $settings['contentLength'];
 
-		$atts = ' data-misc="' . esc_attr( wp_json_encode( $misc_atts ) ) . '"';
+		$atts = ' data-misc="' . esc_attr(wp_json_encode($misc_atts)) . '"';
 
 		if ($settings['layout'] === 'grid') {
-			$atts .= ' data-grid-columns="'.esc_attr( $settings['gridDesktopColumns'] ).'" data-grid-tablet-columns="' . esc_attr($settings['gridTabletColumns']) . '" data-grid-mobile-columns="' . esc_attr($settings['gridMobileColumns']) . '" ';
+			$atts .= ' data-grid-columns="' . esc_attr($settings['gridDesktopColumns']) . '" data-grid-tablet-columns="' . esc_attr($settings['gridTabletColumns']) . '" data-grid-mobile-columns="' . esc_attr($settings['gridMobileColumns']) . '" ';
 		}
 
 		return $atts;
 	}
 
-	public function error_html() {
-		if ( ! sbr_current_user_can( 'manage_reviews_feed_options' ) ) {
+	public function misc_flags()
+	{
+		$doing_gdpr = SBR_GDPR::doing_gdpr();
+		return $doing_gdpr ? 'gdpr' : '';
+	}
+
+	public function error_html()
+	{
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
 			return '';
 		}
 		$errors = $this->feed->get_errors();
-		if ( empty( $errors ) ) {
+		if (empty($errors)) {
 			return '';
 		}
 		ob_start();
 		?>
-        <div class="sbr-feed-error">
-            <span><?php _e('This error message is only visible to WordPress admins', 'reviews-feed' ); ?></span><br />
-			<?php foreach ( $errors as $error ) : ?>
-                <p><strong><?php echo wp_kses_post( $error['message'] ); ?></strong>
-                <p><?php echo wp_kses_post( $error['directions'] ); ?></p>
+		<div class="sbr-feed-error">
+			<span><?php esc_html_e('This error message is only visible to WordPress admins', 'reviews-feed'); ?></span><br />
+			<?php foreach ($errors as $error) : ?>
+				<p><strong><?php echo wp_kses_post($error['message']); ?></strong>
+				<p><?php echo wp_kses_post($error['directions']); ?></p>
 			<?php endforeach; ?>
-        </div>
+		</div>
 		<?php
 		$html = ob_get_contents();
 		ob_get_clean();
 		return $html;
 	}
 
-	public function get_header_reviews_number( $number )
+	public function get_header_reviews_number($number)
 	{
 		$the_text = isset($this->translations['reviewsHeader']) && !$this->feed->is_init_wpml() ? $this->translations['reviewsHeader'] : __('Over %s Reviews', 'sb-customizer');
 		return !empty($number) ? str_replace('%s', $number, $the_text) : '';

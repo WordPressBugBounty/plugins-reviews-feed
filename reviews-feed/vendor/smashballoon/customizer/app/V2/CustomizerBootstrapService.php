@@ -8,11 +8,10 @@ use Smashballoon\Stubs\Services\ServiceProvider;
  *
  * @since 1.0
  */
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly
 }
-/** @internal */
 class CustomizerBootstrapService extends ServiceProvider
 {
     public function register()
@@ -22,28 +21,28 @@ class CustomizerBootstrapService extends ServiceProvider
     private function register_constants()
     {
         // Plugin Version
-        if (!\defined('SBCUSVER')) {
-            \define('SBCUSVER', '1.0');
+        if (!defined('SBCUSVER')) {
+            define('SBCUSVER', '1.0');
         }
         // Plugin Version
-        if (!\defined('SBCUSVER')) {
-            \define('SBCUSVER', '1.0');
+        if (!defined('SBCUSVER')) {
+            define('SBCUSVER', '1.0');
         }
         //Feed Locator
-        if (!\defined('SB_FEED_LOCATOR')) {
-            \define('SB_FEED_LOCATOR', 'sb_feed_locator');
+        if (!defined('SB_FEED_LOCATOR')) {
+            define('SB_FEED_LOCATOR', 'sb_feed_locator');
         }
         //Feed Table
-        if (!\defined('SB_FEEDS_TABLE')) {
-            \define('SB_FEEDS_TABLE', 'sb_feeds');
+        if (!defined('SB_FEEDS_TABLE')) {
+            define('SB_FEEDS_TABLE', 'sb_feeds');
         }
         //Feed Sources
-        if (!\defined('SB_SOURCES_TABLE')) {
-            \define('SB_SOURCES_TABLE', 'sb_sources');
+        if (!defined('SB_SOURCES_TABLE')) {
+            define('SB_SOURCES_TABLE', 'sb_sources');
         }
         //Feed Caches
-        if (!\defined('SB_FEED_CACHES_TABLE')) {
-            \define('SB_FEED_CACHES_TABLE', 'sb_feed_caches');
+        if (!defined('SB_FEED_CACHES_TABLE')) {
+            define('SB_FEED_CACHES_TABLE', 'sb_feed_caches');
         }
     }
 }

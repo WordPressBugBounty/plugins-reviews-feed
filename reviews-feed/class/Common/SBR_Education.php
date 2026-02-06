@@ -1,8 +1,10 @@
 <?php
+
 /**
  *
  * @since X.X
  */
+
 namespace SmashBalloon\Reviews\Common;
 
 // Exit if accessed directly
@@ -12,7 +14,6 @@ if (!defined('ABSPATH')) {
 
 class SBR_Education
 {
-
 	public $plugin_version;
 
 	/**
@@ -101,7 +102,6 @@ class SBR_Education
 			return $pro_messages;
 		}
 		return $free_messages;
-
 	}
 
 	/**
@@ -128,7 +128,7 @@ class SBR_Education
 		if (!empty($dyk_message['more'])) {
 			$dyk_message['more'] = add_query_arg(
 				array(
-					'utm_source'   => 'plugin-'.$this->plugin_version,
+					'utm_source'   => 'plugin-' . $this->plugin_version,
 					'utm_campaign' => 'sbr-issue-email',
 					'utm_content'  => $dyk_message['item'],
 				),

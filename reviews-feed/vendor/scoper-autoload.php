@@ -4,7 +4,7 @@
 
 $loader = (static function () {
     // Backup the autoloaded Composer files
-    $existingComposerAutoloadFiles = $GLOBALS['__composer_autoload_files'] ?? [];
+    $existingComposerAutoloadFiles = isset($GLOBALS['__composer_autoload_files']) ? $GLOBALS['__composer_autoload_files'] : [];
 
     $loader = require_once __DIR__.'/autoload.php';
     // Ensure InstalledVersions is available
@@ -29,11 +29,10 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('ComposerAutoloaderInit63ea58230ae075bdfb6a07208dd316aa', 'SmashBalloon\Reviews\Vendor\ComposerAutoloaderInit63ea58230ae075bdfb6a07208dd316aa');
+humbug_phpscoper_expose_class('ComposerAutoloaderInit84e16c3d027f83f5f9e0fadd381733a6', 'SmashBalloon\Reviews\Vendor\ComposerAutoloaderInit84e16c3d027f83f5f9e0fadd381733a6');
 
 // Function aliases. For more information see:
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases
-if (!function_exists('composerRequire63ea58230ae075bdfb6a07208dd316aa')) { function composerRequire63ea58230ae075bdfb6a07208dd316aa() { return \SmashBalloon\Reviews\Vendor\composerRequire63ea58230ae075bdfb6a07208dd316aa(...func_get_args()); } }
 if (!function_exists('dbDelta')) { function dbDelta() { return \SmashBalloon\Reviews\Vendor\dbDelta(...func_get_args()); } }
 if (!function_exists('do_action')) { function do_action() { return \SmashBalloon\Reviews\Vendor\do_action(...func_get_args()); } }
 

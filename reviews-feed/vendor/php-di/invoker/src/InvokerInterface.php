@@ -8,7 +8,6 @@ use SmashBalloon\Reviews\Vendor\Invoker\Exception\NotCallableException;
 use SmashBalloon\Reviews\Vendor\Invoker\Exception\NotEnoughParametersException;
 /**
  * Invoke a callable.
- * @internal
  */
 interface InvokerInterface
 {

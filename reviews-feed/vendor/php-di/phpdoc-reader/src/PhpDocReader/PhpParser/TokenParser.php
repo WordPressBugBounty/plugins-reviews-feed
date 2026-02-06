@@ -10,7 +10,6 @@ namespace SmashBalloon\Reviews\Vendor\PhpDocReader\PhpParser;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Christian Kaps <christian.kaps@mohiva.com>
- * @internal
  */
 class TokenParser
 {
@@ -37,7 +36,7 @@ class TokenParser
      */
     public function __construct($contents)
     {
-        $this->tokens = \token_get_all($contents);
+        $this->tokens = token_get_all($contents);
         // The PHP parser sets internal compiler globals for certain things. Annoyingly, the last docblock comment it
         // saw gets stored in doc_comment. When it comes to compile the next thing to be include()d this stored
         // doc_comment becomes owned by the first thing the compiler sees in the file that it considers might have a
@@ -45,8 +44,8 @@ class TokenParser
         // getDocBlock() on said class to return our long lost doc_comment. Argh.
         // To workaround, cause the parser to parse an empty docblock. Sure getDocBlock() will return this, but at least
         // it's harmless to us.
-        \token_get_all("<?php\n/**\n *\n */");
-        $this->numTokens = \count($this->tokens);
+        token_get_all("<?php\n/**\n *\n */");
+        $this->numTokens = count($this->tokens);
     }
     /**
      * Gets all use statements.
@@ -60,7 +59,7 @@ class TokenParser
         $statements = [];
         while ($token = $this->next()) {
             if ($token[0] === \T_USE) {
-                $statements = \array_merge($statements, $this->parseUseStatement());
+                $statements = array_merge($statements, $this->parseUseStatement());
                 continue;
             }
             if ($token[0] !== \T_NAMESPACE || $this->parseNamespace() !== $namespaceName) {
@@ -112,8 +111,8 @@ class TokenParser
                 $alias = $token[1];
             } elseif (\PHP_VERSION_ID >= 80000 && ($token[0] === \T_NAME_QUALIFIED || $token[0] === \T_NAME_FULLY_QUALIFIED)) {
                 $class .= $token[1];
-                $classSplit = \explode('\\', $token[1]);
-                $alias = $classSplit[\count($classSplit) - 1];
+                $classSplit = explode('\\', $token[1]);
+                $alias = $classSplit[count($classSplit) - 1];
             } elseif ($token[0] === \T_NS_SEPARATOR) {
                 $class .= '\\';
                 $alias = '';
@@ -121,12 +120,12 @@ class TokenParser
                 $explicitAlias = \true;
                 $alias = '';
             } elseif ($token === ',') {
-                $statements[\strtolower($alias)] = $groupRoot . $class;
+                $statements[strtolower($alias)] = $groupRoot . $class;
                 $class = '';
                 $alias = '';
                 $explicitAlias = \false;
             } elseif ($token === ';') {
-                $statements[\strtolower($alias)] = $groupRoot . $class;
+                $statements[strtolower($alias)] = $groupRoot . $class;
                 break;
             } elseif ($token === '{') {
                 $groupRoot = $class;

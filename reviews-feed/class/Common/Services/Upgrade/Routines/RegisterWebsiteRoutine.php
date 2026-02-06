@@ -8,43 +8,43 @@ use Smashballoon\Stubs\Services\ServiceProvider;
 
 class RegisterWebsiteRoutine extends ServiceProvider
 {
-    protected $target_version = 0;
+	protected $target_version = 0;
 
-    public function register()
-    {
-        if ($this->will_run()) {
-            $this->run();
-        }
-    }
+	public function register()
+	{
+		if ($this->will_run()) {
+			$this->run();
+		}
+	}
 
-    protected function will_run()
-    {
-        $settings = get_option('sbr_settings', []);
-        return !isset( $settings['access_token'] ) || $settings['access_token'] === '';
-    }
+	protected function will_run()
+	{
+		$settings = get_option('sbr_settings', []);
+		return !isset($settings['access_token']) || $settings['access_token'] === '';
+	}
 
 
-    public function run()
-    {
-        $args = [
-            'url' => get_home_url()
-        ];
+	public function run()
+	{
+		$args = [
+			'url' => get_home_url()
+		];
 
-        $relay = new SBRelay( new SettingsManagerService() );
-        $response = $relay->call(
-            'auth/register' ,
-            $args,
-            'POST',
-            false
-        );
-        if (isset($response['data'])
-            && $response['data']
-            && isset($response['data']['token'])
-        ) {
-            $settings = get_option('sbr_settings', []);
-            $settings['access_token'] = $response['data']['token'];
-		    update_option('sbr_settings', $settings);
-        }
-
-    }
+		$relay = new SBRelay(new SettingsManagerService());
+		$response = $relay->call(
+			'auth/register',
+			$args,
+			'POST',
+			false
+		);
+		if (
+			isset($response['data'])
+			&& $response['data']
+			&& isset($response['data']['token'])
+		) {
+			$settings = get_option('sbr_settings', []);
+			$settings['access_token'] = $response['data']['token'];
+			update_option('sbr_settings', $settings);
+		}
+	}
 }

@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Support;
 
-/** @internal */
 class SelfReference
 {
     /**

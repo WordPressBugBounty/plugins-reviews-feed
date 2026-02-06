@@ -1,9 +1,11 @@
 <?php
+
 /**
  * Class RemoteRequest
  *
  * @since 1.0
  */
+
 namespace SmashBalloon\Reviews\Common;
 
 use SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager;
@@ -15,7 +17,6 @@ use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
  */
 class RemoteRequest
 {
-
 	public const BASE_URL = SBR_RELAY_BASE_URL;
 
 	private $provider;
@@ -64,7 +65,6 @@ class RemoteRequest
 			if (!empty($api_keys[$this->provider])) {
 				$args['api_key'] = $api_keys[$this->provider];
 			}
-
 		} else {
 			$args['api_key'] = !empty($this->args['access_token']) ? $this->args['access_token'] : '';
 		}
@@ -74,6 +74,13 @@ class RemoteRequest
 			&& $this->args['language'] !== 'default'
 		) {
 			$args['language'] = $this->args['language'];
+		}
+
+		if (
+			!empty($this->args['starsFilter'])
+			&& $this->args['starsFilter'] !== ''
+		) {
+			$args['starsFilter'] = $this->args['starsFilter'];
 		}
 
 		$settings = new SettingsManagerService();

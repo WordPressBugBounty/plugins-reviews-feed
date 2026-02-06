@@ -2790,7 +2790,9 @@ if(!sbr_js_exists) {
 							locator : (flags.indexOf('locator') > -1),
 							checkMediaNonce : typeof $self.attr( 'data-check-media' ) !== 'undefined' ? $self.attr( 'data-check-media' ) : false,
 							autoMinRes : 1,
-							general : general
+							general : general,
+							carouselBreakpointDesktop : typeof $self.attr( 'data-carousel-breakpoint-desktop' ) !== 'undefined' ? parseInt($self.attr( 'data-carousel-breakpoint-desktop' )) : 850,
+							carouselBreakpointTablet : typeof $self.attr( 'data-carousel-breakpoint-tablet' ) !== 'undefined' ? parseInt($self.attr( 'data-carousel-breakpoint-tablet' )) : 520
 						};
 						if ( typeof feedOptions.misc.carousel !== 'undefined' ) {
 							feedOptions.carousel = feedOptions.misc.carousel;
@@ -2978,7 +2980,6 @@ if(!sbr_js_exists) {
 
 						}, 100);
 					};
-
 				this.carouselArgs = {
 					items: this.settings.cols,
 					loop: loop,
@@ -2990,14 +2991,16 @@ if(!sbr_js_exists) {
 					navText: ['<svg class="svg-inline--fa fa-chevron-left fa-w-10" aria-hidden="true" data-fa-processed="" data-prefix="fa" data-icon="chevron-left" role="presentation" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path fill="currentColor" d="M34.52 239.03L228.87 44.69c9.37-9.37 24.57-9.37 33.94 0l22.67 22.67c9.36 9.36 9.37 24.52.04 33.9L131.49 256l154.02 154.75c9.34 9.38 9.32 24.54-.04 33.9l-22.67 22.67c-9.37 9.37-24.57 9.37-33.94 0L34.52 272.97c-9.37-9.37-9.37-24.57 0-33.94z"></path></svg>', '<svg class="svg-inline--fa fa-chevron-right fa-w-10" aria-hidden="true" data-fa-processed="" data-prefix="fa" data-icon="chevron-right" role="presentation" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path fill="currentColor" d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z"></path></svg>'],
 					dots: pagination,
 					owl2row: has2rows,
+					responsiveClass: true,
+					responsiveRefreshRate: 50,
 					responsive: {
 						0: {
 							items: this.settings.colsmobile
 						},
-						480: {
+						[this.settings.carouselBreakpointTablet]: {
 							items: this.settings.colstablet
 						},
-						640: {
+						[this.settings.carouselBreakpointDesktop]: {
 							items: this.settings.cols
 						}
 					},
@@ -3981,6 +3984,132 @@ if(!sbr_js_exists) {
 				window.sbr.feeds[ index ].afterConsentToggled();
 			});
 		});
+
+		// Initialize reviewer photos lightbox (used by providers with photo support)
+		if (typeof window.SBRLightbox === 'undefined') {
+			window.SBRLightbox = {
+				overlay: null,
+				currentImages: [],
+				currentIndex: 0,
+
+				init: function() {
+					var self = this;
+
+					// Create lightbox overlay on first use
+					if (!this.overlay) {
+						var overlayHtml = '<div class="sbr-lightbox-overlay">' +
+							'<button class="sbr-lightbox-close" aria-label="Close">&times;</button>' +
+							'<button class="sbr-lightbox-nav sbr-prev" aria-label="Previous">&lsaquo;</button>' +
+							'<div class="sbr-lightbox-content">' +
+								'<img class="sbr-lightbox-image" src="" alt="Reviewer photo" />' +
+							'</div>' +
+							'<button class="sbr-lightbox-nav sbr-next" aria-label="Next">&rsaquo;</button>' +
+						'</div>';
+
+						$('body').append(overlayHtml);
+						this.overlay = $('.sbr-lightbox-overlay');
+
+						// Bind close events
+						this.overlay.find('.sbr-lightbox-close').on('click', function() {
+							self.close();
+						});
+
+						this.overlay.on('click', function(e) {
+							if (e.target === this) {
+								self.close();
+							}
+						});
+
+						// Bind navigation events
+						this.overlay.find('.sbr-prev').on('click', function() {
+							self.prev();
+						});
+
+						this.overlay.find('.sbr-next').on('click', function() {
+							self.next();
+						});
+
+						// Keyboard navigation
+						$(document).on('keydown', function(e) {
+							if (!self.overlay.hasClass('sbr-active')) return;
+
+							if (e.key === 'Escape' || e.keyCode === 27) {
+								self.close();
+							} else if (e.key === 'ArrowLeft' || e.keyCode === 37) {
+								self.prev();
+							} else if (e.key === 'ArrowRight' || e.keyCode === 39) {
+								self.next();
+							}
+						});
+					}
+
+					// Bind click events to reviewer photo links
+					$(document).on('click', '.sb-reviewer-photo-link', function(e) {
+						e.preventDefault();
+
+						var $link = $(this);
+						var reviewId = $link.attr('data-sbr-lightbox');
+
+						// Collect all images for this review
+						self.currentImages = [];
+						$('.sb-reviewer-photo-link[data-sbr-lightbox="' + reviewId + '"]').each(function() {
+							self.currentImages.push($(this).attr('href'));
+						});
+
+						// Find the clicked image index
+						self.currentIndex = $('.sb-reviewer-photo-link[data-sbr-lightbox="' + reviewId + '"]').index($link);
+
+						self.open();
+					});
+				},
+
+				open: function() {
+					if (this.currentImages.length === 0) return;
+
+					this.showImage();
+					this.overlay.addClass('sbr-active');
+
+					// Show navigation if multiple images
+					if (this.currentImages.length > 1) {
+						this.overlay.addClass('sbr-has-multiple');
+					} else {
+						this.overlay.removeClass('sbr-has-multiple');
+					}
+
+					// Prevent body scroll
+					$('body').css('overflow', 'hidden');
+				},
+
+				close: function() {
+					this.overlay.removeClass('sbr-active');
+					this.currentImages = [];
+					this.currentIndex = 0;
+
+					// Restore body scroll
+					$('body').css('overflow', '');
+				},
+
+				showImage: function() {
+					if (this.currentIndex < 0) this.currentIndex = this.currentImages.length - 1;
+					if (this.currentIndex >= this.currentImages.length) this.currentIndex = 0;
+
+					var $img = this.overlay.find('.sbr-lightbox-image');
+					$img.attr('src', this.currentImages[this.currentIndex]);
+				},
+
+				prev: function() {
+					this.currentIndex--;
+					this.showImage();
+				},
+
+				next: function() {
+					this.currentIndex++;
+					this.showImage();
+				}
+			};
+
+			window.SBRLightbox.init();
+		}
 	});
 
 } // if sbr_js_exists

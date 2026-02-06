@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SB_Reviews_Blocks
  *
@@ -17,7 +18,6 @@ if (!defined('ABSPATH')) {
 
 class SB_Reviews_Blocks extends ServiceProvider
 {
-
 	/**
 	 * Register Reviews Block
 	 *
@@ -80,7 +80,8 @@ class SB_Reviews_Blocks extends ServiceProvider
 	 *
 	 * @since 2.1
 	 */
-	public function register_block() {
+	public function register_block()
+	{
 		$attributes = array(
 			'shortcodeSettings' => [
 				'type' => 'string',
@@ -93,11 +94,21 @@ class SB_Reviews_Blocks extends ServiceProvider
 			]
 		);
 
+		// Register stylesheet for block editor iframe
+		$min = !empty($_GET['sb_debug']) ? '' : '.min';
+		wp_register_style(
+			'sbr-block-styles',
+			trailingslashit(SBR_PLUGIN_URL) . 'assets/css/sbr-styles' . $min . '.css',
+			[],
+			SBRVER
+		);
+
 		register_block_type(
 			'sbr/sbr-feed-block',
 			array(
 				'attributes'      => $attributes,
 				'render_callback' => [$this, 'get_feed_html'],
+				'editor_style'    => 'sbr-block-styles',
 			)
 		);
 	}
@@ -175,7 +186,6 @@ class SB_Reviews_Blocks extends ServiceProvider
 				'i18n'     				=> $i18n,
 			]
 		);
-
 	}
 
 	/**
@@ -225,7 +235,6 @@ class SB_Reviews_Blocks extends ServiceProvider
 		$return .= do_shortcode('[reviews-feed ' . $shortcode_settings . ']');
 
 		return $return;
-
 	}
 
 	/**
@@ -235,7 +244,8 @@ class SB_Reviews_Blocks extends ServiceProvider
 	 *
 	 * @return bool True if is Gutenberg REST API call.
 	 */
-	public static function is_gb_editor() {
+	public static function is_gb_editor()
+	{
 		return defined('REST_REQUEST') &&
 			REST_REQUEST &&
 			! empty($_REQUEST['context']) &&

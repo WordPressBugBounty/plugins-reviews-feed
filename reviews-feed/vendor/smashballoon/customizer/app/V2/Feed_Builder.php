@@ -9,11 +9,10 @@ use Smashballoon\Stubs\Services\ServiceProvider;
  *
  * @since 1.0
  */
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly
 }
-/** @internal */
 class Feed_Builder extends ServiceProvider
 {
     public static function instance()
@@ -69,7 +68,7 @@ class Feed_Builder extends ServiceProvider
         $builder_data = ['ajaxHandler' => admin_url('admin-ajax.php'), 'adminPostURL' => admin_url('post.php'), 'widgetsPageURL' => admin_url('widgets.php'), 'builderUrl' => admin_url('admin.php?page=' . $this->builder_menu_slug), 'wordpressPageLists' => \Smashballoon\Customizer\V2\SB_Utils::get_wp_pages(), 'iconsList' => \Smashballoon\Customizer\V2\SB_Utils::get_icons(), 'reactScreen' => 'customizer', 'templatesList' => $this->get_templates_list()];
         //Only for Customizer
         if (isset($_GET['feed_id'])) {
-            $builder_data = \array_merge($builder_data, ['isFeedEditor' => \true, 'feedEditor' => ['defaultTab' => 'sb-customize-tab'], 'customizerData' => $this->customizer_builder_data(), 'feedData' => $this->customizer_feed_data()]);
+            $builder_data = array_merge($builder_data, ['isFeedEditor' => \true, 'feedEditor' => ['defaultTab' => 'sb-customize-tab'], 'customizerData' => $this->customizer_builder_data(), 'feedData' => $this->customizer_feed_data()]);
             self::enqueue_date_i18n();
         }
         $customizer_js_file = SB_CUSTOMIZER_ASSETS . '/build/static/js/main.js';
@@ -78,7 +77,7 @@ class Feed_Builder extends ServiceProvider
         } else {
             wp_enqueue_style('sb-customizer-style', SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css', \false, \false);
         }
-        $builder_data = \array_merge($builder_data, $this->custom_builder_data());
+        $builder_data = array_merge($builder_data, $this->custom_builder_data());
         //Data comming from the Actual plugin
         wp_enqueue_script('sb-customizer-app', $customizer_js_file, array('wp-i18n', 'jquery'), \false, \true);
         wp_localize_script('sb-customizer-app', 'sb_customizer', $builder_data);
@@ -100,12 +99,12 @@ class Feed_Builder extends ServiceProvider
     {
         $customizer_builder_data = [];
         /* Require Directly Tab Classes files */
-        foreach (\scandir($this->tabs_path) as $filename) {
+        foreach (scandir($this->tabs_path) as $filename) {
             $path = $this->tabs_path . '/' . $filename;
-            if (\is_file($path)) {
+            if (is_file($path)) {
                 require $path;
-                $tab_name = $this->tabs_namespace . \str_replace('.php', '', $filename);
-                if (\class_exists($tab_name) && \is_subclass_of($tab_name, \Smashballoon\Customizer\V2\SB_Sidebar_Tab::class)) {
+                $tab_name = $this->tabs_namespace . str_replace('.php', '', $filename);
+                if (class_exists($tab_name) && is_subclass_of($tab_name, \Smashballoon\Customizer\V2\SB_Sidebar_Tab::class)) {
                     $tab_class = new $tab_name();
                     $customizer_builder_data[] = $tab_class->get_tab();
                 }
@@ -124,10 +123,10 @@ class Feed_Builder extends ServiceProvider
     {
         global $wp_locale;
         wp_enqueue_script("sb-date_i18n", SB_COMMON_ASSETS . 'sb-customizer/assets/js/date_i18n.js', null, \false, \true);
-        $monthNames = \array_map(array(&$wp_locale, 'get_month'), \range(1, 12));
-        $monthNamesShort = \array_map(array(&$wp_locale, 'get_month_abbrev'), $monthNames);
-        $dayNames = \array_map(array(&$wp_locale, 'get_weekday'), \range(0, 6));
-        $dayNamesShort = \array_map(array(&$wp_locale, 'get_weekday_abbrev'), $dayNames);
+        $monthNames = array_map(array(&$wp_locale, 'get_month'), range(1, 12));
+        $monthNamesShort = array_map(array(&$wp_locale, 'get_month_abbrev'), $monthNames);
+        $dayNames = array_map(array(&$wp_locale, 'get_weekday'), range(0, 6));
+        $dayNamesShort = array_map(array(&$wp_locale, 'get_weekday_abbrev'), $dayNames);
         wp_localize_script("sb-date_i18n", "DATE_I18N", array("month_names" => $monthNames, "month_names_short" => $monthNamesShort, "day_names" => $dayNames, "day_names_short" => $dayNamesShort));
     }
     /**

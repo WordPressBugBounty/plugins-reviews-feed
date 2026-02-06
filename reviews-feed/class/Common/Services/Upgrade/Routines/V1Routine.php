@@ -26,23 +26,27 @@ class V1Routine extends UpgradeRoutine {
 	 */
 	private $db;
 
-	public function __construct(Feed_Saver $feed_saver, DB $DB, Feed_Locator $feed_locator) {
+	public function __construct(Feed_Saver $feed_saver, DB $DB, Feed_Locator $feed_locator)
+	{
 		$this->feed_saver = $feed_saver;
 		$this->feed_locator = $feed_locator;
 		$this->db = $DB;
 	}
 
-	public function run() {
+	public function run()
+	{
 		$this->create_tables();
 		SinglePostCache::create_resizing_table_and_uploads_folder();
 	}
 
-	private function create_tables() {
+	private function create_tables()
+	{
 		$this->feed_locator->create_table();
 		$this->db->create_tables(true, true);
 	}
 
-	private function start_cron() {
+	private function start_cron()
+	{
 		FeedCacheUpdateService::schedule_cron_job();
 	}
 

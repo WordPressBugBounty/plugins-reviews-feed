@@ -6,7 +6,6 @@ namespace SmashBalloon\Reviews\Vendor\Invoker\ParameterResolver;
 use ReflectionFunctionAbstract;
 /**
  * Resolves the parameters to use to call the callable.
- * @internal
  */
 interface ParameterResolver
 {

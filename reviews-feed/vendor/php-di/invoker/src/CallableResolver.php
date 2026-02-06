@@ -11,7 +11,6 @@ use ReflectionException;
 use ReflectionMethod;
 /**
  * Resolves a callable from a container.
- * @internal
  */
 class CallableResolver
 {
@@ -28,13 +27,13 @@ class CallableResolver
      * @return callable Real PHP callable.
      * @throws NotCallableException|ReflectionException
      */
-    public function resolve($callable) : callable
+    public function resolve($callable): callable
     {
-        if (\is_string($callable) && \strpos($callable, '::') !== \false) {
-            $callable = \explode('::', $callable, 2);
+        if (is_string($callable) && strpos($callable, '::') !== \false) {
+            $callable = explode('::', $callable, 2);
         }
         $callable = $this->resolveFromContainer($callable);
-        if (!\is_callable($callable)) {
+        if (!is_callable($callable)) {
             throw NotCallableException::fromInvalidCallable($callable, \true);
         }
         return $callable;
@@ -51,14 +50,14 @@ class CallableResolver
             return $callable;
         }
         // If it's already a callable there is nothing to do
-        if (\is_callable($callable)) {
+        if (is_callable($callable)) {
             // TODO with PHP 8 that should not be necessary to check this anymore
             if (!$this->isStaticCallToNonStaticMethod($callable)) {
                 return $callable;
             }
         }
         // The callable is a container entry name
-        if (\is_string($callable)) {
+        if (is_string($callable)) {
             try {
                 return $this->container->get($callable);
             } catch (NotFoundExceptionInterface $e) {
@@ -70,7 +69,7 @@ class CallableResolver
         }
         // The callable is an array whose first item is a container entry name
         // e.g. ['some-container-entry', 'methodToCall']
-        if (\is_array($callable) && \is_string($callable[0])) {
+        if (is_array($callable) && is_string($callable[0])) {
             try {
                 // Replace the container entry name by the actual object
                 $callable[0] = $this->container->get($callable[0]);
@@ -79,7 +78,7 @@ class CallableResolver
                 if ($this->container->has($callable[0])) {
                     throw $e;
                 }
-                throw new NotCallableException(\sprintf('Cannot call %s() on %s because it is not a class nor a valid container entry', $callable[1], $callable[0]));
+                throw new NotCallableException(sprintf('Cannot call %s() on %s because it is not a class nor a valid container entry', $callable[1], $callable[0]));
             }
         }
         // Unrecognized stuff, we let it fail later
@@ -91,11 +90,11 @@ class CallableResolver
      * @param mixed $callable
      * @throws ReflectionException
      */
-    private function isStaticCallToNonStaticMethod($callable) : bool
+    private function isStaticCallToNonStaticMethod($callable): bool
     {
-        if (\is_array($callable) && \is_string($callable[0])) {
+        if (is_array($callable) && is_string($callable[0])) {
             [$class, $method] = $callable;
-            if (!\method_exists($class, $method)) {
+            if (!method_exists($class, $method)) {
                 return \false;
             }
             $reflection = new ReflectionMethod($class, $method);

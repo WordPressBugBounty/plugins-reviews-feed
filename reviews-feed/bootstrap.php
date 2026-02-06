@@ -1,6 +1,13 @@
 <?php
-if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly
+
+/**
+ * Bootstrap file for Reviews Feed plugin
+ *
+ * @package suspended SmashBalloon\Reviews
+ */
+
+if (! defined('ABSPATH')) {
+	exit; // Exit if accessed directly.
 }
 
 if (!defined('SBR_DBVERSION')) {
@@ -50,7 +57,7 @@ if (!defined('SBR_CUSTOMIZER_TABS_PATH')) {
 
 //Customizer Tabs Name Space
 if (!defined('SBR_CUSTOMIZER_TABS_NAMESPACE')) {
-	define('SBR_CUSTOMIZER_TABS_NAMESPACE',  'SmashBalloon\Reviews\Common\Customizer\Tabs\\');
+	define('SBR_CUSTOMIZER_TABS_NAMESPACE', 'SmashBalloon\Reviews\Common\Customizer\Tabs\\');
 }
 
 //Settings Page Tabs Path
@@ -60,12 +67,13 @@ if (!defined('SBR_SETTINGSPAGE_TABS_PATH')) {
 
 //Settings Page Tabs Name Space
 if (!defined('SBR_SETTINGSPAGE_TABS_NAMESPACE')) {
-	define('SBR_SETTINGSPAGE_TABS_NAMESPACE',  'SmashBalloon\Reviews\Common\Settings\Tabs\\');
+	define('SBR_SETTINGSPAGE_TABS_NAMESPACE', 'SmashBalloon\Reviews\Common\Settings\Tabs\\');
 }
 
-//Relay Backend Name Space
+// Relay API URL - Single URL for all providers
+// Override locally via wp-config.php: define('SBR_RELAY_BASE_URL', 'http://your-local-url/api/v1.0/');
 if (!defined('SBR_RELAY_BASE_URL')) {
- 	define('SBR_RELAY_BASE_URL', 'https://reviews.smashballoon.com/api/v1.0/');
+	define('SBR_RELAY_BASE_URL', 'https://reviews.smashballoon.com/api/v1.0/');
 }
 
 if (!defined('SBR_CONNECT_SITE_URL')) {
@@ -78,7 +86,7 @@ if (!defined('SBR_CRON_UPDATE_CACHE_TIME')) {
 }
 
 //Feed Locator
-if ( !defined('SBR_FEED_LOCATOR')) {
+if (!defined('SBR_FEED_LOCATOR')) {
 	define('SBR_FEED_LOCATOR', 'sbr_feed_locator');
 }
 
@@ -122,17 +130,16 @@ if (!defined('SBR_REFRESH_THRESHOLD_OFFSET')) {
 if (!defined('SBR_MINIMUM_INTERVAL')) {
 	define('SBR_MINIMUM_INTERVAL', 600);
 }
-if ( ! defined( 'SBR_STORE_URL' ) ) {
-	define( 'SBR_STORE_URL', 'https://smashballoon.com/' );
+if (!defined('SBR_STORE_URL')) {
+	define('SBR_STORE_URL', 'https://smashballoon.com/');
 }
 
-if (!defined('SBR_FB_CONNECT_URL')){
-    define('SBR_FB_CONNECT_URL', 'https://connect.smashballoon.com/auth/fb/');
+if (!defined('SBR_FB_CONNECT_URL')) {
+	define('SBR_FB_CONNECT_URL', 'https://connect.smashballoon.com/auth/fb/');
 }
 
 require_once trailingslashit(SBR_PLUGIN_DIR) . 'vendor/autoload.php';
 require_once trailingslashit(SBR_PLUGIN_DIR) . 'class/sbr-functions.php';
-
 
 
 //Customizer container config

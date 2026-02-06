@@ -1,7 +1,9 @@
 <?php
+
 /**
  * Summary of namespace SmashBalloon\Reviews\Common\Utils
  */
+
 namespace SmashBalloon\Reviews\Common\Utils;
 
 use Smashballoon\Stubs\Services\ServiceProvider;
@@ -11,7 +13,6 @@ use Smashballoon\Stubs\Services\ServiceProvider;
  */
 class EmailVerification	extends ServiceProvider
 {
-
 	/**
 	 * Email Verification Data /
 	 * @var string
@@ -40,7 +41,8 @@ class EmailVerification	extends ServiceProvider
 				? sanitize_key($_GET['con_nonce'])
 				: '';
 
-			if (!wp_verify_nonce($nonce, 'sbr_con')
+			if (
+				!wp_verify_nonce($nonce, 'sbr_con')
 				|| empty($_GET['sbr_email_token'])
 				|| empty($_GET['verified_email'])
 			) {

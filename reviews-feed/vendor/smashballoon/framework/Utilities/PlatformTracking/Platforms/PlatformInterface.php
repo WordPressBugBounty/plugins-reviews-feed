@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms;
 
-/** @internal */
 interface PlatformInterface
 {
     /**

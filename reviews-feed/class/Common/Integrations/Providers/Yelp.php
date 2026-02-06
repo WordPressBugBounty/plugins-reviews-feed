@@ -4,6 +4,6 @@ namespace SmashBalloon\Reviews\Common\Integrations\Providers;
 
 class Yelp extends BaseProvider
 {
-    protected $name = 'yelp';
-    protected $friendly_name = 'Yelp';
+	protected $name = 'yelp';
+	protected $friendly_name = 'Yelp';
 }

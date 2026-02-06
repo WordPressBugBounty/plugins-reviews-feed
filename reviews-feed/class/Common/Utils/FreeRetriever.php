@@ -62,7 +62,7 @@ class FreeRetriever	extends ServiceProvider
 			'providers'			=> self::$providers,
 			'providerInfo' 		=> $this->check_possible_free_retrieving(),
 			'emailVerification'	=> EmailVerification::get_email_verification_settings(),
-            'isEmailVerified'    => EmailVerification::check_verified()
+			'isEmailVerified'    => EmailVerification::check_verified()
 		];
 
 		return $settings;

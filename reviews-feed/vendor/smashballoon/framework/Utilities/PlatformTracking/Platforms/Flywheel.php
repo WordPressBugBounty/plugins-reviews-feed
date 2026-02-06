@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms;
 
-/** @internal */
 class Flywheel implements PlatformInterface
 {
     /**
@@ -17,7 +16,7 @@ class Flywheel implements PlatformInterface
      */
     public function filter_sb_hosting_platform($platform)
     {
-        if (\defined('FLYWHEEL_CONFIG_DIR')) {
+        if (defined('FLYWHEEL_CONFIG_DIR')) {
             $platform = 'flywheel';
         }
         return $platform;

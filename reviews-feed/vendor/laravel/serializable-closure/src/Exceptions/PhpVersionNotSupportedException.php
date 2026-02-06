@@ -3,7 +3,6 @@
 namespace SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Exceptions;
 
 use Exception;
-/** @internal */
 class PhpVersionNotSupportedException extends Exception
 {
     /**

@@ -7,13 +7,12 @@
  */
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Notification\Notices;
 
-if (!\defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
     // Exit if accessed directly.
 }
 /**
  * Notice fields class.
- * @internal
  */
 class NoticeFields
 {
@@ -72,18 +71,16 @@ class NoticeFields
     public static function get_styles($styles)
     {
         $styles_attr = '';
-        if (isset($styles) && \is_array($styles)) {
+        if (isset($styles) && is_array($styles)) {
             foreach ($styles as $styles_key => $styles_value) {
-                if (\is_array($styles_value) && isset($styles_value['condition'])) {
+                if (is_array($styles_value) && isset($styles_value['condition'])) {
                     $check = self::check_condition($styles_value['condition']);
                     $styles_value = $check ? $styles_value['true'] : $styles_value['false'];
                 }
                 $styles_attr .= esc_attr($styles_key) . ':' . esc_attr($styles_value) . ';';
             }
-        } else {
-            if (isset($styles) && \is_string($styles)) {
-                $styles_attr = $styles;
-            }
+        } else if (isset($styles) && is_string($styles)) {
+            $styles_attr = $styles;
         }
         return $styles_attr ? 'style="' . $styles_attr . '"' : '';
     }
@@ -97,9 +94,9 @@ class NoticeFields
     public static function get_data($data)
     {
         $data_attr = '';
-        if (isset($data) && \is_array($data)) {
+        if (isset($data) && is_array($data)) {
             foreach ($data as $data_key => $data_value) {
-                if (\is_array($data_value) && isset($data_value['condition'])) {
+                if (is_array($data_value) && isset($data_value['condition'])) {
                     $check = self::check_condition($data_value['condition']);
                     $data_value = $check ? $data_value['true'] : $data_value['false'];
                 }
@@ -118,28 +115,26 @@ class NoticeFields
     public static function get_image($image)
     {
         // Check if image is a url.
-        if (isset($image) && \filter_var($image, \FILTER_VALIDATE_URL)) {
+        if (isset($image) && filter_var($image, \FILTER_VALIDATE_URL)) {
             $image_html = '<img src="' . esc_url($image) . '" />';
         }
-        if (isset($image) && \is_array($image)) {
+        if (isset($image) && is_array($image)) {
             $src = isset($image['src']) ? 'src="' . esc_url($image['src']) . '"' : '';
             $alt = isset($image['alt']) ? ' alt="' . esc_attr($image['alt']) . '"' : '';
             $wrap = isset($image['wrap']) ? $image['wrap'] : '';
             $overlay = isset($image['overlay']) ? $image['overlay'] : '';
             $overlay_wrap = isset($image['overlay_wrap']) ? esc_html($image['overlay_wrap']) : '';
-            $overlay_wrap = \str_replace('{overlay}', $overlay, $overlay_wrap);
+            $overlay_wrap = str_replace('{overlay}', $overlay, $overlay_wrap);
             if ($wrap) {
-                $wrap = \str_replace('{src}', $src, $wrap);
-                $wrap = \str_replace('{alt}', $alt, $wrap);
-                $wrap = \str_replace('{overlay}', $overlay_wrap, $wrap);
+                $wrap = str_replace('{src}', $src, $wrap);
+                $wrap = str_replace('{alt}', $alt, $wrap);
+                $wrap = str_replace('{overlay}', $overlay_wrap, $wrap);
                 $image_html = wp_kses($wrap, self::$allowed_tags);
             } else {
                 $image_html = '<img src="' . esc_url($src) . '" alt="' . esc_attr($alt) . '" />';
             }
-        } else {
-            if (isset($image) && \is_string($image)) {
-                $image_html = wp_kses($image, self::$allowed_tags);
-            }
+        } else if (isset($image) && is_string($image)) {
+            $image_html = wp_kses($image, self::$allowed_tags);
         }
         return $image_html;
     }
@@ -153,15 +148,13 @@ class NoticeFields
     public static function get_title($title)
     {
         $title_html = '';
-        if (isset($title) && \is_array($title)) {
+        if (isset($title) && is_array($title)) {
             $title_tag = isset($title['tag']) ? $title['tag'] : 'h3';
             $title_class = isset($title['class']) ? $title['class'] : '';
             $title = isset($title['text']) ? $title['text'] : '';
             $title_html = $title ? '<' . esc_attr($title_tag) . ' class="' . esc_attr($title_class) . '">' . esc_html($title) . '</' . esc_attr($title_tag) . '>' : '';
-        } else {
-            if (isset($title) && \is_string($title)) {
-                $title_html = '<h3>' . esc_html($title) . '</h3>';
-            }
+        } else if (isset($title) && is_string($title)) {
+            $title_html = '<h3>' . esc_html($title) . '</h3>';
         }
         return $title_html;
     }
@@ -175,15 +168,13 @@ class NoticeFields
     public static function get_content($content)
     {
         $content_html = '';
-        if (isset($content) && \is_array($content)) {
+        if (isset($content) && is_array($content)) {
             $content_tag = isset($content['tag']) ? $content['tag'] : 'p';
             $content_class = isset($content['class']) ? $content['class'] : '';
             $content = isset($content['text']) ? $content['text'] : '';
             $content_html = $content ? '<' . esc_attr($content_tag) . ' class="' . esc_attr($content_class) . '">' . esc_html($content) . '</' . esc_attr($content_tag) . '>' : '';
-        } else {
-            if (isset($content) && \is_string($content)) {
-                $content_html = wp_kses($content, self::$allowed_tags);
-            }
+        } else if (isset($content) && is_string($content)) {
+            $content_html = wp_kses($content, self::$allowed_tags);
         }
         return $content_html;
     }
@@ -199,7 +190,7 @@ class NoticeFields
     public static function get_buttons($buttons, $wrap_start, $wrap_end)
     {
         $buttons_html = '';
-        if (isset($buttons) && \is_array($buttons)) {
+        if (isset($buttons) && is_array($buttons)) {
             $buttons_html .= isset($wrap_start) ? wp_kses($wrap_start, self::$allowed_tags) : '';
             foreach ($buttons as $button) {
                 // conditional check for button.
@@ -209,7 +200,7 @@ class NoticeFields
                     }
                 }
                 $btn_url = isset($button['url']) ? $button['url'] : '';
-                if (\is_array($btn_url) && isset($btn_url['args']) && isset($btn_url['action'])) {
+                if (is_array($btn_url) && isset($btn_url['args']) && isset($btn_url['action'])) {
                     $args = [];
                     foreach ($btn_url['args'] as $key => $value) {
                         $args[sanitize_key($key)] = sanitize_key($value);
@@ -243,7 +234,7 @@ class NoticeFields
     public static function get_dismiss($dismiss)
     {
         $dismiss_html = '';
-        if (isset($dismiss) && \is_array($dismiss)) {
+        if (isset($dismiss) && is_array($dismiss)) {
             $icon = isset($dismiss['icon']) ? esc_url($dismiss['icon']) : '';
             $image_html = '<img src="' . esc_url($icon) . '" />';
             $title = isset($dismiss['title']) ? esc_attr($dismiss['title']) : esc_attr__('Dismiss this message', 'instagram-feed');
@@ -251,7 +242,7 @@ class NoticeFields
             $tag = isset($dismiss['tag']) ? esc_attr($dismiss['tag']) : 'a';
             $attr = isset($dismiss['attr']) ? $dismiss['attr'] : '';
             $href = isset($dismiss['href']) ? $dismiss['href'] : '';
-            if (\is_array($href) && isset($href['args']) && isset($href['action'])) {
+            if (is_array($href) && isset($href['args']) && isset($href['action'])) {
                 $args = [];
                 foreach ($href['args'] as $key => $value) {
                     $args[sanitize_key($key)] = sanitize_key($value);
@@ -262,10 +253,8 @@ class NoticeFields
             }
             $url = !empty($href) ? 'href="' . esc_url($href) . '"' : '';
             $dismiss_html = '<' . esc_attr($tag) . ' ' . $url . ' ' . $attr . ' class="' . $class . '" title="' . $title . '">' . $image_html . '</' . esc_attr($tag) . '>';
-        } else {
-            if (isset($dismiss) && \is_string($dismiss)) {
-                $dismiss_html = $dismiss;
-            }
+        } else if (isset($dismiss) && is_string($dismiss)) {
+            $dismiss_html = $dismiss;
         }
         $dismiss_html = wp_kses($dismiss_html, self::$allowed_tags);
         return $dismiss_html;
@@ -280,7 +269,7 @@ class NoticeFields
     public static function get_navigation($navigation)
     {
         $navigation_html = '';
-        if (isset($navigation) && \is_array($navigation)) {
+        if (isset($navigation) && is_array($navigation)) {
             $class = isset($navigation['class']) ? esc_attr($navigation['class']) : '';
             $tag = isset($navigation['tag']) ? esc_attr($navigation['tag']) : 'a';
             $item_html = '';
@@ -294,10 +283,8 @@ class NoticeFields
                 $item_html .= '<' . $item_tag . ' class="' . $item_class . '" title="' . $title . '" ' . $attr . '>' . $image_html . '</' . $item_tag . '>';
             }
             $navigation_html = '<' . $tag . ' class="' . $class . '">' . $item_html . '</' . $tag . '>';
-        } else {
-            if (isset($navigation) && \is_string($navigation)) {
-                $navigation_html = $navigation;
-            }
+        } else if (isset($navigation) && is_string($navigation)) {
+            $navigation_html = $navigation;
         }
         $navigation_html = wp_kses($navigation_html, self::$allowed_tags);
         return $navigation_html;

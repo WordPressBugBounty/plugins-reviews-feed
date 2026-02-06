@@ -9,16 +9,15 @@ use ReflectionNamedType;
  * Inject entries using type-hints.
  *
  * Tries to match type-hints with the parameters provided.
- * @internal
  */
 class TypeHintResolver implements ParameterResolver
 {
-    public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters) : array
+    public function getParameters(ReflectionFunctionAbstract $reflection, array $providedParameters, array $resolvedParameters): array
     {
         $parameters = $reflection->getParameters();
         // Skip parameters already resolved
         if (!empty($resolvedParameters)) {
-            $parameters = \array_diff_key($parameters, $resolvedParameters);
+            $parameters = array_diff_key($parameters, $resolvedParameters);
         }
         foreach ($parameters as $index => $parameter) {
             $parameterType = $parameter->getType();
@@ -38,7 +37,7 @@ class TypeHintResolver implements ParameterResolver
             if ($parameterClass === 'self') {
                 $parameterClass = $parameter->getDeclaringClass()->getName();
             }
-            if (\array_key_exists($parameterClass, $providedParameters)) {
+            if (array_key_exists($parameterClass, $providedParameters)) {
                 $resolvedParameters[$index] = $providedParameters[$parameterClass];
             }
         }

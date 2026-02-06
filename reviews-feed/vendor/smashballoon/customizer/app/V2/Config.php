@@ -2,7 +2,6 @@
 
 namespace Smashballoon\Customizer\V2;
 
-/** @internal */
 class Config
 {
     public $plugin_slug = 'sbc';

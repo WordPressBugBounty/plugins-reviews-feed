@@ -5,7 +5,6 @@ namespace SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Serializers;
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Contracts\Serializable;
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Exceptions\InvalidSignatureException;
 use SmashBalloon\Reviews\Vendor\Laravel\SerializableClosure\Exceptions\MissingSecretKeyException;
-/** @internal */
 class Signed implements Serializable
 {
     /**
@@ -37,7 +36,7 @@ class Signed implements Serializable
      */
     public function __invoke()
     {
-        return \call_user_func_array($this->closure, \func_get_args());
+        return call_user_func_array($this->closure, func_get_args());
     }
     /**
      * Gets the closure.
@@ -58,7 +57,7 @@ class Signed implements Serializable
         if (!static::$signer) {
             throw new MissingSecretKeyException();
         }
-        return static::$signer->sign(\serialize(new Native($this->closure)));
+        return static::$signer->sign(serialize(new Native($this->closure)));
     }
     /**
      * Restore the closure after serialization.
@@ -74,7 +73,7 @@ class Signed implements Serializable
             throw new InvalidSignatureException();
         }
         /** @var \Laravel\SerializableClosure\Contracts\Serializable $serializable */
-        $serializable = \unserialize($signature['serializable']);
+        $serializable = unserialize($signature['serializable']);
         $this->closure = $serializable->getClosure();
     }
 }

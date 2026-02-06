@@ -2,7 +2,6 @@
 
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Utilities\PlatformTracking\Platforms;
 
-/** @internal */
 class Kinsta implements PlatformInterface
 {
     /**
@@ -17,7 +16,7 @@ class Kinsta implements PlatformInterface
      */
     public function filter_sb_hosting_platform($platform)
     {
-        if (!empty(\getenv('KINSTA_CACHE_ZONE'))) {
+        if (!empty(getenv('KINSTA_CACHE_ZONE'))) {
             $platform = 'kinsta';
         }
         return $platform;
