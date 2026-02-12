@@ -348,11 +348,17 @@ class SBR_Feed_Saver_Manager
 		$return = [];
 
 		if (isset($_POST['provider']) && isset($_POST['providerIdUrl'])) {
-			if (isset($_POST['apiKey']) && !empty($_POST['apiKey']) && $_POST['apiKey'] !== null) {
+			$provider = sanitize_text_field($_POST['provider']);
+			$api_keys = get_option('sbr_apikeys', []);
+			$has_api_key_in_post = isset($_POST['apiKey']) && !empty($_POST['apiKey']) && $_POST['apiKey'] !== null;
+			$has_stored_api_key = isset($api_keys[$provider]) && !empty($api_keys[$provider]);
+
+			// Process if API key is provided in POST OR if one is already stored for this provider
+			if ($has_api_key_in_post || $has_stored_api_key) {
 				$data = array(
-					'provider' => sanitize_text_field($_POST['provider']),
+					'provider' => $provider,
 					'providerIdUrl' => esc_url_raw($_POST['providerIdUrl']),
-					'apiKey' => sanitize_text_field($_POST['apiKey']),
+					'apiKey' => $has_api_key_in_post ? sanitize_text_field($_POST['apiKey']) : null,
 				);
 				$return = self::process_source_apikey($data);
 			}
@@ -637,7 +643,7 @@ class SBR_Feed_Saver_Manager
 			//If there is no providerIdUrl set, then the call is just for checking the API KEY
 			switch ($provider) {
 				case 'tripadvisor':
-					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id_tripadvisor($data['providerIdUrl']) : null;
+					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id_tripadvisor($data['providerIdUrl']) : 'XXX';
 					break;
 				case 'trustpilot':
 					$relay_args['place_id'] = $data['providerIdUrl'];
@@ -660,7 +666,7 @@ class SBR_Feed_Saver_Manager
 						'message' => 'Use provider-specific AJAX endpoint'
 					];
 				default:
-					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id($data['providerIdUrl']) : null;
+					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id($data['providerIdUrl']) : 'XXX';
 					$relay_args['check_api_key'] = true;
 					break;
 			}

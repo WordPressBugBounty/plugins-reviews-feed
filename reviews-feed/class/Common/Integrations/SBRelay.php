@@ -217,8 +217,8 @@ class SBRelay
 		$data = $this->apply_new_google_args($endpoint, $data);
 		$data = $this->add_site_info($endpoint, $data);
 
-		// For GET requests, params go in URL query string
-		// For POST requests, params go in JSON body
+		// GET requests: params go in URL query string (HTTP standard)
+		// POST requests: params go in JSON body
 		if ($method === 'GET') {
 			$url = $this->format_url($endpoint, $data);
 			$args = [
