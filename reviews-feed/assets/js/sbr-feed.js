@@ -3768,7 +3768,17 @@ if(!sbr_js_exists) {
 				} else if (typeof window.Cookiebot !== "undefined") { // Cookiebot by Cybot A/S
 					this.settings.consentGiven = Cookiebot.consented;
 				} else if (typeof window.BorlabsCookie !== 'undefined') { // Borlabs Cookie by Borlabs
-					this.settings.consentGiven = window.BorlabsCookie.checkCookieConsent('youtube');
+					if (typeof window.BorlabsCookie.checkCookieConsent === 'function') {
+						// Borlabs Cookie 2.x API
+						this.settings.consentGiven = window.BorlabsCookie.checkCookieConsent('reviews');
+					} else if (typeof window.BorlabsCookie.Consents !== 'undefined' &&
+							   typeof window.BorlabsCookie.Consents.hasConsent === 'function') {
+						// Borlabs Cookie 3.x API
+						this.settings.consentGiven = window.BorlabsCookie.Consents.hasConsent('reviews');
+					} else {
+						// Fallback: check if consent was given via event listener
+						this.settings.consentGiven = false;
+					}
 				}
 
 				var evt = jQuery.Event('sbrcheckconsent');

@@ -37,13 +37,12 @@ class RegisterWebsiteRoutine extends ServiceProvider
 			'POST',
 			false
 		);
-		if (
-			isset($response['data'])
-			&& $response['data']
-			&& isset($response['data']['token'])
-		) {
+
+		// Token may be at root level (new registration) or nested in data (existing user)
+		$token = $response['data']['token'] ?? $response['token'] ?? null;
+		if ($token) {
 			$settings = get_option('sbr_settings', []);
-			$settings['access_token'] = $response['data']['token'];
+			$settings['access_token'] = $token;
 			update_option('sbr_settings', $settings);
 		}
 	}

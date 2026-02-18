@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.4.2
+Stable tag: 2.4.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.4.4 =
+* Fix: Resolved Borlabs Cookie 3.x compatibility issue preventing consent detection.
+* Fix: Improved website registration token handling for better reliability.
+
 = 2.4.3 =
 * Tweak: Improved API key handling for all review providers.
 * Tweak: Saved API keys are now used when adding new sources.
