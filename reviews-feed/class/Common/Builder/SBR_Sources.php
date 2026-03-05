@@ -36,6 +36,12 @@ class SBR_Sources{
 		if (isset($source_data['id'])) {
 			unset($source_data['id']);
 		}
+
+		// Decode HTML entities in account_id (fixes Danish characters like æ, ø, å)
+		if (isset($source_data['account_id'])) {
+			$source_data['account_id'] = html_entity_decode($source_data['account_id'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+
 		$data = $source_data;
 
 		return $db->source_insert($data);

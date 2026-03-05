@@ -454,37 +454,86 @@ class SBR_Feed_Saver_Manager
 			$source_account_id = sanitize_text_field($_POST['sourceAccountID']);
 			$provider = sanitize_text_field($_POST['sourceProvider']);
 
-			SBR_Sources::delete_source($source_id);
+			// Get source info before deletion to extract relay_source_id if available
+			$source_record = SBR_Sources::get_single_source_info([
+				'id' => $source_account_id,
+				'provider' => $provider
+			]);
+			$source_info = !empty($source_record['info']) ? json_decode($source_record['info'], true) : [];
 
+			// For collections, just delete locally
 			if (isset($_POST['isCollection']) && $_POST['isCollection']) {
+				SBR_Sources::delete_source($source_id);
 				PostAggregator::delete_reviews_by_provide_id($source_account_id);
 			} else {
+				// For relay-synced sources: delete from relay FIRST, then locally
+				// This prevents orphaned sources if relay deletion fails
 				$relay = new SBRelay(new SettingsManagerService());
-				$relay_args = [
-					'place_id' => $source_account_id
-				];
+
+				// Use source_id if available (preferred - eliminates URL encoding issues)
+				// Otherwise fall back to place_id for backward compatibility
+				if (!empty($source_info['relay_source_id'])) {
+					$relay_args = [
+						'source_id' => (int) $source_info['relay_source_id']
+					];
+				} else {
+					$relay_args = [
+						'place_id' => $source_account_id
+					];
+				}
+
+				$relay_response = null;
 				switch ($provider) {
 					case 'google':
 						$google = new Google($relay);
-						$info = $google->removeSource($relay_args);
+						$relay_response = $google->removeSource($relay_args);
 						break;
 					case 'yelp':
 						$yelp = new Yelp($relay);
-						$info = $yelp->removeSource($relay_args);
+						$relay_response = $yelp->removeSource($relay_args);
 						break;
 					case 'tripadvisor':
 						$tripadvisor = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TripAdvisor($relay);
-						$info = $tripadvisor->removeSource($relay_args);
+						$relay_response = $tripadvisor->removeSource($relay_args);
 						break;
 					case 'trustpilot':
 						$trustpilot = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TrustPilot($relay);
-						$info = $trustpilot->removeSource($relay_args);
+						$relay_response = $trustpilot->removeSource($relay_args);
 						break;
 					case 'wordpress.org':
 						$WordpressOrg = new \SmashBalloon\Reviews\Pro\Integrations\Providers\WordpressOrg($relay);
-						$info = $WordpressOrg->removeSource($relay_args);
+						$relay_response = $WordpressOrg->removeSource($relay_args);
 						break;
 				}
+
+				// Check relay response - only delete locally if relay succeeded or source doesn't exist
+				// Allow deletion if: success, source not found (already deleted), or no relay_source_id (local-only)
+				$relay_success = true;
+				if (is_array($relay_response)) {
+					// Check for error responses - but "not found" is OK (source already deleted from relay)
+					if (isset($relay_response['error']) && !empty($relay_response['error'])) {
+						$error_msg = is_string($relay_response['error']) ? $relay_response['error'] : '';
+						$is_not_found = stripos($error_msg, 'not found') !== false
+							|| stripos($error_msg, 'does not exist') !== false
+							|| (isset($relay_response['code']) && $relay_response['code'] === 404);
+
+						if (!$is_not_found) {
+							$relay_success = false;
+						}
+					}
+				}
+
+				if (!$relay_success) {
+					// Relay deletion failed - don't delete locally to prevent orphaned state
+					// Note: wp_send_json_error() terminates execution, no return needed
+					wp_send_json_error([
+						'message' => __('Failed to delete source from server. Please try again.', 'reviews-feed'),
+						'relay_error' => isset($relay_response['error']) ? $relay_response['error'] : 'Unknown error'
+					]);
+				}
+
+				// Relay deletion succeeded (or source wasn't on relay) - safe to delete locally
+				SBR_Sources::delete_source($source_id);
 			}
 		}
 		echo sbr_json_encode([
@@ -574,9 +623,8 @@ class SBR_Feed_Saver_Manager
 		}
 
 		$feed_return = SBR_Feed_Saver_Manager::import_feed($imported_settings);
+		// Note: wp_send_json() terminates execution, no wp_die() needed
 		wp_send_json($feed_return, 200);
-
-		wp_die();
 	}
 
 	public static function check_api_limit($provider)
@@ -768,7 +816,17 @@ class SBR_Feed_Saver_Manager
 				if (isset($info['info']['id'])) {
 					$info['info']['provider'] = $provider;
 
-					$info['info']['name'] = htmlspecialchars_decode(html_entity_decode($info['info']['name'], ENT_QUOTES | ENT_HTML5), ENT_QUOTES | ENT_HTML5);
+					// Decode HTML entities in name and id/URL (fixes Danish characters like æ, ø, å)
+					$info['info']['name'] = htmlspecialchars_decode(html_entity_decode($info['info']['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES);
+					$info['info']['id'] = html_entity_decode($info['info']['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					if (isset($info['info']['url'])) {
+						$info['info']['url'] = html_entity_decode($info['info']['url'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					}
+
+					// Capture relay_source_id for future API calls (eliminates URL encoding issues)
+					if (isset($info['source_id'])) {
+						$info['info']['relay_source_id'] = $info['source_id'];
+					}
 
 					if (isset($info['info']['reviews'])) {
 						$reviews_list = $info['info']['reviews'];
@@ -1330,6 +1388,14 @@ class SBR_Feed_Saver_Manager
 		$providers_no_media,
 		$providers_lang
 	) {
+		// Decode HTML entities in review text and reviewer name (fixes Danish characters, emojis, etc.)
+		if (isset($single_review['text'])) {
+			$single_review['text'] = html_entity_decode($single_review['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+		if (isset($single_review['reviewer']['name'])) {
+			$single_review['reviewer']['name'] = html_entity_decode($single_review['reviewer']['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+
 		$single_review['source'] = $provider;
 		$single_post_cache = Util::sbr_is_pro() ?
 							new \SmashBalloon\Reviews\Pro\SinglePostCache($single_review, new \SmashBalloon\Reviews\Pro\MediaFinder($single_review['source'])) :
@@ -1527,6 +1593,7 @@ class SBR_Feed_Saver_Manager
 			}
 			$collection_db = $results[0];
 			$collection_db['name'] = $collection_name;
+			/** @phpstan-ignore-next-line info key exists in database results */
 			unset($collection_db['info']);
 			$collection_db['last_updated'] = date('Y-m-d H:i:s');
 			$collection_db['id'] = $provider_id;
@@ -1749,6 +1816,7 @@ class SBR_Feed_Saver_Manager
 				$single_post_cache = new \SmashBalloon\Reviews\Pro\SinglePostCache($sanitized_review, new \SmashBalloon\Reviews\Pro\MediaFinder($sanitized_review['source']));
 				$single_post_cache->set_provider_id($id);
 				$single_post_cache->store();
+				/** @phpstan-ignore-next-line media key may or may not exist depending on review data */
 				if (isset($sanitized_review['media']) && Util::should_store_local_images()) {
 					$aggregator = new PostAggregator();
 					$single_post_cache->resize_images(array(640, 150));

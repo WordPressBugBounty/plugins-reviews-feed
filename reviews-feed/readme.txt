@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.4.4
+Stable tag: 2.4.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,7 @@ No API key required. Display Yelp and Google reviews for any business in a clean
 
 Display Yelp and Google business reviews on your site, either in the same single feed or in multiple different ones. Provide social proof through real customer testimonials that will turn site visitors into paying customers.
 
-https://www.youtube.com/watch?v=MFNuktbnaXE
+https://vimeo.com/1166356273
 
 If a Google business listing has a physical location, you can display your latest reviews for it in an attractive feed. You can also enter the website address of any Yelp business and instantly create a feed of your Yelp reviews as well. Business ratings are an important part of social proof to increase customer confidence in your online business. Website visitors will instantly increase their trust in your business if they can see real customer reviews from real customers.
 
@@ -204,6 +204,11 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.4.5 =
+* Fix: Resolved international character encoding issues (æ, ø, å, etc.) in source names causing API errors.
+* Fix: Improved HTML entity decoding in review content display.
+* Tweak: Enhanced source identification reliability for API communications.
+
 = 2.4.4 =
 * Fix: Resolved Borlabs Cookie 3.x compatibility issue preventing consent detection.
 * Fix: Improved website registration token handling for better reliability.

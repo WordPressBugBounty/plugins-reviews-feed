@@ -14,7 +14,7 @@ class FeedCache {
 	public const CACHE_KEY = 'sbr_feed_';
 
 	/**
-	 * @var int
+	 * @var string
 	 */
 	protected $feed_id;
 
@@ -233,6 +233,22 @@ class FeedCache {
 			$cron_update = false;
 		}
 
+		// When updating regular cache with posts, clear stale Customizer cache
+		// This prevents race condition where Customizer cached empty results before posts were fetched
+		if ($cache_type === 'posts' && strpos($this->feed_id, '_CUSTOMIZER') === false) {
+			// Handle both array and string cache values
+			$has_posts = false;
+			if (is_array($cache_value) || is_object($cache_value)) {
+				$has_posts = ! empty($cache_value);
+			} elseif (is_string($cache_value)) {
+				$has_posts = ! empty($cache_value) && $cache_value !== '[]' && $cache_value !== 'null';
+			}
+
+			if ($has_posts) {
+				$this->clear_customizer_posts_cache();
+			}
+		}
+
 		$cache_key = $cache_type . $this->suffix;
 
 		$this->set($cache_key, $cache_value);
@@ -446,6 +462,51 @@ class FeedCache {
 	private function clear_wp_cache()
 	{
 		wp_cache_delete($this->get_wp_cache_key());
+	}
+
+	/**
+	 * Clear the Customizer posts cache when regular cache is updated.
+	 *
+	 * This prevents stale empty cache in Customizer when posts are fetched
+	 * after the Customizer was already opened (race condition fix).
+	 *
+	 * @since 2.4.5
+	 */
+	private function clear_customizer_posts_cache()
+	{
+		global $wpdb;
+		$cache_table_name = $wpdb->prefix . self::CACHES_TABLE_NAME;
+		$customizer_feed_id = $this->feed_id . '_CUSTOMIZER';
+
+		// Clear standard Customizer cache
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE $cache_table_name
+				SET cache_value = ''
+				WHERE feed_id = %s
+				AND cache_key = 'posts'",
+				$customizer_feed_id
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// Clear MODMODE Customizer caches (with any offset)
+		$mod_mode_pattern = esc_sql((string) $this->feed_id) . '_CUSTOMIZER_MODMODE%';
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely constructed from $wpdb->prefix
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE $cache_table_name
+				SET cache_value = ''
+				WHERE feed_id LIKE %s
+				AND cache_key = 'posts'",
+				$mod_mode_pattern
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// Also clear WP object cache for the Customizer feed
+		wp_cache_delete(self::CACHE_KEY . $customizer_feed_id . '_');
 	}
 
 	/**

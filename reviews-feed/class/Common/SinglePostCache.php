@@ -220,40 +220,58 @@ class SinglePostCache {
 			$rating = $this->post_data['rating'] === 'positive' ? 5 : 1;
 		}
 
-		$to_store = array(
-			array( 'created_on', date('Y-m-d H:i:s'), '%s' ),
-			array( 'post_id', $this->post_data['review_id'], '%s' ),
-			array( 'time_stamp', date('Y-m-d H:i:s', $this->post_data['time']), '%s' ),
-			array( 'json_data', $this->should_encrypt($this->post_data, wp_json_encode($this->post_data)), '%s' ),
-			array( 'post_content', $this->should_encrypt($this->post_data, $this->post_data['text']), '%s' ),
-			array( 'rating', $rating, '%d' ),
-			array( 'provider', $this->post_data['provider']['name'], '%s' ),
-			array( 'provider_id', $this->get_provider_id(), '%s' ),
-			array( 'business', $this->post_data['business']['id'] ?? '', '%s' ),
-			array( 'media_id', $this->storage_data['media_id'], '%s' ),
-			array( 'avatar_id', $this->storage_data['avatar_id'] ?? '', '%s' ),
-			array( 'sizes', $this->storage_data['sizes'], '%s' ),
-			array( 'aspect_ratio', $this->storage_data['aspect_ratio'], '%s' ),
-			array( 'images_done', $this->storage_data['images_done'], '%d' ),
-			array( 'last_requested', date('Y-m-d H:i:s'), '%s' ),
-			array( 'lang', $this->lang, '%s' ),
-		);
-		$data = array();
-		$format = array();
-		foreach ($to_store as $single_store) {
-			$data[ $single_store[0] ] = $single_store[1];
-			$format[] = $single_store[2];
-		}
+		$now = date('Y-m-d H:i:s');
+		$post_id = $this->post_data['review_id'];
+		$provider_id = $this->get_provider_id();
+		$json_data = $this->should_encrypt($this->post_data, wp_json_encode($this->post_data));
+		$post_content = $this->should_encrypt($this->post_data, $this->post_data['text']);
+		$provider = $this->post_data['provider']['name'];
+		$business = $this->post_data['business']['id'] ?? '';
+		$time_stamp = date('Y-m-d H:i:s', $this->post_data['time']);
 
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
-		$error      = $wpdb->insert($table_name, $data, $format);
 
-		if ($error !== false) {
-			$insert_id = $wpdb->insert_id;
-		} else {
-			// log error
-		}
+		// Use INSERT ... ON DUPLICATE KEY UPDATE to prevent duplicates
+		// This handles race conditions where two requests try to insert the same review
+		// Note: We pass values directly in UPDATE clause instead of using VALUES() function
+		// for cross-version MySQL compatibility (VALUES() deprecated in MySQL 8.0.20+)
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safely prefixed constant
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO $table_name
+					(created_on, post_id, time_stamp, json_data, post_content, rating, provider, provider_id, business, media_id, avatar_id, sizes, aspect_ratio, images_done, last_requested, lang)
+				VALUES (%s, %s, %s, %s, %s, %d, %s, %s, %s, %s, %s, %s, %s, %d, %s, %s)
+				ON DUPLICATE KEY UPDATE
+					json_data = %s,
+					post_content = %s,
+					rating = %d,
+					last_requested = %s",
+				// INSERT values
+				$now,
+				$post_id,
+				$time_stamp,
+				$json_data,
+				$post_content,
+				$rating,
+				$provider,
+				$provider_id,
+				$business,
+				$this->storage_data['media_id'],
+				$this->storage_data['avatar_id'] ?? '',
+				$this->storage_data['sizes'],
+				$this->storage_data['aspect_ratio'],
+				$this->storage_data['images_done'],
+				$now,
+				$this->lang,
+				// UPDATE values (repeated for ON DUPLICATE KEY UPDATE)
+				$json_data,
+				$post_content,
+				$rating,
+				$now
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	public function update_single($strict_update = false)

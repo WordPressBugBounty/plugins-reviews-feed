@@ -2,6 +2,7 @@
 
 namespace SmashBalloon\Reviews\Common\Services\Upgrade;
 
+use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\AddUniqueReviewIndexRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\LanguageCacheUpgradeRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RegisterWebsiteRoutine;
 use Smashballoon\Stubs\Services\ServiceProvider;
@@ -22,7 +23,8 @@ class RoutineManagerService extends ServiceProvider{
 		RegisterWebsiteRoutine::class,
 		LanguageCacheUpgradeRoutine::class,
 		ClearReviewsDuplicateRoutine::class,
-		NewUserRatingRoutine::class
+		NewUserRatingRoutine::class,
+		AddUniqueReviewIndexRoutine::class,
 	];
 
 	public function register()

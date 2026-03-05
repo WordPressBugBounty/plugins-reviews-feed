@@ -21,7 +21,8 @@ class Parser {
 	public function get_text($post)
 	{
 		if (! empty($post['text'])) {
-			return (string) $post['text'];
+			// Decode HTML entities (fixes Danish characters like æ, ø, å and other special chars)
+			return html_entity_decode((string) $post['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
 		}
 		return '';
 	}
@@ -52,7 +53,8 @@ class Parser {
 	public function get_reviewer_name($post)
 	{
 		if (! empty($post['reviewer']['name'])) {
-			return $post['reviewer']['name'];
+			// Decode HTML entities (fixes Danish characters like æ, ø, å and other special chars)
+			return html_entity_decode($post['reviewer']['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
 		}
 		return '';
 	}
