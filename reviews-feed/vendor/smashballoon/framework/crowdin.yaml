@@ -1,0 +1,9 @@
+project_id_env: "CROWDIN_PROJECT_ID"
+api_token_env: "CROWDIN_PERSONAL_TOKEN"
+base_path: "."
+base_url: "https://awesomemotive.crowdin.com/api/v2"
+preserve_hierarchy: true
+
+files:
+  - source: "languages/sb-common.pot"
+    translation: "languages/sb-common-%locale_with_underscore%.po"

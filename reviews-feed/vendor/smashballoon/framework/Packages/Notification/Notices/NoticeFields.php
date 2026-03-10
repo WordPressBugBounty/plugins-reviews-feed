@@ -237,7 +237,7 @@ class NoticeFields
         if (isset($dismiss) && is_array($dismiss)) {
             $icon = isset($dismiss['icon']) ? esc_url($dismiss['icon']) : '';
             $image_html = '<img src="' . esc_url($icon) . '" />';
-            $title = isset($dismiss['title']) ? esc_attr($dismiss['title']) : esc_attr__('Dismiss this message', 'instagram-feed');
+            $title = isset($dismiss['title']) ? esc_attr($dismiss['title']) : esc_attr__('Dismiss this message', 'sb-common');
             $class = isset($dismiss['class']) ? esc_attr($dismiss['class']) : '';
             $tag = isset($dismiss['tag']) ? esc_attr($dismiss['tag']) : 'a';
             $attr = isset($dismiss['attr']) ? $dismiss['attr'] : '';

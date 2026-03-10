@@ -147,3 +147,19 @@ $customizerContainer = \Smashballoon\Customizer\V2\Container::getInstance();
 $customizerContainer->set(\Smashballoon\Customizer\V2\Config\Proxy::class, new \SmashBalloon\Reviews\Common\Builder\Config\Proxy());
 $serviceContainerClass = SmashBalloon\Reviews\Common\Util::sbr_is_pro() ? \SmashBalloon\Reviews\Pro\ServiceContainer::class : \SmashBalloon\Reviews\Common\ServiceContainer::class;
 $commonServiceContainer = \SmashBalloon\Reviews\Common\Container::get_instance()->get($serviceContainerClass)->register();
+
+// Initialize the deactivation feedback survey.
+if (class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Feedback\FeedbackManager')) {
+	$sbr_plugin_slug = defined('SBR_PRO') && SBR_PRO ? 'reviews-feed-pro' : 'reviews-feed';
+	$sbr_plugin_file = defined('SBR_PRO') && SBR_PRO
+		? SBR_PLUGIN_DIR . 'sb-reviews-pro.php'
+		: SBR_PLUGIN_DIR . 'sb-reviews.php';
+
+	\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Feedback\FeedbackManager::init([
+		'plugin_slug'    => $sbr_plugin_slug,
+		'plugin_name'    => 'Smash Balloon Reviews Feed',
+		'plugin_version' => SBRVER,
+		'plugin_file'    => $sbr_plugin_file,
+		'support_url'    => 'https://smashballoon.com/support/',
+	]);
+}

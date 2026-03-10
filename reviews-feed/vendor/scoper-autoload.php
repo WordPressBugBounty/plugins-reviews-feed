@@ -35,5 +35,6 @@ humbug_phpscoper_expose_class('ComposerAutoloaderInit84e16c3d027f83f5f9e0fadd381
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases
 if (!function_exists('dbDelta')) { function dbDelta() { return \SmashBalloon\Reviews\Vendor\dbDelta(...func_get_args()); } }
 if (!function_exists('do_action')) { function do_action() { return \SmashBalloon\Reviews\Vendor\do_action(...func_get_args()); } }
+if (!function_exists('wp_get_environment_type')) { function wp_get_environment_type() { return \SmashBalloon\Reviews\Vendor\wp_get_environment_type(...func_get_args()); } }
 
 return $loader;

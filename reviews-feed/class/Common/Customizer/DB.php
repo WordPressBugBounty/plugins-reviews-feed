@@ -535,8 +535,15 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 	}
 
 
-
-	public static function get_feeds_list($feeds_args = array())
+	/**
+	 * Get feeds list with optional location data.
+	 *
+	 * @param array $feeds_args     Query arguments.
+	 * @param bool  $skip_locations Skip expensive shortcode location queries. Default false.
+	 *
+	 * @return array
+	 */
+	public static function get_feeds_list($feeds_args = array(), $skip_locations = false)
 	{
 
 		if (! empty($_GET['feed_id'])) {
@@ -547,14 +554,19 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 
 		$i = 0;
 		foreach ($feeds_data as $single_feed) {
-			// Use direct content scanning to find shortcode usage
-			// This finds shortcodes in drafts, unpublished content, and all post types
-			$locations = self::get_feed_shortcode_locations($single_feed['id'], DB::RESULTS_PER_PAGE);
-			$count     = self::count_feed_shortcode_locations($single_feed['id']);
+			if ($skip_locations) {
+				$feeds_data[ $i ]['instance_count']   = 0;
+				$feeds_data[ $i ]['location_summary'] = array();
+			} else {
+				// Use direct content scanning to find shortcode usage
+				// This finds shortcodes in drafts, unpublished content, and all post types
+				$locations = self::get_feed_shortcode_locations($single_feed['id'], DB::RESULTS_PER_PAGE);
+				$count     = self::count_feed_shortcode_locations($single_feed['id']);
+				$feeds_data[ $i ]['instance_count']   = $count;
+				$feeds_data[ $i ]['location_summary'] = $locations;
+			}
 
-			$feeds_data[ $i ]['instance_count']   = $count;
-			$feeds_data[ $i ]['location_summary'] = $locations;
-			$settings                             = json_decode($feeds_data[ $i ]['settings'], true);
+			$settings = json_decode($feeds_data[ $i ]['settings'], true);
 
 			$settings['feed'] = $single_feed['id'];
 

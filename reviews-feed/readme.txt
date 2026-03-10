@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.4.5
+Stable tag: 2.4.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.4.6 =
+* New: Added deactivation feedback survey to help improve the plugin.
+* Fix: Improved block editor performance by eliminating unnecessary database queries on page load.
+
 = 2.4.5 =
 * Fix: Resolved international character encoding issues (æ, ø, å, etc.) in source names causing API errors.
 * Fix: Improved HTML entity decoding in review content display.

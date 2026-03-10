@@ -348,14 +348,14 @@ class SBNotices
     {
         if (isset($_GET['sb-dismiss-notice']) && isset($_GET['_sb_notice_nonce'])) {
             if (!wp_verify_nonce(wp_unslash($_GET['_sb_notice_nonce']), 'sb_dismiss_notice_nonce')) {
-                wp_die(esc_html__('Action failed. Please refresh the page and retry.', 'sb-notices'));
+                wp_die(esc_html__('Action failed. Please refresh the page and retry.', 'sb-common'));
             }
             $notice_id = sanitize_text_field(wp_unslash($_GET['sb-dismiss-notice']));
             $notices = $this->get_notices();
             if (isset($notices[$notice_id])) {
                 $notice = $notices[$notice_id];
                 if (!$notice['dismissible']) {
-                    wp_die(esc_html__('Notice cannot be dismissed.', 'sb-notices'));
+                    wp_die(esc_html__('Notice cannot be dismissed.', 'sb-common'));
                 }
                 if (isset($notice['capability']) && !empty($notice['capability'])) {
                     $capability = $notice['capability'];
@@ -363,7 +363,7 @@ class SBNotices
                         $capability = [$capability];
                     }
                     if (!current_user_can($capability[0])) {
-                        wp_die(esc_html__('You do not have permission to dismiss the notice.', 'sb-notices'));
+                        wp_die(esc_html__('You do not have permission to dismiss the notice.', 'sb-common'));
                     }
                 }
                 $this->remove_notice($notice_id);

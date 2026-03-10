@@ -127,7 +127,7 @@ class SB_Reviews_Blocks extends ServiceProvider
 				'disabled' => true
 			]
 		];
-		$feeds = DB::get_feeds_list();
+		$feeds = DB::get_feeds_list([], true);
 		if (is_array($feeds)) {
 			foreach ($feeds as $feed) {
 				array_push(
@@ -213,7 +213,7 @@ class SB_Reviews_Blocks extends ServiceProvider
 				! is_numeric($shortcode_settings)
 			)
 		) {
-			$feeds = DB::get_feeds_list();
+			$feeds = DB::get_feeds_list([], true);
 			if (!empty($feeds[0]['id'])) {
 				$shortcode_settings = 'feed="' . (int) $feeds[0]['id'] . '"';
 			}

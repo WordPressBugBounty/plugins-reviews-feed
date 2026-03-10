@@ -84,7 +84,7 @@ if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_
         if ($filter_template !== $template) {
             if (!file_exists($filter_template)) {
                 // translators: %s template.
-                sb_doing_it_wrong(__FUNCTION__, sprintf(__('%s does not exist.', 'sb-notices'), '<code>' . $template . '</code>'), '6.2.2');
+                sb_doing_it_wrong(__FUNCTION__, sprintf(__('%s does not exist.', 'sb-common'), '<code>' . $template . '</code>'), '6.2.2');
                 return;
             }
             $template = $filter_template;
@@ -92,7 +92,7 @@ if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_
         $action_args = ['template_name' => $template_name, 'template_path' => $template_path, 'located' => $template, 'args' => $args];
         if (!empty($args) && is_array($args)) {
             if (isset($args['action_args'])) {
-                sb_doing_it_wrong(__FUNCTION__, __('action_args should not be overwritten when calling sb_get_template.', 'sb-notices'), '1.0.0');
+                sb_doing_it_wrong(__FUNCTION__, __('action_args should not be overwritten when calling sb_get_template.', 'sb-common'), '1.0.0');
                 unset($args['action_args']);
             }
             extract($args);
