@@ -557,8 +557,47 @@ class DisplayElements {
 
 	public static function get_star_icon()
 	{
-		return '<svg viewBox="0 0 20 20">
-					<path d="M10.0001 16.0074L14.8499 18.9407C15.7381 19.4783 16.8249 18.6836 16.5912 17.6786L15.3057 12.1626L19.5946 8.44634C20.3776 7.76853 19.9569 6.48303 18.9285 6.40122L13.2839 5.92208L11.0752 0.709949C10.6779 -0.236649 9.32225 -0.236649 8.92491 0.709949L6.71618 5.91039L1.07165 6.38954C0.043251 6.47134 -0.377459 7.75685 0.405529 8.43466L4.69444 12.1509L3.40893 17.6669C3.17521 18.6719 4.26204 19.4666 5.15021 18.929L10.0001 16.0074V16.0074Z" ></path>
+		// Matches customizer/sb-common/sb-customizer/assets/icons/popup-star.svg
+		return '<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
 				</svg>';
+	}
+
+	/**
+	 * Get provider icon as inline SVG
+	 *
+	 * Reads the provider SVG file and returns its content for inline rendering.
+	 * This matches the admin preview which uses inline SVGs via SbUtils.printIcon().
+	 *
+	 * @since 2.5.0
+	 * @param string $provider Provider name (e.g., 'google', 'yelp', 'edd').
+	 * @return string Inline SVG markup or empty string if file not found.
+	 */
+	public static function get_provider_icon($provider)
+	{
+		// Sanitize provider name to prevent path traversal
+		$provider = sanitize_file_name($provider);
+
+		// Build path to provider icon SVG
+		$icon_path = SBR_PLUGIN_DIR . 'assets/icons/' . $provider . '-provider.svg';
+
+		// Check if file exists and is readable
+		if (! file_exists($icon_path) || ! is_readable($icon_path)) {
+			// Fallback to google icon if provider icon not found
+			$icon_path = SBR_PLUGIN_DIR . 'assets/icons/google-provider.svg';
+			if (! file_exists($icon_path) || ! is_readable($icon_path)) {
+				return '';
+			}
+		}
+
+		// Read SVG content
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading local SVG file
+		$svg_content = file_get_contents($icon_path);
+
+		if (false === $svg_content) {
+			return '';
+		}
+
+		return $svg_content;
 	}
 }

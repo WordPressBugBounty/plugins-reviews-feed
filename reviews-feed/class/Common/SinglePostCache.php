@@ -67,6 +67,19 @@ class SinglePostCache {
 		$this->lang = $lang;
 	}
 
+	/**
+	 * Check and process API media (reviews photos)
+	 *
+	 * Stub method for Common version. Pro version overrides with full implementation.
+	 *
+	 * @since 2.5.0
+	 * @return void
+	 */
+	public function check_api_media()
+	{
+		// No-op in Common version. Pro version handles media processing.
+	}
+
 	public function get_provider_id()
 	{
 		return $this->provider_id;

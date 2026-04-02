@@ -42,4 +42,18 @@ abstract class SB_Sidebar_Tab
      * @return array
      */
     abstract protected function tab_sections();
+    /**
+     * Determine if this tab should be displayed in the current context
+     *
+     * Override this method in child classes to conditionally show/hide tabs
+     * based on the current page, user role, or other criteria.
+     *
+     * @since 2.5.0
+     *
+     * @return bool
+     */
+    public function should_display()
+    {
+        return \true;
+    }
 }

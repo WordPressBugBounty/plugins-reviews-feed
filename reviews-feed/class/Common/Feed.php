@@ -51,8 +51,9 @@ class Feed
 	{
 		$this->feed_cache = $feed_cache;
 		$this->feed_id = $feed_id;
-		$this->settings = $settings;
-		$this->settings['apiCallLanguage'] = Util::get_api_call_language($settings);
+		// Ensure settings is an array to prevent PHP 8.1+ deprecation warning
+		$this->settings = is_array($settings) ? $settings : [];
+		$this->settings['apiCallLanguage'] = Util::get_api_call_language($this->settings);
 		$this->feed_style = is_array($settings) && isset($settings['feed_style']) ? $settings['feed_style'] : '';
 		$this->statuses = array(
 			'from_cache' => false,
@@ -235,7 +236,9 @@ class Feed
 	{
 		$settings = $this->get_settings();
 		$aggregator = new PostAggregator();
-		$posts = $aggregator->db_post_set($settings['sources'], $this->settings['apiCallLanguage']);
+		// Pass limit from settings (default 150 for backward compatibility)
+		$limit = isset($settings['numPostDesktop']) ? max(150, (int) $settings['numPostDesktop']) : 150;
+		$posts = $aggregator->db_post_set($settings['sources'], $this->settings['apiCallLanguage'], $limit);
 		$posts = $aggregator->normalize_db_post_set($posts);
 		if ($aggregator->missing_media_found()) {
 			$this->flag_media_check = true;
@@ -367,6 +370,7 @@ class Feed
 			$single_post_cache->set_provider_id($provider_id);
 
 			$single_post_cache->set_lang($this->get_db_lang($provider_id));
+
 			if (Util::sbr_is_pro() && method_exists($single_post_cache, 'check_api_media')) {
 				$single_post_cache->check_api_media();
 			}
@@ -795,11 +799,11 @@ class Feed
 				$filtered_posts = $this->sort_array_bydate($filtered_posts, $sort_by_date);
 			}
 
-			if ($is_sortbyrating && !$is_sortbyrating) {
+			if ($is_sortbyrating && !$is_sortbydate) {
 				$filtered_posts = $this->sort_array_byrating($filtered_posts, $sort_by_rating);
 			}
 
-			if ($is_sortbyrating && $is_sortbyrating) {
+			if ($is_sortbyrating && $is_sortbydate) {
 				$filtered_posts = $this->sort_array_byrating_and_date($filtered_posts, $sort_by_rating, $sort_by_date);
 			}
 		}
@@ -839,7 +843,9 @@ class Feed
 	{
 		$settings = $this->get_settings();
 		$aggregator = new PostAggregator();
-		$posts = $aggregator->db_post_set($settings['sources']);
+		// Pass limit from settings (default 150 for backward compatibility)
+		$limit = isset($settings['numPostDesktop']) ? max(150, (int) $settings['numPostDesktop']) : 150;
+		$posts = $aggregator->db_post_set($settings['sources'], null, $limit);
 		$posts = $aggregator->normalize_db_post_set($posts);
 		$post_set = $this->filter_posts($posts, $settings);
 		return $post_set;

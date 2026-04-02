@@ -106,7 +106,10 @@ class Feed_Builder extends ServiceProvider
                 $tab_name = $this->tabs_namespace . str_replace('.php', '', $filename);
                 if (class_exists($tab_name) && is_subclass_of($tab_name, \Smashballoon\Customizer\V2\SB_Sidebar_Tab::class)) {
                     $tab_class = new $tab_name();
-                    $customizer_builder_data[] = $tab_class->get_tab();
+                    // Check if tab should be displayed in current context
+                    if ($tab_class->should_display()) {
+                        $customizer_builder_data[] = $tab_class->get_tab();
+                    }
                 }
             }
         }

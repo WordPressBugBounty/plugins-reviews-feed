@@ -1,0 +1,2230 @@
+/**
+ * Review Alert Themes CSS
+ *
+ * This is the SOURCE file. Edit styles here.
+ * See: .claude/docs/REVIEW-ALERTS-CSS-FLOW.md for build/loading documentation.
+ *
+ * Matches prototype design from 2025-11-19-review-notification-popup-v2:
+ * - Horizontal layout with avatar left, content right
+ * - Accent-colored wrapper with white inner card
+ * - Hover scale effect on wrapper
+ * - "View All Reviews" link with hover fill effect
+ * - Powered by footer in accent color
+ *
+ * @since 2.5.0
+ */
+
+/* ==========================================================================
+   CSS Custom Properties (Design Tokens)
+   ========================================================================== */
+
+:root {
+    /* Neutral Colors - Zinc scale (static, not hue-dependent) */
+    --sbr-popup-white: #FFFFFF;
+    --sbr-popup-zinc-50: #fafafa;
+    --sbr-popup-zinc-100: #f4f4f5;
+    --sbr-popup-zinc-200: #e4e4e7;
+    --sbr-popup-zinc-300: #d4d4d8;
+    --sbr-popup-zinc-400: #a1a1aa;
+    --sbr-popup-zinc-500: #71717a;
+    --sbr-popup-zinc-600: #52525b;
+    --sbr-popup-zinc-700: #3f3f46;
+    --sbr-popup-zinc-800: #27272a;
+    --sbr-popup-zinc-900: #18181b;
+    --sbr-popup-zinc-950: #09090b;
+
+    /* Typography */
+    --sbr-popup-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+
+    /* Border Radius */
+    --sbr-popup-radius-outer: 16px;
+    --sbr-popup-radius-inner: 12px;
+
+    /* Shadows */
+    --sbr-popup-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* Component Sizes */
+    --sbr-popup-width: 408px;
+    --sbr-popup-avatar-size: 56px;
+    --sbr-popup-provider-badge-size: 28px;
+    --sbr-popup-star-size: 20px;
+
+    /* Animation */
+    --sbr-popup-transition: 200ms ease;
+}
+
+/* ==========================================================================
+   Fallback for browsers that don't support OKLCH (~5% of users)
+
+   STRATEGY:
+   1. Base tokens use static blue hex values as default
+   2. For elements using accent color (stars, close button, links),
+      we use --sbr-popup-accent-fallback if set, otherwise fallback to hex
+   3. This ensures custom accent colors work in legacy browsers
+   ========================================================================== */
+@supports not (color: oklch(0.5 0.2 250)) {
+    .sbr-review-alert {
+        /* Static blue palette for legacy browsers */
+        --sbr-popup-accent-50: #f5f7ff;
+        --sbr-popup-accent-100: #e8edff;
+        --sbr-popup-accent-200: #c9d5ff;
+        --sbr-popup-accent-300: #a3b8ff;
+        --sbr-popup-accent-400: #7090ff;
+        --sbr-popup-accent-500: #4169e1;
+        --sbr-popup-accent-600: #3355cc;
+        --sbr-popup-accent-700: #2944a3;
+        --sbr-popup-accent-800: #1f3380;
+        --sbr-popup-accent-900: #14225c;
+        --sbr-popup-accent-950: #0a1133;
+
+        --sbr-popup-accent-muted-50: #f8f9fc;
+        --sbr-popup-accent-muted-100: #eef1f7;
+        --sbr-popup-accent-muted-200: #dde3ef;
+        --sbr-popup-accent-muted-300: #c5cee0;
+        --sbr-popup-accent-muted-400: #9aa8c7;
+        --sbr-popup-accent-muted-500: #7282a8;
+        --sbr-popup-accent-muted-600: #5a6a8c;
+        --sbr-popup-accent-muted-700: #455270;
+        --sbr-popup-accent-muted-800: #333d54;
+        --sbr-popup-accent-muted-900: #232a3a;
+        --sbr-popup-accent-muted-950: #141820;
+    }
+
+    /* Use custom accent fallback hex for key accent elements (legacy browsers only) */
+    .sbr-review-alert .sbr-review-alert__star {
+        color: var(--sbr-popup-accent-fallback, var(--sbr-popup-accent-500));
+    }
+
+    .sbr-review-alert .sbr-review-alert__close-btn {
+        background-color: var(--sbr-popup-accent-fallback, var(--sbr-popup-accent-600));
+    }
+
+    .sbr-review-alert .sbr-review-alert__link:hover {
+        color: var(--sbr-popup-accent-fallback, var(--sbr-popup-accent-600));
+    }
+
+    .sbr-review-alert .sbr-review-alert__powered-by-wrapper {
+        background-color: var(--sbr-popup-accent-fallback, var(--sbr-popup-accent-600));
+    }
+}
+
+/* ==========================================================================
+   Base Popup Styles
+   ========================================================================== */
+
+.sbr-review-alert {
+    font-family: var(--sbr-popup-font);
+    font-size: 14px;
+    line-height: 1.5;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Default accent hue (250 = blue in OKLCH color space)
+     * OKLCH provides perceptually uniform colors - green/yellow won't wash out
+     * Hue values: Red=15, Orange=40, Yellow=70, Green=145, Teal=180, Blue=250, Purple=280, Pink=330
+     * This is defined here (not :root) so inline style --sbr-popup-accent-hue is inherited */
+    --sbr-popup-accent-hue: 250;
+
+    /* ========================================================================
+       OKLCH Accent Color Palette (22 tokens)
+       Perceptually uniform - consistent brightness across all hues
+       Browser support: ~95% (Chrome 111+, Firefox 113+, Safari 15.4+)
+       Defined here to inherit --sbr-popup-accent-hue from inline styles
+
+       FALLBACK STRATEGY:
+       - First value: hex fallback (default blue hue=250) for older browsers
+       - Second value: OKLCH with dynamic hue for modern browsers
+       - Browsers that don't support OKLCH ignore the second declaration
+       ======================================================================== */
+
+    /* Accent color shades - hex fallback + OKLCH (11 tokens) */
+    --sbr-popup-accent-50: #f5f7ff;
+    --sbr-popup-accent-50: oklch(0.99 0.01 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-100: #e0e7ff;
+    --sbr-popup-accent-100: oklch(0.95 0.05 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-200: #c7d2fe;
+    --sbr-popup-accent-200: oklch(0.9 0.1 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-300: #a5b4fc;
+    --sbr-popup-accent-300: oklch(0.85 0.15 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-400: #818cf8;
+    --sbr-popup-accent-400: oklch(0.75 0.2 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-500: #6366f1;
+    --sbr-popup-accent-500: oklch(0.65 0.25 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-600: #4f46e5;
+    --sbr-popup-accent-600: oklch(0.55 0.25 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-700: #4338ca;
+    --sbr-popup-accent-700: oklch(0.45 0.2 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-800: #3730a3;
+    --sbr-popup-accent-800: oklch(0.35 0.15 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-900: #312e81;
+    --sbr-popup-accent-900: oklch(0.25 0.1 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-950: #1e1b4b;
+    --sbr-popup-accent-950: oklch(0.15 0.05 var(--sbr-popup-accent-hue));
+
+    /* Muted accent color shades - hex fallback + OKLCH (11 tokens) */
+    --sbr-popup-accent-muted-50: #fafafa;
+    --sbr-popup-accent-muted-50: oklch(0.99 0.005 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-100: #f1f2f9;
+    --sbr-popup-accent-muted-100: oklch(0.95 0.025 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-200: #e2e4f0;
+    --sbr-popup-accent-muted-200: oklch(0.9 0.05 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-300: #d0d4e8;
+    --sbr-popup-accent-muted-300: oklch(0.85 0.075 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-400: #a8aed4;
+    --sbr-popup-accent-muted-400: oklch(0.75 0.1 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-500: #8087c0;
+    --sbr-popup-accent-muted-500: oklch(0.65 0.125 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-600: #6269a8;
+    --sbr-popup-accent-muted-600: oklch(0.55 0.125 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-700: #4d5390;
+    --sbr-popup-accent-muted-700: oklch(0.45 0.1 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-800: #3a3f74;
+    --sbr-popup-accent-muted-800: oklch(0.35 0.075 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-900: #2a2e58;
+    --sbr-popup-accent-muted-900: oklch(0.25 0.05 var(--sbr-popup-accent-hue));
+    --sbr-popup-accent-muted-950: #1a1d3c;
+    --sbr-popup-accent-muted-950: oklch(0.15 0.025 var(--sbr-popup-accent-hue));
+
+    /* ========================================================================
+       SEMANTIC TOKENS - Theme-aware design tokens
+       These are the ONLY tokens that should be used in component styles.
+       Themes override these values to change the entire look in one place.
+       ======================================================================== */
+
+    /* Text colors */
+    --sbr-popup-text: var(--sbr-popup-zinc-900);
+    --sbr-popup-text-muted: var(--sbr-popup-zinc-600);
+    --sbr-popup-text-meta: var(--sbr-popup-zinc-500);
+
+    /* Background colors */
+    --sbr-popup-bg-card: var(--sbr-popup-white);
+    --sbr-popup-bg-inner: var(--sbr-popup-accent-700);
+    --sbr-popup-bg-inner-hover: var(--sbr-popup-accent-800);
+
+    /* Star colors */
+    --sbr-popup-star-fill: var(--sbr-popup-accent-600);
+    --sbr-popup-star-empty: var(--sbr-popup-zinc-200);
+
+    /* Avatar */
+    --sbr-popup-avatar-bg: var(--sbr-popup-zinc-200);
+
+    /* Provider badge */
+    --sbr-popup-badge-bg: var(--sbr-popup-white);
+    --sbr-popup-badge-border: var(--sbr-popup-white);
+    --sbr-popup-badge-icon: var(--sbr-popup-accent-600);
+
+    /* Links and interactive elements */
+    --sbr-popup-link-text: var(--sbr-popup-zinc-800);
+    --sbr-popup-link-hover-text: var(--sbr-popup-white);
+    --sbr-popup-link-hover-bg: var(--sbr-popup-accent-600);
+
+    /* Powered by footer */
+    --sbr-popup-powered-text: var(--sbr-popup-white);
+    --sbr-popup-powered-bg: transparent;
+
+    /* Close button */
+    --sbr-popup-close-bg: var(--sbr-popup-accent-600);
+    --sbr-popup-close-bg-hover: var(--sbr-popup-accent-700);
+}
+
+.sbr-review-alert *,
+.sbr-review-alert *::before,
+.sbr-review-alert *::after {
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Popup Container for Preview
+   ========================================================================== */
+
+.sbr-review-alert-container {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.sbr-review-alert--bottom-left + .sbr-review-alert-container,
+.sbr-review-alert-container:has(.sbr-review-alert--bottom-left) {
+    right: auto;
+    left: 24px;
+    align-items: flex-start;
+}
+
+/* Main popup container - ensure right alignment */
+.sbr-review-alert {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    transition: all 300ms ease;
+}
+
+.sbr-review-alert--bottom-left {
+    align-items: flex-start;
+}
+
+/* Keyboard focus styles for expand trigger */
+.sbr-review-alert:focus-visible {
+    outline: 2px solid var(--sbr-popup-accent-600);
+    outline-offset: 4px;
+    border-radius: var(--sbr-popup-radius-outer);
+}
+
+/* ==========================================================================
+   Wrapper - Hover Effect Container
+   ========================================================================== */
+
+.sbr-review-alert__wrapper {
+    border-radius: var(--sbr-popup-radius-outer);
+    transition: transform var(--sbr-popup-transition), opacity 300ms ease, filter 300ms ease;
+    animation: sbr-popup-slide-in 300ms ease;
+    /* No transform-origin here - hover scale should grow from center (default) */
+}
+
+@keyframes sbr-popup-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(64px);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+.sbr-review-alert__wrapper:hover {
+    transform: scale(1.02);
+}
+
+.sbr-review-alert__wrapper:active {
+    transform: scale(0.98);
+}
+
+/* Note: When collapsing from expanded state, the expanded content plays exit animation.
+   After 300ms, React re-renders the collapsed content which has the entrance animation
+   automatically via .sbr-review-alert__wrapper's animation property. */
+
+/* ==========================================================================
+   Inner Container - Accent Border Card
+   ========================================================================== */
+
+.sbr-review-alert__inner {
+    width: var(--sbr-popup-width);
+    max-width: 100%;
+    border-radius: var(--sbr-popup-radius-outer);
+    box-shadow: var(--sbr-popup-shadow);
+    padding: 4px;
+    overflow: hidden;
+    /* Note: Avoid "transition: all" here - it animates width changes during
+       expand/collapse state switches, causing a left-shift glitch */
+    transition: background-color var(--sbr-popup-transition), box-shadow var(--sbr-popup-transition);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    cursor: pointer;
+}
+
+/* With Powered By - solid accent background */
+.sbr-review-alert--has-powered-by .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner);
+}
+
+.sbr-review-alert--has-powered-by .sbr-review-alert__wrapper:hover .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner-hover);
+}
+
+/* Without Powered By - semi-transparent accent */
+.sbr-review-alert:not(.sbr-review-alert--has-powered-by) .sbr-review-alert__inner {
+    background-color: color-mix(in oklch, var(--sbr-popup-accent-700) 30%, transparent);
+}
+
+/* ==========================================================================
+   Close Button - Collapsed View Dismiss
+   ========================================================================== */
+
+.sbr-review-alert__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 9999px;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 200ms, background-color 200ms, transform 200ms;
+    z-index: 10;
+}
+
+.sbr-review-alert__close svg {
+    width: 14px;
+    height: 14px;
+    color: var(--sbr-popup-text-muted);
+}
+
+/* Show on hover/focus of the popup */
+.sbr-review-alert:hover .sbr-review-alert__close,
+.sbr-review-alert:focus-within .sbr-review-alert__close,
+.sbr-review-alert__close:focus {
+    opacity: 1;
+}
+
+.sbr-review-alert__close:hover {
+    background-color: var(--sbr-popup-close-bg-subtle, rgba(0, 0, 0, 0.1));
+    transform: scale(1.1);
+}
+
+.sbr-review-alert__close:hover svg {
+    color: var(--sbr-popup-text);
+}
+
+.sbr-review-alert__close:active {
+    transform: scale(0.95);
+}
+
+.sbr-review-alert__close:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--sbr-popup-accent);
+    outline-offset: 2px;
+}
+
+/* Hide close button when expanded (expanded view has its own close) */
+.sbr-review-alert--expanded-state .sbr-review-alert__close {
+    display: none;
+}
+
+/* ==========================================================================
+   Main Card - White Content Container
+   ========================================================================== */
+
+.sbr-review-alert__card {
+    background-color: var(--sbr-popup-bg-card);
+    padding: 16px 32px 16px 24px;
+    border-radius: var(--sbr-popup-radius-inner);
+    position: relative;
+}
+
+/* ==========================================================================
+   Date Label - Top Right Position
+   ========================================================================== */
+
+.sbr-review-alert__date {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sbr-popup-text-meta);
+}
+
+/* ==========================================================================
+   Content Row - Horizontal Layout
+   ========================================================================== */
+
+.sbr-review-alert__content-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+/* Aggregate View - Center align content */
+.sbr-review-alert__content-row--aggregate {
+    align-items: flex-start;
+}
+
+/* ==========================================================================
+   Aggregate View - Specific Inner Container
+   Narrower width for aggregate view as per design
+   ========================================================================== */
+
+.sbr-review-alert--aggregate .sbr-review-alert__inner {
+    width: auto;
+    min-width: 304px; /* 19rem - matches prototype */
+}
+
+/* Aggregate Card - Simpler padding and centered content */
+.sbr-review-alert--aggregate .sbr-review-alert__card {
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+/* ==========================================================================
+   Aggregate View - Rating Number (replaces avatar)
+   ========================================================================== */
+
+.sbr-review-alert__rating-number {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.sbr-review-alert__rating-value {
+    font-family: var(--sbr-popup-font);
+    font-size: 36px; /* 2.25rem - matches prototype */
+    font-weight: 600; /* semibold - matches prototype */
+    line-height: 1;
+    color: var(--sbr-popup-text);
+}
+
+/* Dark theme rating value - now handled by semantic tokens */
+
+/* ==========================================================================
+   Aggregate View - Stars and Count Section
+   ========================================================================== */
+
+.sbr-review-alert__stars-and-count {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 8px; /* 0.5rem - matches prototype */
+}
+
+/* Aggregate content - match prototype styling */
+.sbr-review-alert--aggregate .sbr-review-alert__content {
+    padding-top: 8px; /* 0.5rem - matches prototype */
+    gap: 12px; /* 0.75rem - matches prototype */
+}
+
+/* Remove padding-top when rating is hidden */
+.sbr-review-alert--aggregate .sbr-review-alert__content--no-rating {
+    padding-top: 0;
+}
+
+/* Aggregate view stars - no extra margin (handled by gap) */
+.sbr-review-alert--aggregate .sbr-review-alert__stars {
+    margin-bottom: 0;
+}
+
+/* Aggregate view all link - remove margins since content uses gap */
+.sbr-review-alert--aggregate .sbr-review-alert__view-all-link {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Aggregate text - "X Total Reviews" with hover fill effect */
+.sbr-review-alert__aggregate-text {
+    position: relative;
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--sbr-popup-font);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sbr-popup-link-text);
+    line-height: 1.25;
+    z-index: 1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+
+/* Hover fill background for aggregate text */
+.sbr-review-alert__aggregate-text::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: -6px;
+    right: -6px;
+    border-radius: 8px;
+    background-color: var(--sbr-popup-link-hover-bg);
+    transform: scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+    transition: all 200ms;
+    z-index: -1;
+}
+
+/* Hover states - trigger on inner hover */
+.sbr-review-alert__inner:hover .sbr-review-alert__aggregate-text {
+    color: var(--sbr-popup-link-hover-text);
+}
+
+.sbr-review-alert__inner:hover .sbr-review-alert__aggregate-text::before {
+    transform: scaleX(1);
+    opacity: 1;
+    filter: blur(0);
+}
+
+/* Aggregate text chevron */
+.sbr-review-alert__aggregate-text .sbr-review-alert__chevron {
+    width: 12px;
+    height: 12px;
+}
+
+/* Dark theme aggregate text - now handled by semantic tokens */
+
+/* ==========================================================================
+   Avatar with Provider Badge
+   ========================================================================== */
+
+.sbr-review-alert__avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.sbr-review-alert__avatar {
+    width: var(--sbr-popup-avatar-size);
+    height: var(--sbr-popup-avatar-size);
+    border-radius: 9999px;
+    overflow: hidden;
+    background-color: var(--sbr-popup-avatar-bg);
+    object-fit: cover;
+}
+
+/* Provider Badge - Bottom-right of avatar */
+.sbr-review-alert__provider-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: var(--sbr-popup-provider-badge-size);
+    height: var(--sbr-popup-provider-badge-size);
+    background-color: var(--sbr-popup-badge-bg);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--sbr-popup-badge-border);
+}
+
+.sbr-review-alert__provider-badge img,
+.sbr-review-alert__provider-badge svg,
+.sbr-review-alert__provider-badge span {
+    width: 22px;
+    height: 22px;
+    color: var(--sbr-popup-badge-icon);
+}
+
+/* ==========================================================================
+   Provider Badge Icons - Theme-aware coloring
+
+   All provider SVG icons should match the star rating colors per theme:
+   - Light/Minimal: Uses accent/muted colors (same as stars)
+   - Dark/Minimal-Dark: Uses white (same as stars)
+
+   Force SVG paths to inherit the semantic --sbr-popup-badge-icon token
+   which is already theme-aware and matches star colors.
+   ========================================================================== */
+
+/* Force provider badge SVG paths to use theme-aware color.
+   Background elements (rects, circles) are hidden to ensure single-color icons
+   work properly across all themes. This prevents multi-layer icons (e.g., WooCommerce,
+   Facebook, TripAdvisor, Zomato) from having invisible foregrounds when both
+   background and foreground are forced to the same color. */
+.sbr-review-alert__provider-badge svg,
+.sbr-review-alert__provider-badge svg path,
+.sbr-review-alert__provider-badge svg g {
+    fill: var(--sbr-popup-badge-icon) !important;
+}
+
+/* Hide background elements in provider badges - many icons have colored
+   backgrounds (rects, circles) that conflict with single-color theming */
+.sbr-review-alert__provider-badge svg > rect,
+.sbr-review-alert__provider-badge svg > circle,
+.sbr-review-alert__provider-badge svg g > rect:first-child,
+.sbr-review-alert__provider-badge svg g > circle:first-child {
+    fill: transparent !important;
+}
+
+/* Facebook icon fix for dark themes:
+   Facebook SVG has two paths (circle background + "f" letter) instead of rect/circle + path.
+   On dark themes, we need the circle path white and the "f" path dark for contrast.
+   Use data-provider attribute to target ONLY Facebook, not other providers like Google. */
+.sbr-review-alert--dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:first-child,
+.sbr-review-alert--minimal-dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:first-child {
+    fill: var(--sbr-popup-white) !important;
+}
+
+.sbr-review-alert--dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:last-child,
+.sbr-review-alert--minimal-dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:last-child {
+    fill: var(--sbr-popup-badge-bg) !important;
+}
+
+/* ==========================================================================
+   Content Section - Right Side
+   ========================================================================== */
+
+.sbr-review-alert__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+/* Recent Reviews: Add padding when rating is hidden to avoid overlap with date */
+.sbr-review-alert__content--no-rating {
+    padding-top: 20px;
+}
+
+/* ==========================================================================
+   Stars Row
+   ========================================================================== */
+
+.sbr-review-alert__stars {
+    display: flex;
+    margin-bottom: 12px;
+    gap: 2px;
+}
+
+/* Remove bottom margin in aggregate view (handled by parent gap) */
+.sbr-review-alert__stars-and-count .sbr-review-alert__stars {
+    margin-bottom: 0;
+}
+
+.sbr-review-alert__star {
+    display: inline-flex;
+    width: var(--sbr-popup-star-size);
+    height: var(--sbr-popup-star-size);
+    color: var(--sbr-popup-star-fill);
+    flex-shrink: 0;
+    transition: all var(--sbr-popup-transition);
+}
+
+.sbr-review-alert__star svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.sbr-review-alert__star span {
+    display: inline-flex;
+    width: 100%;
+    height: 100%;
+}
+
+.sbr-review-alert__star--empty {
+    color: var(--sbr-popup-star-empty);
+}
+
+/* ==========================================================================
+   Heading - "[Name] left us a review"
+   ========================================================================== */
+
+.sbr-review-alert__heading {
+    line-height: 1;
+    font-weight: 600;
+    color: var(--sbr-popup-text);
+    font-size: 16px;
+    margin: 0;
+}
+
+.sbr-review-alert__reviewer-text {
+    line-height: 1;
+    font-weight: 600;
+    color: var(--sbr-popup-text);
+    font-size: 16px;
+}
+
+.sbr-review-alert__reviewer-text strong {
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Review Text - 2-line clamp
+   ========================================================================== */
+
+.sbr-review-alert__review-text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sbr-popup-text-muted);
+    letter-spacing: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
+
+/* ==========================================================================
+   View All Link - With Hover Fill Effect
+   ========================================================================== */
+
+.sbr-review-alert__view-all-link {
+    position: relative;
+    width: fit-content;
+    display: flex;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 600;
+    align-items: center;
+    gap: 4px;
+    color: var(--sbr-popup-link-text);
+    z-index: 1;
+    transition: all var(--sbr-popup-transition);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Hover fill background */
+.sbr-review-alert__view-all-link::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: -6px;
+    right: -6px;
+    border-radius: 8px;
+    background-color: var(--sbr-popup-link-hover-bg);
+    transform: scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+    transition: all var(--sbr-popup-transition);
+    z-index: -1;
+}
+
+/* Hover states - trigger on inner hover */
+.sbr-review-alert__inner:hover .sbr-review-alert__view-all-link {
+    color: var(--sbr-popup-link-hover-text);
+}
+
+.sbr-review-alert__inner:hover .sbr-review-alert__view-all-link::before {
+    background-color: var(--sbr-popup-link-hover-bg);
+    transform: scaleX(1);
+    opacity: 1;
+    filter: blur(0);
+}
+
+.sbr-review-alert__chevron {
+    width: 12px;
+    height: 12px;
+    display: inline-flex;
+}
+
+.sbr-review-alert__chevron svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* ==========================================================================
+   Powered By Footer
+   ========================================================================== */
+
+.sbr-review-alert__powered-by {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.sbr-review-alert__powered-text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sbr-popup-powered-text);
+}
+
+.sbr-review-alert__powered-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--sbr-popup-powered-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: opacity 0.15s ease;
+}
+
+.sbr-review-alert__powered-link:hover {
+    opacity: 0.85;
+}
+
+.sbr-review-alert__logo {
+    height: 24px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.sbr-review-alert__logo svg,
+.sbr-review-alert__logo img {
+    height: 100%;
+    width: auto;
+}
+
+/* ==========================================================================
+   Theme: Light
+   ========================================================================== */
+
+.sbr-review-alert--light {
+    /* Light theme - uses base styles (default) */
+}
+
+/* Light - Card with powered-by: no bottom radius */
+/* Minimal themes: remove bottom border-radius when powered-by is visible */
+.sbr-review-alert--minimal.sbr-review-alert--has-powered-by .sbr-review-alert__card,
+.sbr-review-alert--minimal-dark.sbr-review-alert--has-powered-by .sbr-review-alert__card {
+    border-radius: var(--sbr-popup-radius-inner) var(--sbr-popup-radius-inner) 0 0;
+}
+
+/* Compact mode: restore full border-radius (powered-by is hidden in compact mode) */
+.sbr-review-alert--compact.sbr-review-alert--minimal.sbr-review-alert--has-powered-by .sbr-review-alert__card,
+.sbr-review-alert--compact.sbr-review-alert--minimal-dark.sbr-review-alert--has-powered-by .sbr-review-alert__card {
+    border-radius: var(--sbr-popup-radius-inner);
+}
+
+/* ==========================================================================
+   Theme: Minimal
+   Uses muted accent colors and translucent backgrounds
+   Hides review text, simpler hover effects
+   ========================================================================== */
+
+.sbr-review-alert--minimal {
+    /* Minimal theme semantic token overrides */
+    --sbr-popup-text: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 80%, transparent);
+    --sbr-popup-text-muted: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 70%, transparent);
+    --sbr-popup-text-meta: color-mix(in oklch, var(--sbr-popup-accent-muted-900) 50%, transparent);
+    --sbr-popup-bg-card: var(--sbr-popup-white);
+    --sbr-popup-bg-inner: color-mix(in oklch, var(--sbr-popup-accent-muted-400) 50%, transparent);
+    --sbr-popup-bg-inner-hover: color-mix(in oklch, var(--sbr-popup-accent-muted-500) 50%, transparent);
+    --sbr-popup-star-fill: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 80%, transparent);
+    --sbr-popup-star-empty: var(--sbr-popup-accent-muted-300);
+    --sbr-popup-avatar-bg: var(--sbr-popup-accent-muted-100);
+    --sbr-popup-badge-bg: var(--sbr-popup-white);
+    --sbr-popup-badge-border: var(--sbr-popup-white);
+    --sbr-popup-badge-icon: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 80%, transparent);
+    --sbr-popup-link-text: var(--sbr-popup-accent-700);
+    --sbr-popup-link-hover-text: var(--sbr-popup-accent-muted-950);
+    --sbr-popup-link-hover-bg: transparent;
+    --sbr-popup-powered-text: var(--sbr-popup-accent-muted-900);
+    --sbr-popup-powered-bg: var(--sbr-popup-white);
+    --sbr-popup-close-bg: var(--sbr-popup-accent-900);
+    --sbr-popup-close-bg-hover: var(--sbr-popup-accent-600);
+}
+
+/* Minimal - Inner container uses translucent muted accent + blur */
+.sbr-review-alert--minimal .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner);
+    backdrop-filter: saturate(4) blur(4px);
+    -webkit-backdrop-filter: saturate(4) blur(4px);
+}
+
+/* Minimal - Same inner bg with/without powered-by (semantic token) */
+.sbr-review-alert--minimal.sbr-review-alert--has-powered-by .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner);
+}
+
+.sbr-review-alert--minimal.sbr-review-alert--has-powered-by .sbr-review-alert__wrapper:hover .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner-hover);
+}
+
+/* Minimal - date, avatar, stars, badge, heading, text colors now handled by semantic tokens */
+
+/* Minimal - View all link - no fill effect (hide ::before) */
+.sbr-review-alert--minimal .sbr-review-alert__view-all-link::before {
+    display: none;
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__inner:hover .sbr-review-alert__view-all-link {
+    color: var(--sbr-popup-link-hover-text);
+}
+
+/* Minimal - Aggregate text - no fill effect (hide ::before) */
+.sbr-review-alert--minimal .sbr-review-alert__aggregate-text::before {
+    display: none;
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__inner:hover .sbr-review-alert__aggregate-text {
+    color: var(--sbr-popup-link-hover-text);
+}
+
+/* Minimal - rating value, powered text/link colors now handled by semantic tokens */
+
+/* Minimal - Powered by footer - white background with subtle border */
+.sbr-review-alert--minimal .sbr-review-alert__powered-by {
+    background-color: var(--sbr-popup-powered-bg);
+    border-top: 1px solid color-mix(in oklch, var(--sbr-popup-accent-muted-500) 20%, transparent);
+    border-radius: 0 0 12px 12px;
+}
+
+/* Minimal - powered text/link colors handled by semantic tokens */
+
+/* Minimal - Logo SVG paths are white by default (smashballoon-logo-white),
+   override to show visible colors on white background */
+.sbr-review-alert--minimal .sbr-review-alert__logo svg path {
+    fill: var(--sbr-popup-accent-muted-800);
+}
+
+/* ==========================================================================
+   Theme: Minimal Dark
+   Structure: Wrapper has translucent outer frame, Inner has gradient that
+   covers both card and powered-by for seamless gradient flow
+   ========================================================================== */
+
+.sbr-review-alert--minimal-dark {
+    /* Minimal Dark theme semantic token overrides */
+    --sbr-popup-text: var(--sbr-popup-white);
+    --sbr-popup-text-muted: rgba(255, 255, 255, 0.7);
+    --sbr-popup-text-meta: rgba(255, 255, 255, 0.5);
+    --sbr-popup-bg-card: transparent;
+    --sbr-popup-bg-inner: color-mix(in oklch, var(--sbr-popup-accent-muted-400) 50%, transparent);
+    --sbr-popup-bg-inner-hover: var(--sbr-popup-accent-muted-900);
+    --sbr-popup-star-fill: var(--sbr-popup-white);
+    --sbr-popup-star-empty: var(--sbr-popup-zinc-600);
+    --sbr-popup-avatar-bg: rgba(255, 255, 255, 0.2);
+    --sbr-popup-badge-bg: var(--sbr-popup-accent-muted-950);
+    --sbr-popup-badge-border: var(--sbr-popup-accent-muted-950);
+    --sbr-popup-badge-icon: var(--sbr-popup-white);
+    --sbr-popup-link-text: var(--sbr-popup-accent-300);
+    --sbr-popup-link-hover-text: var(--sbr-popup-white);
+    --sbr-popup-link-hover-bg: transparent;
+    --sbr-popup-powered-text: rgba(255, 255, 255, 0.7);
+    --sbr-popup-powered-bg: transparent;
+    --sbr-popup-close-bg: var(--sbr-popup-accent-700);
+    --sbr-popup-close-bg-hover: var(--sbr-popup-accent-600);
+}
+
+/* Minimal Dark - Wrapper has translucent outer frame with blur */
+.sbr-review-alert--minimal-dark .sbr-review-alert__wrapper {
+    background-color: color-mix(in oklch, var(--sbr-popup-accent-muted-400) 50%, transparent);
+    backdrop-filter: saturate(4) blur(12px);
+    -webkit-backdrop-filter: saturate(4) blur(12px);
+    border-radius: 16px;
+    padding: 4px;
+}
+
+/* Minimal Dark - Wrapper hover - subtle accent background */
+.sbr-review-alert--minimal-dark .sbr-review-alert__wrapper:hover {
+    background-color: var(--sbr-popup-accent-muted-900);
+}
+
+/* Minimal Dark - Inner carries the gradient (covers both card and powered-by) */
+.sbr-review-alert--minimal-dark .sbr-review-alert__inner {
+    background: linear-gradient(
+        to bottom,
+        var(--sbr-popup-accent-muted-950),
+        color-mix(in oklch, var(--sbr-popup-zinc-950) 70%, transparent)
+    );
+    border-radius: 12px;
+}
+
+/* Minimal Dark - Card is transparent to show inner gradient */
+.sbr-review-alert--minimal-dark .sbr-review-alert__card {
+    background: transparent;
+}
+
+/* Minimal Dark - When has powered-by, card has no bottom radius */
+.sbr-review-alert--minimal-dark.sbr-review-alert--has-powered-by .sbr-review-alert__card {
+    border-radius: 12px 12px 0 0;
+}
+
+/* Minimal Dark - Compact mode: restore full border-radius */
+.sbr-review-alert--compact.sbr-review-alert--minimal-dark.sbr-review-alert--has-powered-by .sbr-review-alert__card {
+    border-radius: 12px;
+}
+
+/* Minimal Dark - Powered by footer - transparent to continue gradient from inner */
+.sbr-review-alert--minimal-dark .sbr-review-alert__powered-by {
+    background: transparent;
+    border-top: 1px solid color-mix(in oklch, var(--sbr-popup-accent-muted-500) 20%, transparent);
+    border-radius: 0 0 12px 12px;
+}
+
+/* Minimal Dark - powered text, rating, stars now handled by semantic tokens */
+
+/* Minimal Dark - no fill effect for links (hide ::before) */
+.sbr-review-alert--minimal-dark .sbr-review-alert__aggregate-text::before,
+.sbr-review-alert--minimal-dark .sbr-review-alert__view-all-link::before {
+    display: none;
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__inner:hover .sbr-review-alert__aggregate-text,
+.sbr-review-alert--minimal-dark .sbr-review-alert__inner:hover .sbr-review-alert__view-all-link {
+    color: var(--sbr-popup-link-hover-text);
+}
+
+/* Minimal Dark - text, date, avatar, badge colors now handled by semantic tokens */
+
+/* Minimal Dark - All SVG icons white */
+/* Using simple global rule with specific overrides for browser compatibility (pre-Chrome 88/Firefox 84) */
+.sbr-review-alert--minimal-dark svg,
+.sbr-review-alert--minimal-dark svg path {
+    color: var(--sbr-popup-white);
+}
+
+/* Minimal Dark - Empty stars use semantic token for contrast */
+/* Include svg and svg path targets to override the global SVG color rule above */
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--empty,
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--empty svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--empty svg path,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star--empty,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star--empty svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star--empty svg path {
+    color: var(--sbr-popup-star-empty);
+}
+
+/* Minimal Dark - Chevron uses stroke, not fill */
+/* Override global SVG white rule - chevron should inherit text color */
+.sbr-review-alert--minimal-dark .sbr-review-alert__chevron svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__chevron svg path {
+    fill: none;
+    color: inherit;
+    stroke: currentColor;
+}
+
+/* Minimal Dark - Close button colors */
+.sbr-review-alert--minimal-dark .sbr-review-alert__close svg {
+    color: var(--sbr-popup-zinc-400);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__close:hover svg {
+    color: var(--sbr-popup-white);
+}
+
+/* ==========================================================================
+   Theme: Dark
+   Dark blue outer (#041F55), lighter blue content (#175CE3), white text/icons
+   ========================================================================== */
+
+.sbr-review-alert--dark {
+    /* Dark theme semantic token overrides */
+    --sbr-popup-text: var(--sbr-popup-white);
+    --sbr-popup-text-muted: var(--sbr-popup-zinc-300);
+    --sbr-popup-text-meta: var(--sbr-popup-zinc-400);
+    --sbr-popup-bg-card: var(--sbr-popup-accent-900);
+    --sbr-popup-bg-inner: var(--sbr-popup-accent-muted-700);
+    --sbr-popup-bg-inner-hover: var(--sbr-popup-accent-muted-800);
+    --sbr-popup-star-fill: var(--sbr-popup-white);
+    --sbr-popup-star-empty: var(--sbr-popup-zinc-600);
+    --sbr-popup-avatar-bg: var(--sbr-popup-zinc-700);
+    --sbr-popup-badge-bg: var(--sbr-popup-accent-900);
+    --sbr-popup-badge-border: var(--sbr-popup-accent-900);
+    --sbr-popup-badge-icon: var(--sbr-popup-white);
+    --sbr-popup-link-text: var(--sbr-popup-zinc-300);
+    --sbr-popup-link-hover-bg: var(--sbr-popup-accent-800);
+    --sbr-popup-close-bg: var(--sbr-popup-accent-600);
+    --sbr-popup-close-bg-hover: var(--sbr-popup-accent-700);
+}
+
+/* Dark - Inner (outer container) now uses semantic tokens */
+.sbr-review-alert--dark .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__wrapper:hover .sbr-review-alert__inner {
+    background-color: var(--sbr-popup-bg-inner-hover);
+}
+
+/* Dark - Card (content area) now uses --sbr-popup-bg-card semantic token */
+
+/* Dark - Wrapper hover - no white background */
+.sbr-review-alert--dark .sbr-review-alert__wrapper:hover {
+    background-color: transparent;
+}
+
+/* Dark - avatar, badge, date, text, stars, heading, link colors now handled by semantic tokens */
+
+/* Dark - All SVG icons white */
+/* Using simple global rule with specific overrides for browser compatibility (pre-Chrome 88/Firefox 84) */
+.sbr-review-alert--dark svg,
+.sbr-review-alert--dark svg path {
+    color: var(--sbr-popup-white);
+}
+
+/* Dark - Empty stars use semantic token for contrast */
+/* Include svg and svg path targets to override the global SVG color rule above */
+.sbr-review-alert--dark .sbr-review-alert__star--empty,
+.sbr-review-alert--dark .sbr-review-alert__star--empty svg,
+.sbr-review-alert--dark .sbr-review-alert__star--empty svg path,
+.sbr-review-alert--dark .sbr-review-alert__expanded-star--empty,
+.sbr-review-alert--dark .sbr-review-alert__expanded-star--empty svg,
+.sbr-review-alert--dark .sbr-review-alert__expanded-star--empty svg path {
+    color: var(--sbr-popup-star-empty);
+}
+
+/* Chevron uses stroke, not fill - reset fill and set stroke for dark mode */
+.sbr-review-alert--dark .sbr-review-alert__chevron svg {
+    fill: none;
+}
+
+/* Dark - Close button colors */
+.sbr-review-alert--dark .sbr-review-alert__close svg {
+    color: var(--sbr-popup-zinc-400);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__close:hover svg {
+    color: var(--sbr-popup-white);
+}
+
+/* ==========================================================================
+   Custom Accent Color Support
+
+   NOTE: Non-OKLCH fallback is handled via duplicate CSS property declarations.
+   Each accent color token has a hex fallback first, then OKLCH override:
+
+   --sbr-popup-accent-600: #4f46e5;  (hex fallback for legacy browsers)
+   --sbr-popup-accent-600: oklch(0.55 0.25 var(--sbr-popup-accent-hue));
+
+   Modern browsers use OKLCH, legacy browsers fall back to hex automatically.
+   No attribute selectors needed - the CSS cascade handles it.
+   ========================================================================== */
+
+/* ==========================================================================
+   COMPACT MODE - Near footer/bottom of page
+   Applied when user scrolls within 200px of page bottom
+   ========================================================================== */
+
+/* Compact mode - hide review text */
+.sbr-review-alert--compact .sbr-review-alert__review-text {
+    display: none;
+}
+
+/* Compact mode - hide view all link */
+.sbr-review-alert--compact .sbr-review-alert__view-all-link {
+    display: none;
+}
+
+/* Compact mode - date inline, aligned right */
+.sbr-review-alert--compact .sbr-review-alert__date {
+    position: static;
+    order: 3;
+    margin-left: auto;
+    font-size: 12px;
+}
+
+/* Compact mode - card becomes flex row to align date inline */
+.sbr-review-alert--compact .sbr-review-alert__card {
+    padding: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Compact mode - aggregate view inner width auto */
+.sbr-review-alert--compact.sbr-review-alert--aggregate .sbr-review-alert__inner {
+    width: auto;
+    min-width: 0;
+}
+
+/* Compact mode - content row doesn't grow, allows date to align right */
+.sbr-review-alert--compact .sbr-review-alert__content-row {
+    flex: 1;
+    align-items: center;
+}
+
+/* Compact mode - smaller avatar */
+.sbr-review-alert--compact .sbr-review-alert__avatar {
+    width: 40px;
+    height: 40px;
+}
+
+/* Compact mode - smaller provider badge */
+.sbr-review-alert--compact .sbr-review-alert__provider-badge {
+    width: 20px;
+    height: 20px;
+    bottom: -2px;
+    right: -2px;
+}
+
+.sbr-review-alert--compact .sbr-review-alert__provider-badge img,
+.sbr-review-alert--compact .sbr-review-alert__provider-badge svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Compact mode - smaller stars */
+.sbr-review-alert--compact .sbr-review-alert__star {
+    width: 16px;
+    height: 16px;
+}
+
+.sbr-review-alert--compact .sbr-review-alert__star svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Compact mode - content as horizontal row (name, stars, date inline) */
+.sbr-review-alert--compact .sbr-review-alert__content {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding-top: 0;
+}
+
+/* Compact mode - name first */
+.sbr-review-alert--compact .sbr-review-alert__heading {
+    order: 1;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Compact mode - stars second */
+.sbr-review-alert--compact .sbr-review-alert__stars {
+    order: 2;
+    margin-bottom: 0;
+}
+
+/* Compact mode - hide powered by footer */
+.sbr-review-alert--compact .sbr-review-alert__powered-by {
+    display: none;
+}
+
+/* Compact mode - adjust wrapper hover */
+.sbr-review-alert--compact .sbr-review-alert__wrapper:hover {
+    transform: scale(1.01);
+}
+
+/* ==========================================================================
+   EXPANDED STATE - Review Feed View
+   ========================================================================== */
+
+/* Expanded Container */
+.sbr-review-alert__expanded {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+    max-width: 450px;
+    max-height: 700px;
+    pointer-events: auto;
+    animation: sbr-popup-expand 300ms ease-out;
+}
+
+@keyframes sbr-popup-expand {
+    from {
+        opacity: 0;
+        transform: translateY(64px);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* Exit animation for collapsing expanded state */
+@keyframes sbr-popup-collapse {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(64px);
+        filter: blur(4px);
+    }
+}
+
+/* Apply exit animation when collapsing */
+.sbr-review-alert--collapsing .sbr-review-alert__expanded {
+    animation: sbr-popup-collapse 300ms ease-out forwards;
+}
+
+.sbr-review-alert--bottom-left .sbr-review-alert__expanded {
+    align-items: flex-start;
+}
+
+.sbr-review-alert--bottom-right .sbr-review-alert__expanded {
+    align-items: flex-end;
+}
+
+/* Expanded Card - Main container with gradient background */
+.sbr-review-alert__expanded-card {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    background: linear-gradient(to bottom, var(--sbr-popup-accent-700), var(--sbr-popup-accent-600), var(--sbr-popup-zinc-300));
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    padding: 8px;
+}
+
+/* Header Section - Blue background with heading + CTA */
+.sbr-review-alert__expanded-header {
+    padding: 24px 24px 40px;
+    text-align: center;
+}
+
+.sbr-review-alert__expanded-header--with-cta {
+    padding-bottom: 40px;
+}
+
+.sbr-review-alert__expanded-header--no-cta {
+    padding-bottom: 32px;
+}
+
+.sbr-review-alert__expanded-heading {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    color: var(--sbr-popup-white);
+    margin: 0;
+}
+
+.sbr-review-alert__expanded-heading--with-cta {
+    margin-bottom: 24px;
+}
+
+/* CTA Button */
+.sbr-review-alert__expanded-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--sbr-popup-white);
+    color: var(--sbr-popup-accent-700);
+    padding: 12px 32px;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms, color 150ms;
+}
+
+/* Light theme CTA hover - stronger selector to override WP admin a:hover */
+.sbr-review-alert .sbr-review-alert__expanded-cta:hover {
+    background-color: var(--sbr-popup-zinc-100);
+    color: var(--sbr-popup-accent-700);
+}
+
+/* CTA Button Icon */
+.sbr-review-alert__expanded-cta-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon,
+.sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon path {
+    fill: var(--sbr-popup-accent-700);
+}
+
+/* CTA Button with icon - icon on right side */
+.sbr-review-alert__expanded-cta--has-icon {
+    flex-direction: row-reverse;
+}
+
+/* Reviews Container - White scrollable area */
+.sbr-review-alert__expanded-reviews {
+    flex: 1;
+    min-height: 0;
+    background-color: var(--sbr-popup-white);
+    border-radius: 16px;
+    padding: 0;
+}
+
+/* Individual Review Card */
+.sbr-review-alert__expanded-review {
+    padding: 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sbr-review-alert__expanded-review:last-of-type {
+    border-bottom: none;
+}
+
+/* Review Stars Row */
+.sbr-review-alert__expanded-stars {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+}
+
+.sbr-review-alert__expanded-star {
+    display: inline-flex;
+    width: var(--sbr-popup-star-size);
+    height: var(--sbr-popup-star-size);
+    color: var(--sbr-popup-accent-600);
+    flex-shrink: 0;
+}
+
+.sbr-review-alert__expanded-star svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.sbr-review-alert__expanded-star span {
+    display: inline-flex;
+    width: 100%;
+    height: 100%;
+}
+
+.sbr-review-alert__expanded-star--empty {
+    color: var(--sbr-popup-zinc-300);
+}
+
+/* Review Title */
+.sbr-review-alert__expanded-review-title {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    color: var(--sbr-popup-zinc-900);
+    margin: 0 0 8px 0;
+}
+
+/* Review Text/Content */
+.sbr-review-alert__expanded-review-text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sbr-popup-zinc-600);
+    margin: 0 0 16px 0;
+}
+
+/* Review Meta - Author + Date */
+.sbr-review-alert__expanded-review-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sbr-popup-zinc-700);
+}
+
+.sbr-review-alert__expanded-review-author {
+    font-weight: 600;
+}
+
+.sbr-review-alert__expanded-review-date {
+    color: var(--sbr-popup-zinc-500);
+}
+
+/* See All Reviews Button */
+.sbr-review-alert__expanded-see-all {
+    padding: 8px 24px 24px;
+}
+
+.sbr-review-alert__expanded-see-all-btn {
+    width: 100%;
+    background-color: var(--sbr-popup-accent-muted-100);
+    color: var(--sbr-popup-accent-700);
+    cursor: pointer;
+    padding: 12px 24px;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 14px;
+    font-family: inherit;
+    border: 1px solid transparent;
+    transition: all 200ms;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.sbr-review-alert__expanded-see-all-btn:hover {
+    background-color: var(--sbr-popup-accent-50);
+    border-color: var(--sbr-popup-accent-300);
+    transform: scale(1.01);
+}
+
+.sbr-review-alert__expanded-see-all-btn:active {
+    transform: scale(0.98);
+}
+
+.sbr-review-alert__expanded-see-all-btn .sbr-review-alert__chevron {
+    width: 16px;
+    height: 16px;
+}
+
+/* Powered By - Sticky pill */
+.sbr-review-alert__expanded-powered-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 16px 8px;
+    position: sticky;
+    bottom: 0;
+}
+
+.sbr-review-alert__expanded-powered-pill {
+    background-color: var(--sbr-popup-white);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    border-radius: 9999px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.sbr-review-alert__expanded-powered-text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sbr-popup-zinc-700);
+}
+
+.sbr-review-alert__expanded-powered-logo {
+    height: 24px;
+}
+
+.sbr-review-alert__expanded-powered-logo svg {
+    height: 100%;
+    width: auto;
+}
+
+/* ==========================================================================
+   Close Button
+   ========================================================================== */
+
+.sbr-review-alert__close-row {
+    display: flex;
+}
+
+.sbr-review-alert--bottom-left .sbr-review-alert__close-row {
+    justify-content: flex-start;
+}
+
+.sbr-review-alert--bottom-right .sbr-review-alert__close-row {
+    justify-content: flex-end;
+}
+
+.sbr-review-alert__close-btn {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 9999px;
+    background-color: var(--sbr-popup-close-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    border: none;
+    padding: 0;
+}
+
+.sbr-review-alert__close-btn:hover {
+    background-color: var(--sbr-popup-close-bg-hover);
+    transform: scale(1.04);
+}
+
+.sbr-review-alert__close-btn:active {
+    transform: scale(0.98);
+}
+
+.sbr-review-alert__close-btn:focus-visible {
+    outline: 2px solid var(--sbr-popup-white);
+    outline-offset: 2px;
+}
+
+.sbr-review-alert__close-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert__close-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* ==========================================================================
+   Expanded State - Theme Variations
+   ========================================================================== */
+
+/* Dark Theme - Expanded State (standard dark theme only) */
+.sbr-review-alert--dark .sbr-review-alert__expanded-card {
+    background: linear-gradient(to bottom, var(--sbr-popup-accent-700), var(--sbr-popup-accent-muted-600), var(--sbr-popup-accent-muted-200));
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-reviews {
+    background-color: var(--sbr-popup-accent-muted-950);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-review {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-review-title {
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-review-text {
+    color: var(--sbr-popup-zinc-300);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-review-meta {
+    color: var(--sbr-popup-zinc-400);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-review-date {
+    color: var(--sbr-popup-zinc-400);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-see-all-btn {
+    background-color: var(--sbr-popup-accent-900);
+    color: var(--sbr-popup-accent-50);
+    border-color: transparent;
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-see-all-btn:hover {
+    background-color: var(--sbr-popup-accent-800);
+    border-color: var(--sbr-popup-accent-600);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-powered-pill {
+    background-color: var(--sbr-popup-accent-muted-900);
+    border-color: color-mix(in oklch, var(--sbr-popup-accent-muted-500) 20%, transparent);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-powered-text {
+    color: var(--sbr-popup-white);
+}
+
+/* Dark theme logo - white with dark inner star */
+.sbr-review-alert--dark .sbr-review-alert__expanded-powered-logo svg,
+.sbr-review-alert--dark .sbr-review-alert__expanded-powered-logo svg path {
+    fill: var(--sbr-popup-white) !important;
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-powered-logo svg path:last-child {
+    fill: var(--sbr-popup-accent-muted-900) !important;
+}
+
+/* Dark theme CTA button - white button on dark gradient header */
+.sbr-review-alert--dark .sbr-review-alert__expanded-cta {
+    background-color: var(--sbr-popup-white);
+    color: var(--sbr-popup-accent-700);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__expanded-cta:hover {
+    background-color: var(--sbr-popup-zinc-100);
+    color: var(--sbr-popup-accent-700); /* Override WP admin a:hover color */
+}
+
+/* Dark theme CTA icon - accent color to match text */
+.sbr-review-alert--dark .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon,
+.sbr-review-alert--dark .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon path {
+    fill: var(--sbr-popup-accent-700);
+}
+
+/* ==========================================================================
+   Minimal (Light) Theme - Expanded State
+   Colors from prototype: minimal/ReviewFeedTheme.module.css
+   Key: Translucent outer frame with white gradient interior
+   Same structure as minimal-dark: everything on expanded-card
+   ========================================================================== */
+
+/* Card wrapper - translucent accent outer frame with blur
+   Same approach as minimal-dark but with light colors */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-card {
+    background: color-mix(in oklch, var(--sbr-popup-accent-muted-600) 30%, transparent);
+    backdrop-filter: saturate(4) blur(4px);
+    -webkit-backdrop-filter: saturate(4) blur(4px);
+}
+
+/* Header - white gradient background (creates the light interior look) */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-header {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), white);
+    border-bottom: 1px solid color-mix(in oklch, var(--sbr-popup-accent-900) 1%, transparent);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Heading - dark text on light background */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-heading {
+    color: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 80%, transparent);
+}
+
+/* CTA button - accent colored */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-cta {
+    background-color: var(--sbr-popup-accent-600);
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__expanded-cta:hover {
+    background-color: var(--sbr-popup-accent-800);
+    color: var(--sbr-popup-white); /* Override WP admin a:hover color */
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon,
+.sbr-review-alert--minimal .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon path {
+    fill: var(--sbr-popup-white);
+}
+
+/* Reviews container - white background (continues from header) */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-reviews {
+    background: white;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Reviews container - rounded top when header is hidden */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-reviews--no-header {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Review card border - very subtle */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-review {
+    border-bottom-color: color-mix(in oklch, var(--sbr-popup-accent-muted-500) 20%, transparent);
+}
+
+/* Stars - dark gray, matching text */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-star {
+    color: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 80%, transparent);
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__expanded-star--empty {
+    color: var(--sbr-popup-accent-muted-300);
+}
+
+/* Review title - dark */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-review-title {
+    color: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 80%, transparent);
+}
+
+/* Review text - slightly lighter */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-review-text {
+    color: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 70%, transparent);
+}
+
+/* Review meta - same as text */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-review-meta {
+    color: color-mix(in oklch, var(--sbr-popup-accent-muted-950) 70%, transparent);
+}
+
+/* See all button - light background with accent text */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-see-all-btn {
+    background-color: var(--sbr-popup-accent-muted-100);
+    color: var(--sbr-popup-accent-700);
+    border: 1px solid var(--sbr-popup-accent-muted-200);
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__expanded-see-all-btn:hover {
+    background-color: var(--sbr-popup-accent-muted-50);
+}
+
+/* Powered by pill - white with subtle border */
+.sbr-review-alert--minimal .sbr-review-alert__expanded-powered-pill {
+    background-color: var(--sbr-popup-white);
+    border-color: color-mix(in oklch, var(--sbr-popup-accent-muted-500) 20%, transparent);
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__expanded-powered-text {
+    color: var(--sbr-popup-accent-muted-900);
+}
+
+/* Close button - dark accent */
+.sbr-review-alert--minimal .sbr-review-alert__close-btn {
+    background-color: var(--sbr-popup-accent-900);
+}
+
+.sbr-review-alert--minimal .sbr-review-alert__close-btn:hover {
+    background-color: var(--sbr-popup-accent-600);
+}
+
+/* ==========================================================================
+   Minimal Dark Theme - Expanded State (Override shared dark styles)
+   Colors from prototype: minimal-dark/ReviewFeedTheme.module.css
+   Key: Semi-transparent wrapper with dark gradient interior
+   ========================================================================== */
+
+/* Card wrapper - translucent accent outer frame (same as minimal light)
+   Both minimal themes share the same outer frame, just different inner colors */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-card {
+    background: color-mix(in oklch, var(--sbr-popup-accent-muted-500) 30%, transparent);
+    backdrop-filter: saturate(4) blur(12px);
+    -webkit-backdrop-filter: saturate(4) blur(12px);
+}
+
+/* Header - dark gradient background (inner card look) */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-header {
+    background: linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--sbr-popup-accent-muted-900) 70%, transparent),
+        color-mix(in oklch, var(--sbr-popup-accent-muted-950) 90%, transparent)
+    );
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Heading - white text */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-heading {
+    color: var(--sbr-popup-white);
+}
+
+/* CTA button - lighter on hover for dark theme */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-cta {
+    background-color: var(--sbr-popup-accent-600);
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-cta:hover {
+    background-color: var(--sbr-popup-accent-300);
+    color: var(--sbr-popup-white); /* Override WP admin a:hover color */
+}
+
+/* CTA icon - white to match text */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon path {
+    fill: var(--sbr-popup-white);
+}
+
+/* Reviews container - dark gradient continuing from header */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-reviews {
+    background: linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--sbr-popup-accent-muted-950) 90%, transparent),
+        var(--sbr-popup-zinc-900)
+    );
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Reviews container - rounded top when header is hidden */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-reviews--no-header {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Review card border */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-review {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Stars - white */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star {
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star--empty,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star--empty svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-star--empty svg path {
+    color: var(--sbr-popup-zinc-600);
+}
+
+/* Review title - white */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-review-title {
+    color: var(--sbr-popup-white);
+}
+
+/* Review text - white at 70% */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-review-text {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Review meta - white at 70% */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-review-meta {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* See all button - semi-transparent with accent-300 text */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-see-all-btn {
+    background-color: color-mix(in oklch, var(--sbr-popup-accent-muted-400) 10%, transparent);
+    color: var(--sbr-popup-accent-300);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-see-all-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Powered by pill - zinc-900 background */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-powered-pill {
+    background-color: var(--sbr-popup-zinc-900);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-powered-text {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Logo - white with dark inner star */
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-powered-logo svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-powered-logo svg path {
+    fill: var(--sbr-popup-white) !important;
+    color: var(--sbr-popup-white);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__expanded-powered-logo svg path:last-child {
+    fill: var(--sbr-popup-zinc-900) !important;
+}
+
+/* Close button */
+.sbr-review-alert--minimal-dark .sbr-review-alert__close-btn {
+    background-color: var(--sbr-popup-accent-700);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__close-btn:hover {
+    background-color: var(--sbr-popup-accent-600);
+}
+
+/* ==========================================================================
+   Loading Skeleton Placeholder
+   Animated placeholder while reviews are loading
+   Compact size to match actual popup dimensions
+   ========================================================================== */
+
+@keyframes sbr-skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.sbr-popup-skeleton {
+    background: linear-gradient(90deg, #e6e6eb 25%, #f0f0f3 50%, #e6e6eb 75%);
+    background-size: 200% 100%;
+    animation: sbr-skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+/* Avatar skeleton - matches popup avatar size */
+.sbr-popup-skeleton--avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+}
+
+/* Stars skeleton - compact row */
+.sbr-popup-skeleton--stars {
+    width: 88px;
+    height: 14px;
+    margin-bottom: 6px;
+    animation-delay: 0.1s;
+}
+
+/* Heading skeleton - single line */
+.sbr-popup-skeleton--heading {
+    width: 120px;
+    height: 12px;
+    margin-bottom: 6px;
+    animation-delay: 0.2s;
+}
+
+/* Text skeleton - two lines worth */
+.sbr-popup-skeleton--text {
+    width: 150px;
+    height: 24px;
+    margin-bottom: 8px;
+    animation-delay: 0.3s;
+}
+
+/* Link skeleton - view all link */
+.sbr-popup-skeleton--link {
+    width: 100px;
+    height: 12px;
+    animation-delay: 0.4s;
+}
+
+/* Powered by skeleton */
+.sbr-popup-skeleton--powered-by {
+    width: 90px;
+    height: 14px;
+    margin: 0 auto;
+    animation-delay: 0.5s;
+}
+
+/* Dark theme skeleton colors */
+.sbr-review-alert--dark .sbr-popup-skeleton,
+.sbr-review-alert--minimal-dark .sbr-popup-skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+    background-size: 200% 100%;
+}
+
+/* ==========================================================================
+   Empty State Styles (Admin Preview Only)
+   ========================================================================== */
+
+.sbr-review-alert__empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    text-align: center;
+    min-height: 100px;
+}
+
+.sbr-review-alert__empty-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+    color: #9CA3AF;
+}
+
+.sbr-review-alert__empty-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.sbr-review-alert__empty-icon--large {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+}
+
+.sbr-review-alert__empty-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6B7280;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.sbr-review-alert__expanded-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    min-height: 200px;
+}
+
+/* Dark theme empty state */
+.sbr-review-alert--dark .sbr-review-alert__empty-icon,
+.sbr-review-alert--minimal-dark .sbr-review-alert__empty-icon {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__empty-text,
+.sbr-review-alert--minimal-dark .sbr-review-alert__empty-text {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==========================================================================
+   Review Cycling Animation
+   Animate individual elements for smooth transition between reviews
+   ========================================================================== */
+
+.sbr-review-alert__review--cycling .sbr-review-alert__avatar {
+    animation: sbr-element-cycle 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sbr-review-alert__review--cycling .sbr-review-alert__heading {
+    animation: sbr-element-cycle 500ms cubic-bezier(0.4, 0, 0.2, 1) 30ms;
+}
+
+.sbr-review-alert__review--cycling .sbr-review-alert__stars {
+    animation: sbr-element-cycle 500ms cubic-bezier(0.4, 0, 0.2, 1) 60ms;
+}
+
+.sbr-review-alert__review--cycling .sbr-review-alert__review-text {
+    animation: sbr-element-cycle 500ms cubic-bezier(0.4, 0, 0.2, 1) 90ms;
+}
+
+@keyframes sbr-element-cycle {
+    0% { opacity: 1; transform: translateX(0); }
+    40% { opacity: 0; transform: translateX(-12px); }
+    50% { opacity: 0; transform: translateX(12px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ==========================================================================
+   Responsive Styles
+   ========================================================================== */
+
+@media (max-width: 480px) {
+    .sbr-review-alert {
+        --sbr-popup-avatar-size: 48px;
+        --sbr-popup-provider-badge-size: 24px;
+        --sbr-popup-star-size: 16px;
+        --sbr-popup-width: calc(100vw - 16px);
+    }
+
+    .sbr-review-alert__card {
+        padding: 12px 16px 12px 16px;
+    }
+
+    .sbr-review-alert__content-row {
+        gap: 16px;
+    }
+
+    .sbr-review-alert__heading,
+    .sbr-review-alert__reviewer-text {
+        font-size: 14px;
+    }
+
+    .sbr-review-alert__review-text {
+        font-size: 13px;
+    }
+
+    .sbr-review-alert__view-all-link {
+        font-size: 13px;
+    }
+
+    .sbr-review-alert__date {
+        font-size: 12px;
+        top: 12px;
+        right: 12px;
+    }
+
+    .sbr-review-alert__stars {
+        margin-bottom: 8px;
+    }
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+/* Focus styles */
+.sbr-review-alert__view-all-link:focus,
+.sbr-review-alert__powered-link:focus {
+    outline: 2px solid var(--sbr-popup-accent-600, #4f46e5);
+    outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .sbr-review-alert,
+    .sbr-review-alert *,
+    .sbr-review-alert__wrapper,
+    .sbr-review-alert__view-all-link::before {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+    .sbr-review-alert__inner {
+        border: 2px solid CanvasText;
+    }
+
+    .sbr-review-alert__card {
+        border: 1px solid CanvasText;
+    }
+}

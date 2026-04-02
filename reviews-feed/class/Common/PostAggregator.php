@@ -49,16 +49,35 @@ class PostAggregator {
 		return $this->post_set = array_merge($this->post_set, $post_set);
 	}
 
-	public function db_post_set($requests_needed)
+	/**
+	 * Get posts from database for given sources
+	 *
+	 * @param array      $requests_needed Source IDs to fetch posts for
+	 * @param string|int $language_or_limit Language code (deprecated, ignored) or limit number
+	 * @param int        $limit             Maximum number of posts to fetch (default 150)
+	 * @return array
+	 */
+	public function db_post_set($requests_needed, $language_or_limit = null, $limit = 150)
 	{
 		global $wpdb;
 		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
 		$where_clause = $this->build_provider_business_where_clause($requests_needed);
 
+		// Handle backwards compatibility: if second param is numeric, treat it as limit
+		// Otherwise, use third param (for calls that pass language string as second param)
+		if (is_numeric($language_or_limit) && $language_or_limit > 0) {
+			$limit = absint($language_or_limit);
+		} else {
+			$limit = absint($limit);
+		}
+
+		// Ensure minimum limit of 1
+		$limit = max(1, $limit);
+
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is esc_sql'd, where_clause built from sanitized values
 		$results = $wpdb->get_results(
 			"SELECT * FROM $table_name
-					WHERE $where_clause ORDER BY time_stamp DESC LIMIT 150",
+					WHERE $where_clause ORDER BY time_stamp DESC LIMIT $limit",
 			ARRAY_A
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared

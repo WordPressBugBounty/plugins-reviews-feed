@@ -1,0 +1,122 @@
+/**
+ * Review Alert Frontend Styles
+ *
+ * This file contains ONLY frontend-specific styles that are NOT needed in the admin preview:
+ * - Fixed positioning and z-index
+ * - Visibility transitions (show/hide)
+ * - Position variants (top/bottom, left/right)
+ * - Print styles (hide popup when printing)
+ *
+ * All other styles (theme, responsive, accessibility, compact mode) are in the
+ * customizer theme CSS which is loaded via symlink.
+ *
+ * @since 2.5.0
+ * @package SmashBalloon\Reviews
+ */
+
+/* ==========================================================================
+   Frontend-Specific Variables
+   ========================================================================== */
+
+:root {
+	/* Spacing from viewport edges */
+	--sbr-popup-offset-x: 24px;
+	--sbr-popup-offset-y: 24px;
+
+	/* Animation timing */
+	--sbr-popup-animation-slide: 300ms ease-out;
+
+	/* Z-Index (high to stay above most content) */
+	--sbr-popup-z-index: 10000;
+}
+
+/* Smaller offsets on mobile */
+@media (max-width: 480px) {
+	:root {
+		--sbr-popup-offset-x: 8px;
+		--sbr-popup-offset-y: 8px;
+	}
+}
+
+/* ==========================================================================
+   Fixed Positioning (Frontend Only)
+   ========================================================================== */
+
+.sbr-review-alert {
+	position: fixed;
+	z-index: var(--sbr-popup-z-index);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(64px);
+	filter: blur(4px);
+	transition:
+		opacity var(--sbr-popup-animation-slide),
+		visibility var(--sbr-popup-animation-slide),
+		transform var(--sbr-popup-animation-slide),
+		filter var(--sbr-popup-animation-slide);
+	/* Hint browser about upcoming animations for GPU optimization */
+	will-change: opacity, transform, filter;
+}
+
+/* Visible state */
+.sbr-review-alert.sbr-review-alert--visible {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+	filter: blur(0);
+	background: transparent;
+}
+
+/* ==========================================================================
+   Position Variants
+   ========================================================================== */
+
+.sbr-review-alert--bottom-right {
+	bottom: var(--sbr-popup-offset-y);
+	right: var(--sbr-popup-offset-x);
+}
+
+.sbr-review-alert--bottom-left {
+	bottom: var(--sbr-popup-offset-y);
+	left: var(--sbr-popup-offset-x);
+}
+
+.sbr-review-alert--top-right {
+	top: var(--sbr-popup-offset-y);
+	right: var(--sbr-popup-offset-x);
+}
+
+.sbr-review-alert--top-left {
+	top: var(--sbr-popup-offset-y);
+	left: var(--sbr-popup-offset-x);
+}
+
+/* Top positions slide down instead of up */
+.sbr-review-alert--top-right:not(.sbr-review-alert--visible),
+.sbr-review-alert--top-left:not(.sbr-review-alert--visible) {
+	transform: translateY(-64px);
+}
+
+/* ==========================================================================
+   Logo SVG Support (inline SVG, matches admin preview)
+   ========================================================================== */
+
+.sbr-review-alert__logo svg {
+	height: 100%;
+	width: auto;
+}
+
+/* Minimal theme: override white fill to accent color for visibility on white background */
+.sbr-review-alert--minimal .sbr-review-alert__logo svg path {
+	fill: var(--sbr-popup-accent-muted-800, #4a5568);
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+	.sbr-review-alert {
+		display: none !important;
+	}
+}

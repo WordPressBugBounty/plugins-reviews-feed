@@ -940,6 +940,37 @@ class Util
 		return defined('SBR_PRO') && SBR_PRO === true;
 	}
 
+	/**
+	 * Check if user has Pro Plus tier
+	 *
+	 * @since 2.5.0
+	 *
+	 * @return boolean
+	 */
+	public static function sbr_is_pro_plus()
+	{
+		if (!self::sbr_is_pro()) {
+			return false;
+		}
+
+		// Read from sbr_statuses where license_tier is written during license activation
+		// This is consistent with AuthorizationStatusCheck::get_license_tier()
+		$statuses = get_option('sbr_statuses', []);
+		$license_tier = $statuses['license_tier'] ?? 0;
+
+		// Handle All Access Bundle special case (same as AuthorizationStatusCheck)
+		if (
+			isset($statuses['license_info']['item_name'])
+			&& $statuses['license_info']['item_name'] === 'All Access Bundle - All Plugins Unlimited'
+		) {
+			$license_tier = 3;
+		}
+
+		// Tiers: 1 = Pro Basic, 2 = Pro Plus, 3 = Elite
+		// Pro Plus and Elite (tiers 2 and 3) have full access
+		return (int) $license_tier >= 2;
+	}
+
 
 	/**
 	 * Get List of Upsell Modal Content
@@ -950,10 +981,13 @@ class Util
 	 */
 	public static function upsell_modal_content()
 	{
+		// Pro users (including Pro Plus) don't need provider upsell modals
+		// Note: Review Alert Pro Plus upsells are handled separately in SBR_ReviewAlert_Builder
 		if (Util::sbr_is_pro()) {
 			return [];
 		}
 
+		// Free users get all upsell modals
 		return [
 			'facebookProvider' => [
 				'heading' => __('Upgrade to Pro to display Facebook reviews', 'reviews-feed'),
@@ -1134,6 +1168,131 @@ class Util
 				'buttons' => [
 					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=all-feeds&utm_medium=responsive-modal&utm_content=LiteUsers50OFF',
 					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=customizer&utm_medium=temresponsiveplate-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			// Review Alert Upsell Modals
+			'reviewAlertFeature' => [
+				'heading' => __('Upgrade to Pro for Review Alerts', 'reviews-feed'),
+				'description' => __('Display eye-catching review popups that cycle through your best reviews to boost social proof and conversions.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-feature-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-feature-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertRecentReviews' => [
+				'heading' => __('Upgrade to Pro for Recent Reviews popup', 'reviews-feed'),
+				'description' => __('Cycle through your individual reviews one by one to showcase real customer feedback and build trust.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-recent-reviews-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-recent-reviews-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertVariations' => [
+				'heading' => __('Upgrade to Pro for more popup styles', 'reviews-feed'),
+				'description' => __('Unlock V2 and V3 style variations for your notification popups with unique layouts and designs.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-variations-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-variations-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertDarkTheme' => [
+				'heading' => __('Upgrade to Pro for dark theme popups', 'reviews-feed'),
+				'description' => __('Match your site\'s dark mode with elegant dark-themed notification popups.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-dark-theme-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-dark-theme-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertCustomColor' => [
+				'heading' => __('Upgrade to Pro for custom popup colors', 'reviews-feed'),
+				'description' => __('Customize your popup accent color to perfectly match your brand identity.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-custom-color-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-custom-color-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertMultiple' => [
+				'heading' => __('Upgrade to Pro Plus for multiple popups', 'reviews-feed'),
+				'description' => __('Create unlimited notification popups and display different popups on different pages.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-multiple-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-multiple-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertTargeting' => [
+				'heading' => __('Upgrade to Pro for page targeting', 'reviews-feed'),
+				'description' => __('Control exactly where your notification popups appear with specific page targeting and exclusions.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-targeting-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-targeting-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'reviewAlertBranding' => [
+				'heading' => __('Remove Smash Balloon Branding', 'reviews-feed'),
+				'description' => __('Present a clean, professional look by removing the \'Powered by\' badge from your notification popups.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-branding-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-branding-modal&utm_content=Upgrade',
+					'learnMore' => 'https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=review-alert&utm_medium=popup-branding-modal&utm_content=LearnMore'
+				],
+				'includeContent' => true
+			]
+		];
+	}
+
+	/**
+	 * Get Pro Plus upsell content for Pro users
+	 *
+	 * Returns upsell modals for features that require Pro Plus tier.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @return array
+	 */
+	public static function get_pro_plus_upsell_content()
+	{
+		return [
+			'reviewAlertMultiple' => [
+				'heading' => __('Upgrade to Pro Plus for multiple popups', 'reviews-feed'),
+				'description' => __('Create unlimited notification popups and display different popups on different pages.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-pro&utm_source=review-alert&utm_medium=popup-multiple-modal&utm_content=UpgradeToProPlus'
+				],
+				'includeContent' => false
+			],
+			'reviewAlertTargeting' => [
+				'heading' => __('Upgrade to Pro Plus for page targeting', 'reviews-feed'),
+				'description' => __('Control exactly where your notification popups appear with specific page targeting and exclusions.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-pro&utm_source=review-alert&utm_medium=popup-targeting-modal&utm_content=UpgradeToProPlus'
+				],
+				'includeContent' => false
+			],
+			'reviewAlertBranding' => [
+				'heading' => __('Remove Smash Balloon Branding', 'reviews-feed'),
+				'description' => __('Present a clean, professional look by removing the \'Powered by\' badge from your notification popups.', 'reviews-feed'),
+				'image' => 'upsell-review-alert.png',
+				'buttons' => [
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-pro&utm_source=review-alert&utm_medium=popup-branding-modal&utm_content=UpgradeToProPlus',
+					'learnMore' => 'https://smashballoon.com/reviews-feed/?utm_campaign=reviews-pro&utm_source=review-alert&utm_medium=popup-branding-modal&utm_content=LearnMore'
 				],
 				'includeContent' => true
 			]
