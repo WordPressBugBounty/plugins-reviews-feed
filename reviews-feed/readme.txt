@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.5.0
+Stable tag: 2.5.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,12 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.5.1 =
+* Fix: Resolved an issue where email verification could get stuck in a loop if the email was already verified.
+* Fix: Resolved an error that could occur when clicking an expired email verification link.
+* Fix: Email verification now completes successfully even if your session has expired.
+* Tweak: Improved security for the email verification process.
+
 = 2.5.0 =
 * Fix: Resolved PHP 8.1+ deprecation warning when feed settings were not an array.
 * Tweak: Added security fix with rel="noreferrer" on external links.
