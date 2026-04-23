@@ -19,6 +19,8 @@ use SmashBalloon\Reviews\Common\Services\FeedCacheUpdateService;
 use SmashBalloon\Reviews\Common\Services\SBR_Upgrader;
 use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
 use SmashBalloon\Reviews\Common\Services\ShortcodeService;
+use SmashBalloon\Reviews\Common\Services\MigrationReactivationNotice;
+use SmashBalloon\Reviews\Common\Services\SiteUrlWatcher;
 use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 use Smashballoon\Stubs\Services\ServiceProvider;
 use SmashBalloon\Reviews\Common\Services\Upgrade\RoutineManagerService;
@@ -44,6 +46,14 @@ class ServiceContainer extends ServiceProvider
 		FeedCacheUpdateService::class,
 		SettingsManagerService::class,
 		ShortcodeService::class,
+		// SMASH-1281 — syncs sbr_settings['website_url'] when WP admin
+		// legitimately changes the site URL, preventing the proactive
+		// site-migration guard from spuriously firing on HTTP→HTTPS rollouts
+		// or www/apex swaps.
+		SiteUrlWatcher::class,
+		// SMASH-1281 — renders the dismissible admin notice after a
+		// successful silent license re-activation on a migrated site.
+		MigrationReactivationNotice::class,
 		Google::class,
 		Yelp::class,
 		CLIService::class,

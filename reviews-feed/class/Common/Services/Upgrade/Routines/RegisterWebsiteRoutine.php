@@ -20,6 +20,9 @@ class RegisterWebsiteRoutine extends ServiceProvider
 	protected function will_run()
 	{
 		$settings = get_option('sbr_settings', []);
+		if (!is_array($settings)) {
+			return true; // corrupted state — re-register and rewrite as array
+		}
 		return !isset($settings['access_token']) || $settings['access_token'] === '';
 	}
 
@@ -42,7 +45,17 @@ class RegisterWebsiteRoutine extends ServiceProvider
 		$token = $response['data']['token'] ?? $response['token'] ?? null;
 		if ($token) {
 			$settings = get_option('sbr_settings', []);
+			// `$settings` is written below as an array. A corrupted non-array
+			// value would PHP-fatal on the offset write in PHP 8+ — normalize
+			// first so recovery can proceed instead of crashing.
+			if (!is_array($settings)) {
+				$settings = [];
+			}
 			$settings['access_token'] = $token;
+			// Store the URL we registered with so SBRelay::detect_site_migration()
+			// has a reference point. A later DB copy / staging→live push will show
+			// a different get_home_url() and trigger proactive recovery. SMASH-1281.
+			$settings['website_url']  = get_home_url();
 			update_option('sbr_settings', $settings);
 		}
 	}

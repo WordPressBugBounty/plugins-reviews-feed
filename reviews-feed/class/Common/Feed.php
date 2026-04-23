@@ -269,18 +269,59 @@ class Feed
 		$remote_header_data = $this->get_remote_header_data($settings);
 
 		if (!empty($remote_header_data) && isset($remote_header_data[0]) && isset($remote_header_data[0]['info']) && isset($remote_header_data[0]['info']['id'])) {
+			// Use get_provider_for_source to match the correct provider for the first header entry
+			$first_header_id = $remote_header_data[0]['info']['id'];
+			$first_header_provider = $this->get_provider_for_source($first_header_id, $settings['sources']);
 			$persistent_business_data_cache = new BusinessDataCache();
-			$persistent_business_data_cache->update_data($settings['sources'][0]['provider'], $remote_header_data[0]['info']['id'], $remote_header_data);
+			$persistent_business_data_cache->update_data($first_header_provider ?: ($settings['sources'][0]['provider'] ?? ''), $first_header_id, $remote_header_data);
 			$this->feed_cache->update_or_insert('header', json_encode($remote_header_data));
-			$source_to_update = [
-				'id' 			=> $remote_header_data[0]['info']['id'],
-				'provider' 			=> $settings['sources'][0]['provider'],
-				'last_updated' => date('Y-m-d H:i:s'),
-				'info' 		=> json_encode($remote_header_data[0]['info'])
-			];
-			SBR_Sources::update($source_to_update);
+
+			// Update ALL sources in DB, not just the first one
+			foreach ($remote_header_data as $index => $source_data) {
+				if (empty($source_data['info']['id'])) {
+					continue;
+				}
+				$provider = $this->get_provider_for_source($source_data['info']['id'], $settings['sources']);
+				// Fall back to index-based provider when ID lookup fails (e.g., type mismatch)
+				if (empty($provider) && isset($settings['sources'][$index]['provider'])) {
+					$provider = $settings['sources'][$index]['provider'];
+				}
+				if (empty($provider)) {
+					continue;
+				}
+				$source_to_update = [
+					'id'           => $source_data['info']['id'],
+					'provider'     => $provider,
+					'last_updated' => date('Y-m-d H:i:s'),
+					'info'         => json_encode($source_data['info'])
+				];
+				SBR_Sources::update($source_to_update);
+			}
 		}
 		return $remote_header_data;
+	}
+
+	/**
+	 * Get the provider name for a source ID from the sources settings array
+	 *
+	 * @param string $source_id
+	 * @param array  $sources
+	 *
+	 * @return string
+	 */
+	private function get_provider_for_source($source_id, $sources)
+	{
+		foreach ($sources as $source) {
+			$info = $source['info'] ?? [];
+			if (is_string($info)) {
+				$info = json_decode($info, true) ?: [];
+			}
+			$info_id = $info['id'] ?? $source['account_id'] ?? '';
+			if ($info_id === $source_id || ($source['account_id'] ?? '') === $source_id) {
+				return $source['provider'] ?? '';
+			}
+		}
+		return '';
 	}
 
 	public function update_header_cache_from_source()
@@ -300,38 +341,39 @@ class Feed
 			}
 		}
 
-		$total_rating = 0;
-		$rating = 0;
+		// Build per-source header data so Parser can iterate each source correctly
+		$remote_header_data = [];
 		foreach ($settings['sources'] as $s_source) {
-			// Handle both standard sources (total_rating/rating) and WooCommerce (review_count/average_rating)
-			$source_total = $s_source['info']['total_rating'] ?? $s_source['info']['review_count'] ?? 0;
-			$source_rating = $s_source['info']['rating'] ?? $s_source['info']['average_rating'] ?? 0;
-			$total_rating += intval($source_total);
-			$rating += floatval($source_rating);
-		}
-		$rating_average = $rating > 0 ? $rating / sizeof($settings['sources']) : 0;
-
-		// Get source ID - use account_id as fallback for WooCommerce multi-product sources
-		$source_id = $settings['sources'][0]['info']['id'] ?? $settings['sources'][0]['account_id'] ?? '';
-		$source_name = $settings['sources'][0]['info']['name'] ?? $settings['sources'][0]['info']['source_name'] ?? $settings['sources'][0]['name'] ?? 'Unknown';
-
-		$remote_header_data = [
-			[
+			$source_info = $s_source['info'] ?? [];
+			if (empty($source_info)) {
+				continue;
+			}
+			$remote_header_data[] = [
 				'info' => [
-					'id' => $source_id,
-					'name' => $source_name,
-					'rating' => $rating_average,
-					'total_rating' => $total_rating,
-					'url' => $settings['sources'][0]['info']['url'] ?? ''
+					'id'           => $source_info['id'] ?? $s_source['account_id'] ?? '',
+					'name'         => $source_info['name'] ?? $source_info['source_name'] ?? $s_source['name'] ?? 'Unknown',
+					'rating'       => $source_info['rating'] ?? $source_info['average_rating'] ?? 0,
+					'total_rating' => $source_info['total_rating'] ?? $source_info['review_count'] ?? 0,
+					'url'          => $source_info['url'] ?? ''
 				]
-			]
-		];
+			];
+		}
 
-		$persistent_business_data_cache = new BusinessDataCache();
-		$persistent_business_data_cache->update_data($settings['sources'][0]['provider'], $source_id, $remote_header_data);
-		$this->feed_cache->update_or_insert('header', json_encode($remote_header_data));
+		if (!empty($remote_header_data)) {
+			$first_source = $remote_header_data[0]['info'] ?? [];
+			$first_source_id = $first_source['id'] ?? '';
+			$first_provider = !empty($first_source_id)
+				? $this->get_provider_for_source($first_source_id, $settings['sources'])
+				: '';
+			if (empty($first_provider)) {
+				$first_provider = $settings['sources'][0]['provider'] ?? '';
+			}
+			$persistent_business_data_cache = new BusinessDataCache();
+			$persistent_business_data_cache->update_data($first_provider, $first_source_id, $remote_header_data);
+			$this->feed_cache->update_or_insert('header', json_encode($remote_header_data));
+		}
 
-		return $remote_header_data ;
+		return $remote_header_data;
 	}
 
 
@@ -557,13 +599,27 @@ class Feed
 				$new_data = $remote_request->fetch();
 			}
 
-			// Skip if no data was returned
+			// If no data was returned, fall back to stored source info for header requests
 			if (!isset($new_data['data'])) {
+				if ($type === 'sources' && !empty($request['info'])) {
+					$fallback_info = is_string($request['info']) ? json_decode($request['info'], true) : $request['info'];
+					if (!empty($fallback_info) && is_array($fallback_info)) {
+						array_push($data, ['info' => $fallback_info]);
+					}
+				}
 				continue;
 			}
 
-			// Handle errors
+			// Handle errors — for source requests, fall back to stored info
 			if (! empty($new_data['data']['error'])) {
+				$used_fallback = false;
+				if ($type === 'sources' && !empty($request['info'])) {
+					$fallback_info = is_string($request['info']) ? json_decode($request['info'], true) : $request['info'];
+					if (!empty($fallback_info) && is_array($fallback_info)) {
+						array_push($data, ['info' => $fallback_info]);
+						$used_fallback = true;
+					}
+				}
 				$message = ! empty(( $new_data['message'] )) ? wp_strip_all_tags($new_data['message']) : 'An error has occurred when fetching new reviews';
 				if (is_array($new_data['data']['error'])) {
 					$message .= '<br>';
@@ -575,6 +631,12 @@ class Feed
 				$message .= sprintf(__('This is affecting the source %s for %s. New reviews will not be fetched until this is resolved.', 'reviews-feed'), wp_strip_all_tags($request['name']), wp_strip_all_tags($request['provider']));
 				$message .= '<br><br>';
 				$this->add_error($message, sprintf(__('Troubleshoot by visiting %serror message reference page%s.', 'reviews-feed'), '<a href="https://smashballoon.com/doc/reviews-feed-error-message-reference/?reviews&utm_campaign=reviews-pro&utm_source=feed&utm_medium=apierror&utm_content=Error%20Message%20Reference" target="_blank" rel="noopener noreferrer">', '</a>'));
+				// For source requests: always skip the normal data push after error handling
+				// (error structures lack 'info' key and would break update_header_cache)
+				// For review requests: preserve original fall-through behavior
+				if ($type === 'sources') {
+					continue;
+				}
 			}
 
 			$new_data = $this->add_source_to_post_set($request, $new_data);

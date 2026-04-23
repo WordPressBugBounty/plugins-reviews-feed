@@ -85,6 +85,9 @@ class UsageTrackingService extends ServiceProvider {
 
 		$settings_to_send = array();
 		$raw_settings     = get_option('sbr_settings', array());
+		if (! is_array($raw_settings)) {
+			$raw_settings = array();
+		}
 		$feeds = DB::get_feeds_list();
 		$feed_settings = [];
 

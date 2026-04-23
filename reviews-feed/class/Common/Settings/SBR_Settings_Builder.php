@@ -60,7 +60,7 @@ class SBR_Settings_Builder extends Settings_Builder {
 
 	public function custom_settings_data()
 	{
-		EmailVerification::catch_email_verification();
+		$verification_result = EmailVerification::catch_email_verification();
 
 		$settings_data = [
 			'nonce' => wp_create_nonce('sbr-admin'),
@@ -88,11 +88,18 @@ class SBR_Settings_Builder extends Settings_Builder {
 			'bulkHistorySources'    => get_option('sbr_bulk_sources', []),
 			'freeRetrieverData'     => Util::get_free_retriever_data(),
 			'emailVerificationURL'    => EmailVerification::build_email_verification_url(),
-			'isEmailVerified'    => EmailVerification::check_verified()
+			// Try recovery before checking verified status (handles stuck loop case)
+			'isEmailVerified'    => EmailVerification::check_and_recover_verification()
 		];
 
+		// Check if verification was attempted but failed
 		if (!empty($_GET['sbr_email_token']) && !empty($_GET['verified_email'])) {
-			$settings_data['openSourceModal'] = true;
+			if ($verification_result === true) {
+				$settings_data['openSourceModal'] = true;
+			} else {
+				// Verification failed - pass error to frontend
+				$settings_data['emailVerificationError'] = EmailVerification::get_verification_error_message();
+			}
 		}
 		if (isset($_GET['manualsource']) && $_GET['manualsource'] == true) {
 			$settings_data['manualSourcePopupInit'] = true;

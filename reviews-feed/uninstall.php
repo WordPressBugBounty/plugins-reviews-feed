@@ -9,6 +9,9 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 
 
 $settings = get_option('sbr_settings', array());
+if (! is_array($settings)) {
+	$settings = array();
+}
 
 $preserve_settings = ! empty($settings['preserve_settings']) && $settings['preserve_settings'];
 

@@ -59,7 +59,10 @@ class SettingsManagerService extends ServiceProvider
 
 	public function get_settings(): array
 	{
-		return get_option($this->settings_options, []);
+		$settings = get_option($this->settings_options, []);
+		// Return type is `array` — coerce corrupted non-array state to [] to
+		// avoid a TypeError and let SMASH-1281's recovery flow re-register.
+		return is_array($settings) ? $settings : [];
 	}
 
 	public function sanitize_settings($data)

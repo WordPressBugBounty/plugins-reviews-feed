@@ -48,6 +48,15 @@ function sbr_get_database_settings()
 		$sbr_settings = get_option('sbr_settings', []);
 	}
 
+	// Defensive: `sbr_settings` can arrive as a non-array (raw SQL edits,
+	// broken backup/restore, migration tooling that mangled serialization).
+	// Without this guard `array_merge()` fatals and takes the whole admin
+	// down. Normalizing to an array lets SMASH-1281's migration-recovery
+	// flow re-register + repopulate on the next page load.
+	if (!is_array($sbr_settings)) {
+		$sbr_settings = [];
+	}
+
 	return array_merge($defaults, $sbr_settings);
 }
 
@@ -398,6 +407,9 @@ function sbr_scripts_enqueue($enqueue = false)
 	//Register the script to make it available
 	$assets_url = trailingslashit(SBR_PLUGIN_URL);
 	$settings = get_option('sbr_settings', []);
+	if (!is_array($settings)) {
+		$settings = [];
+	}
 	$min = !empty($_GET['sb_debug']) ? '' : '.min';
 
 	wp_enqueue_style(

@@ -347,7 +347,10 @@ class Error_Reporter extends ServiceProvider
 			return;
 		}
 		/** TODO: Match real option */
-		$options = get_option('sbr_settings');
+		$options = get_option('sbr_settings', array());
+		if (! is_array($options)) {
+			$options = array();
+		}
 
 		if (isset($options['enable_email_report']) && empty($options['enable_email_report'])) {
 			return;
@@ -468,6 +471,9 @@ class Error_Reporter extends ServiceProvider
 	public function send_report_email()
 	{
 		$options = get_option('sbr_settings', array());
+		if (! is_array($options)) {
+			$options = array();
+		}
 
 		$to_string = ! empty($options['email_notification_addresses']) ? str_replace(' ', '', $options['email_notification_addresses']) : get_option('admin_email', '');
 

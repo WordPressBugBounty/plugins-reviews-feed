@@ -586,6 +586,9 @@ class Util
 	{
 		$output = '## GLOBAL SETTINGS: ## </br>';
 		$sbr_settings = get_option('sbr_settings', array());
+		if (! is_array($sbr_settings)) {
+			$sbr_settings = array();
+		}
 
 		$plugin_status = new AuthorizationStatusCheck();
 
@@ -1455,6 +1458,9 @@ class Util
 	public static function should_store_local_images()
 	{
 		$settings = get_option('sbr_settings', sbr_plugin_settings_defaults());
+		if (! is_array($settings)) {
+			$settings = sbr_plugin_settings_defaults();
+		}
 		return !empty($settings['optimize_images']) ? $settings['optimize_images'] : true;
 	}
 

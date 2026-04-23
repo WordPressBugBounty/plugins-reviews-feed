@@ -269,7 +269,7 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 			'feedData'         => [],
 			'feedsList'        => [],
 			'feedsCount'       => 0,
-			'pluginSettings'   => get_option('sbr_settings', []),
+			'pluginSettings'   => is_array($sbr_settings_raw = get_option('sbr_settings', [])) ? $sbr_settings_raw : [],
 			// WordPress data for visibility settings
 			'wordpressPageLists'   => $this->get_wordpress_pages(),
 			'wordpressCategories'  => $this->get_wordpress_categories(),

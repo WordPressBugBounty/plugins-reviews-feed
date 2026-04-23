@@ -14,7 +14,10 @@ class SBR_GDPR
 {
 	public static function doing_gdpr()
 	{
-		$settings = get_option('sbr_settings');
+		$settings = get_option('sbr_settings', []);
+		if (!is_array($settings)) {
+			$settings = [];
+		}
 
 		$gdpr = !empty($settings['gdpr']) ? $settings['gdpr'] : 'auto';
 
