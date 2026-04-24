@@ -48,4 +48,15 @@ trait UrlNormalization
 		$query  = isset($parts['query']) ? '?' . $parts['query'] : '';
 		return "{$scheme}://{$host}{$port}{$path}{$query}";
 	}
+
+	/**
+	 * Normalized form with the scheme stripped, so http and https variants
+	 * of the same URL compare equal. Used by detect_site_migration.
+	 */
+	public function normalize_url_scheme_agnostic($url)
+	{
+		$normalized = $this->normalize_url($url);
+		$stripped   = preg_replace('#^https?://#i', '', $normalized);
+		return is_string($stripped) ? $stripped : $normalized;
+	}
 }

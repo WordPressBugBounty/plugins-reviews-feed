@@ -8,6 +8,8 @@ use Smashballoon\Stubs\Services\ServiceProvider;
 
 class RegisterWebsiteRoutine extends ServiceProvider
 {
+	private const RETRY_TRANSIENT_KEY = 'sbr_register_retry_cooldown';
+
 	protected $target_version = 0;
 
 	public function register()
@@ -23,12 +25,25 @@ class RegisterWebsiteRoutine extends ServiceProvider
 		if (!is_array($settings)) {
 			return true; // corrupted state — re-register and rewrite as array
 		}
-		return !isset($settings['access_token']) || $settings['access_token'] === '';
+		if (isset($settings['access_token']) && $settings['access_token'] !== '') {
+			return false;
+		}
+		// Rate-limit re-registration so a misbehaving caller can't flood /auth/register.
+		if (function_exists('get_transient') && get_transient(self::RETRY_TRANSIENT_KEY)) {
+			return false;
+		}
+		return true;
 	}
 
 
 	public function run()
 	{
+		// Claim the quota slot before the relay call — a mid-call fatal still counts.
+		if (function_exists('set_transient')) {
+			$cooldown = defined('MINUTE_IN_SECONDS') ? 5 * MINUTE_IN_SECONDS : 300;
+			set_transient(self::RETRY_TRANSIENT_KEY, time(), $cooldown);
+		}
+
 		$args = [
 			'url' => get_home_url()
 		];
@@ -52,11 +67,13 @@ class RegisterWebsiteRoutine extends ServiceProvider
 				$settings = [];
 			}
 			$settings['access_token'] = $token;
-			// Store the URL we registered with so SBRelay::detect_site_migration()
-			// has a reference point. A later DB copy / staging→live push will show
-			// a different get_home_url() and trigger proactive recovery. SMASH-1281.
 			$settings['website_url']  = get_home_url();
 			update_option('sbr_settings', $settings);
+
+			// Clear the cooldown so a later legitimate re-register isn't blocked by our own entry.
+			if (function_exists('delete_transient')) {
+				delete_transient(self::RETRY_TRANSIENT_KEY);
+			}
 		}
 	}
 }

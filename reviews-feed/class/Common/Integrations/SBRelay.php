@@ -422,7 +422,8 @@ class SBRelay
 			return false;
 		}
 
-		if ($this->normalize_url($current) === $this->normalize_url((string) $settings['website_url'])) {
+		// Scheme-agnostic compare — http vs https on the same site is not a migration.
+		if ($this->normalize_url_scheme_agnostic($current) === $this->normalize_url_scheme_agnostic((string) $settings['website_url'])) {
 			return false;
 		}
 

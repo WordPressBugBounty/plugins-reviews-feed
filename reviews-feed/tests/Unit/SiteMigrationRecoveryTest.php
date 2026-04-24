@@ -57,6 +57,36 @@ class SiteMigrationRecoveryTest extends TestCase
 		$this->assertSame('', $harness->normalize_url(''));
 	}
 
+	/** Same domain with different schemes must compare equal. */
+	public function test_url_normalization_scheme_agnostic_strips_http_and_https(): void
+	{
+		$harness = new class {
+			use UrlNormalization;
+		};
+
+		$this->assertSame(
+			$harness->normalize_url_scheme_agnostic('http://example.com'),
+			$harness->normalize_url_scheme_agnostic('https://example.com')
+		);
+		$this->assertSame(
+			$harness->normalize_url_scheme_agnostic('HTTP://Example.com/'),
+			$harness->normalize_url_scheme_agnostic('https://example.com')
+		);
+		$this->assertSame(
+			'example.com:8443',
+			$harness->normalize_url_scheme_agnostic('HTTPS://Example.COM:8443/')
+		);
+		$this->assertNotSame(
+			$harness->normalize_url_scheme_agnostic('https://foo.com'),
+			$harness->normalize_url_scheme_agnostic('https://bar.com')
+		);
+		// Path variance is not collapsed — multisite/language subpaths stay distinct.
+		$this->assertNotSame(
+			$harness->normalize_url_scheme_agnostic('https://foo.com'),
+			$harness->normalize_url_scheme_agnostic('https://foo.com/pt-br')
+		);
+	}
+
 	/*
 	|--------------------------------------------------------------------------
 	| check_token_validity — reactive recovery
@@ -219,6 +249,50 @@ class SiteMigrationRecoveryTest extends TestCase
 		$wp_options_mock['sbr_settings'] = [
 			'access_token' => 'tok',
 			'website_url'  => 'https://example.com',
+		];
+
+		$relay = new SBRelay();
+		$this->assertFalse($relay->detect_site_migration());
+		$this->assertSame('tok', $wp_options_mock['sbr_settings']['access_token']);
+	}
+
+	/** Scheme variance is not a migration — same site on http vs https. */
+	public function test_detect_site_migration_returns_false_when_only_scheme_differs(): void
+	{
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_home_url_mock = 'https://example.com';
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok',
+			'website_url'  => 'http://example.com',
+		];
+
+		$relay = new SBRelay();
+		$this->assertFalse($relay->detect_site_migration());
+		$this->assertSame('tok', $wp_options_mock['sbr_settings']['access_token']);
+	}
+
+	public function test_detect_site_migration_returns_false_when_scheme_downgraded(): void
+	{
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_home_url_mock = 'http://example.com';
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok',
+			'website_url'  => 'https://example.com',
+		];
+
+		$relay = new SBRelay();
+		$this->assertFalse($relay->detect_site_migration());
+		$this->assertSame('tok', $wp_options_mock['sbr_settings']['access_token']);
+	}
+
+	/** Combined scheme + trailing slash + case variance — realistic WP edge case. */
+	public function test_detect_site_migration_returns_false_when_scheme_and_slash_differ(): void
+	{
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_home_url_mock = 'HTTPS://Example.COM/';
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok',
+			'website_url'  => 'http://example.com',
 		];
 
 		$relay = new SBRelay();

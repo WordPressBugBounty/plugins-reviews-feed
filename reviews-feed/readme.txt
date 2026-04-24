@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.5.2
+Stable tag: 2.5.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.5.3 =
+* Fix: Resolved a loop where sites that switched between http and https (for example after enabling SSL via their host) kept re-registering on every page load.
+* Tweak: Added a safeguard that limits how often the plugin can retry registration when something goes wrong, so it never floods your site or our servers.
+
 = 2.5.2 =
 * Fix: Google reviews from authors with non-Latin names (Japanese, Korean, Arabic, Cyrillic, etc.) no longer disappear.
 * Fix: Source address now shows under the business name for your Google sources.
