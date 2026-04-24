@@ -59,4 +59,25 @@ trait UrlNormalization
 		$stripped   = preg_replace('#^https?://#i', '', $normalized);
 		return is_string($stripped) ? $stripped : $normalized;
 	}
+
+	/**
+	 * Host-only normalized form: scheme stripped, path/query dropped.
+	 * Used by detect_site_migration so WPML/Polylang language path variants
+	 * (`/pt-br/`, `/en/`, `/de/`) on the same WordPress install don't
+	 * register as a migration. Multisite subsites stay distinct because
+	 * each subsite has its own hostname or its own sbr_settings store.
+	 */
+	public function normalize_url_host_only($url)
+	{
+		if (!is_string($url) || $url === '') {
+			return '';
+		}
+		$parts = parse_url($url);
+		if ($parts === false || empty($parts['host'])) {
+			return $url;
+		}
+		$host = strtolower($parts['host']);
+		$port = isset($parts['port']) ? ':' . $parts['port'] : '';
+		return $host . $port;
+	}
 }

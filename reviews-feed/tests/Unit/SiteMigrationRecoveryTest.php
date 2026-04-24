@@ -87,6 +87,24 @@ class SiteMigrationRecoveryTest extends TestCase
 		);
 	}
 
+	/** Host-only form drops scheme and path — used for migration detection. */
+	public function test_url_normalization_host_only_drops_scheme_and_path(): void
+	{
+		$harness = new class {
+			use UrlNormalization;
+		};
+
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('http://Example.COM/'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com/pt-br/'));
+		$this->assertSame('example.com:8443', $harness->normalize_url_host_only('https://example.com:8443/any/path'));
+		$this->assertNotSame(
+			$harness->normalize_url_host_only('https://foo.com'),
+			$harness->normalize_url_host_only('https://bar.com')
+		);
+		$this->assertSame('', $harness->normalize_url_host_only(''));
+	}
+
 	/*
 	|--------------------------------------------------------------------------
 	| check_token_validity — reactive recovery
@@ -283,6 +301,53 @@ class SiteMigrationRecoveryTest extends TestCase
 		$relay = new SBRelay();
 		$this->assertFalse($relay->detect_site_migration());
 		$this->assertSame('tok', $wp_options_mock['sbr_settings']['access_token']);
+	}
+
+	/**
+	 * Path variance is not a migration — WPML/Polylang on a single install
+	 * can emit `get_home_url()` as either root or language subpath depending
+	 * on request context. Host-only compare treats them as the same site.
+	 */
+	public function test_detect_site_migration_returns_false_when_only_language_path_differs(): void
+	{
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_home_url_mock = 'https://example.com/pt-br/';
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok',
+			'website_url'  => 'https://example.com',
+		];
+
+		$relay = new SBRelay();
+		$this->assertFalse($relay->detect_site_migration());
+		$this->assertSame('tok', $wp_options_mock['sbr_settings']['access_token']);
+	}
+
+	public function test_detect_site_migration_returns_false_when_path_and_scheme_both_differ(): void
+	{
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_home_url_mock = 'http://example.com/en/';
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok',
+			'website_url'  => 'https://example.com',
+		];
+
+		$relay = new SBRelay();
+		$this->assertFalse($relay->detect_site_migration());
+		$this->assertSame('tok', $wp_options_mock['sbr_settings']['access_token']);
+	}
+
+	/** Different domain still registers as migration — genuine site move. */
+	public function test_detect_site_migration_wipes_state_on_different_host(): void
+	{
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_home_url_mock = 'https://new-site.com';
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok',
+			'website_url'  => 'https://old-site.com',
+		];
+
+		new SBRelay();
+		$this->assertArrayNotHasKey('access_token', $wp_options_mock['sbr_settings']);
 	}
 
 	/** Combined scheme + trailing slash + case variance — realistic WP edge case. */

@@ -422,8 +422,11 @@ class SBRelay
 			return false;
 		}
 
-		// Scheme-agnostic compare — http vs https on the same site is not a migration.
-		if ($this->normalize_url_scheme_agnostic($current) === $this->normalize_url_scheme_agnostic((string) $settings['website_url'])) {
+		// Host-only compare — same host = same site. Covers http/https variance
+		// AND WPML/Polylang language-path oscillation (/pt-br/, /en/ etc) that
+		// produced the residual traffic pattern after the scheme-agnostic fix.
+		// Migration is a domain change, not a subpath change.
+		if ($this->normalize_url_host_only($current) === $this->normalize_url_host_only((string) $settings['website_url'])) {
 			return false;
 		}
 

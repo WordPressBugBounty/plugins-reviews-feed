@@ -70,10 +70,14 @@ class RegisterWebsiteRoutine extends ServiceProvider
 			$settings['website_url']  = get_home_url();
 			update_option('sbr_settings', $settings);
 
-			// Clear the cooldown so a later legitimate re-register isn't blocked by our own entry.
-			if (function_exists('delete_transient')) {
-				delete_transient(self::RETRY_TRANSIENT_KEY);
-			}
+			// DO NOT clear the cooldown on success. Earlier revisions did — with
+			// unintended consequence: when an upstream bug (e.g. detect_site_migration
+			// false-positives wiping access_token every request), the loop was
+			// register → store → clear cooldown → next request repeats, so the
+			// cooldown never engaged and the rate-limit was a no-op. Keeping the
+			// cooldown active bounds per-site register traffic to 1 per 5 minutes
+			// regardless of what happens elsewhere. A legitimate re-registration
+			// (admin migration, manual reset) simply waits up to 5 minutes.
 		}
 	}
 }
