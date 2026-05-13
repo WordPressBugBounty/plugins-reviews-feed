@@ -48,7 +48,7 @@ class SBR_Translation_Tab extends SB_SettingsPage_Tab {
 				'info' => sprintf(
 					__('Change the displayed language for all feeds and its displayed reviews. You can override this for each feed from the individual feed settings.%sLearn more%s <br/>
                     %sNote: Currently only Google support translated reviews.%s', 'reviews-feed'),
-					'<a href="https://smashballoon.com/doc/language-reviews-feed/" target="_blank" rel="noreferrer" >',
+					'<a href="https://smashballoon.com/doc/language-reviews-feed/?utm_campaign=reviews-free&utm_source=settings&utm_medium=docs" target="_blank" rel="noreferrer" >',
 					'</a>',
 					'<span class="sb-notice sb-notice-control sb-notice-default sb-text-tiny" style="padding: 0 12px; margin-top: 7px; width: auto;">',
 					'</span>'

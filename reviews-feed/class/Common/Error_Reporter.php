@@ -431,11 +431,11 @@ class Error_Reporter extends ServiceProvider
 			$error_code = (int)$response['error']['code'];
 			if ($error_code === 104) {
 				$error_code = 999;
-				$url        = 'https://smashballoon.com/doc/error-999-access-token-could-not-be-decrypted/';
+				$url        = 'https://smashballoon.com/doc/error-999-access-token-could-not-be-decrypted/?utm_campaign=reviews-free&utm_source=error&utm_medium=docs';
 
 				$response['error']['message'] = __('Your access token could not be decrypted on this website. Reconnect this account or go to our website to learn how to prevent this.', 'reviews-feed');
 			} else {
-				$url = 'https://smashballoon.com/doc/facebook-api-errors/';
+				$url = 'https://smashballoon.com/doc/facebook-api-errors/?utm_campaign=reviews-free&utm_source=error&utm_medium=docs';
 			}
 			$api_error_number_message 				= sprintf(__('API Error %s:', 'reviews-feed'), $error_code);
 			$error_message_return['public_message'] = __('Error connecting to the Facebook API.', 'reviews-feed') . ' ' . $api_error_number_message;
@@ -446,12 +446,12 @@ class Error_Reporter extends ServiceProvider
 				: '<strong>' . $api_error_number_message . '</strong><br>' . $response['error']['message'];
 
 			$error_message_return['frontend_directions'] = ($ppca_error)
-				? '<p class="sbr-error-directions"><a href="https://smashballoon.com/facebook-api-changes-september-4-2020/" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a></p>'
-				: '<p class="sbr-error-directions"><a href="' . $url . '?facebook&utm_campaign=facebook-pro&utm_source=error-message&utm_medium=frontend#' . absint($error_code) . '" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a></p>';
+				? '<p class="sbr-error-directions"><a href="https://smashballoon.com/facebook-api-changes-september-4-2020/?utm_campaign=reviews-free&utm_source=error&utm_medium=docs" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a></p>'
+				: '<p class="sbr-error-directions"><a href="' . $url . '&facebook#' . absint($error_code) . '" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a></p>';
 
 			$error_message_return['backend_directions'] = ($ppca_error)
-				? '<a class="sbr-notice-btn sbr-btn-blue" href="https://smashballoon.com/facebook-api-changes-september-4-2020/" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a>'
-				: '<a class="sbr-notice-btn sbr-btn-blue" href="' . $url . '?facebook&utm_campaign=facebook-pro&utm_source=error-message&utm_medium=frontend#' . absint($error_code) . '" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a>';
+				? '<a class="sbr-notice-btn sbr-btn-blue" href="https://smashballoon.com/facebook-api-changes-september-4-2020/?utm_campaign=reviews-free&utm_source=error&utm_medium=docs" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a>'
+				: '<a class="sbr-notice-btn sbr-btn-blue" href="' . $url . '&facebook#' . absint($error_code) . '" target="_blank" rel="noopener">' . __('Directions on How to Resolve This Issue', 'reviews-feed')  . '</a>';
 
 			$error_message_return['errorno'] = $error_code;
 		} else {
@@ -563,7 +563,7 @@ class Error_Reporter extends ServiceProvider
 						$accounts_revoked
 					),
 					__('To prevent the automated data deletion for the account, please reconnect your account within 7 days.', 'reviews-feed'),
-					'<a href="https://smashballoon.com/doc/action-required-within-7-days/?facebook&utm_campaign=facebook-pro&utm_source=permissionerror&utm_medium=notice&utm_content=More Information" target="_blank" rel="noopener">' . __('More Information', 'reviews-feed') . '</a>',
+					'<a href="https://smashballoon.com/doc/action-required-within-7-days/?reviews&utm_campaign=reviews-pro&utm_source=permissionerror&utm_medium=notice&utm_content=More Information" target="_blank" rel="noopener">' . __('More Information', 'reviews-feed') . '</a>',
 				]
 			];
 		}

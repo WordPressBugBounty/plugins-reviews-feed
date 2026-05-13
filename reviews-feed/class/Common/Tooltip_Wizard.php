@@ -129,7 +129,7 @@ class Tooltip_Wizard extends ServiceProvider
 					<?php echo esc_html__('Click the plus button, search for Reviews Feed', 'reviews-feed'); ?>
 					<br />
 					<?php echo esc_html__('and click the block to embed it.', 'reviews-feed') ?> <a
-						href="https://smashballoon.com/doc/wordpress-5-block-page-editor-gutenberg/?facebook" rel="noopener"
+						href="https://smashballoon.com/doc/wordpress-5-block-page-editor-gutenberg/?facebook&utm_campaign=reviews-free&utm_source=settings&utm_medium=docs" rel="noopener"
 						target="_blank">
 						<?php echo esc_html__('Learn More', 'reviews-feed') ?>
 					</a>

@@ -96,11 +96,11 @@ class SBR_Support_Builder extends Support_Builder
 				'content' => [
 					[
 						'text' => __('Why do I only see a few reviews?', 'reviews-feed'),
-						'link' => 'https://smashballoon.com/doc/why-do-i-only-see-a-few-reviews/?reviews&utm_campaign=' .  $utm_source . '&utm_source=support&utm_medium=docs&utm_content=GDPR Compliance'
+						'link' => 'https://smashballoon.com/doc/why-do-i-only-see-a-few-reviews/?reviews&utm_campaign=' .  $utm_source . '&utm_source=support&utm_medium=docs&utm_content=WhyFewReviews'
 					],
 					[
 						'text' => __('How to Resolve Error Messages', 'reviews-feed'),
-						'link' => 'https://smashballoon.com/doc/reviews-feed-error-message-reference/?reviews&utm_campaign=' . $utm_source . '&utm_source=front-end-error&utm_medium=no-posts-found&utm_content=ErrorMessageReference'
+						'link' => 'https://smashballoon.com/doc/reviews-feed-error-message-reference/?reviews&utm_campaign=' . $utm_source . '&utm_source=support&utm_medium=docs&utm_content=ErrorMessageReference'
 					],
 					[
 						'text' => __('Translating Google Reviews', 'reviews-feed'),
@@ -119,11 +119,11 @@ class SBR_Support_Builder extends Support_Builder
 				'content' => [
 					[
 						'text' => __('Can I Display Multiple Reviews on One Page?', 'reviews-feed'),
-						'link' => 'https://smashballoon.com/doc/can-i-display-multiple-reviews-feeds-on-my-site-or-on-the-same-page/?reviews&utm_campaign=' .  $utm_source . '&utm_source=support&utm_medium=docs&utm_content=Google API Key'
+						'link' => 'https://smashballoon.com/doc/can-i-display-multiple-reviews-feeds-on-my-site-or-on-the-same-page/?reviews&utm_campaign=' .  $utm_source . '&utm_source=support&utm_medium=docs&utm_content=MultipleReviews'
 					],
 					[
 						'text' => __('License Tiers Explained (additional review providers)', 'reviews-feed'),
-						'link' => 'https://smashballoon.com/docs/license-tiers-explained/?reviews&utm_campaign=' .  $utm_source . '&utm_source=support&utm_medium=docs&utm_content=License Tiers Explained'
+						'link' => 'https://smashballoon.com/doc/license-tiers-explained/?reviews&utm_campaign=' .  $utm_source . '&utm_source=support&utm_medium=docs&utm_content=License Tiers Explained'
 					],
 					[
 						'text' => __('How do I Embed My Feed Directly in a Template?', 'reviews-feed'),

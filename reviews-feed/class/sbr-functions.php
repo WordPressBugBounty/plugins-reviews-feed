@@ -513,7 +513,7 @@ function sbr_plugin_action_links($links)
 	if (!Util::sbr_is_pro()) {
 		$links = array_merge(
 			array(
-				'<a href="https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=plugins-page&utm_medium=upgrade-link&utm_content=UpgradeToPro" target="_blank" style="font-weight:bold; color: #50a56d;">' . __('Upgrade to Pro', 'reviews-feed') . '</a>'
+				'<a href="https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_campaign=reviews-free&utm_source=plugins-page&utm_medium=upgrade-link&utm_content=UpgradeToPro" target="_blank" style="font-weight:bold; color: #50a56d;">' . __('Upgrade to Pro', 'reviews-feed') . '</a>'
 			),
 			$links
 		);
@@ -565,7 +565,7 @@ function sbr_custom_menu()
 			__('Upgrade to Pro', 'reviews-feed'),
 			__('<div class="sb-pro-upgradelink-bg"></div><strong class="sb-pro-upgradelink">Upgrade to Pro</strong>', 'reviews-feed'),
 			$cap,
-			'https://smashballoon.com/reviews-feed/?utm_campaign=reviews-free&utm_source=menu-link&utm_medium=upgrade-link&utm_content=UpgradeToPro',
+			'https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_campaign=reviews-free&utm_source=menu-link&utm_medium=upgrade-link&utm_content=UpgradeToPro',
 			''
 		);
 	}

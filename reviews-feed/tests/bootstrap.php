@@ -152,6 +152,16 @@ if (!defined('HOUR_IN_SECONDS')) {
 if (!defined('MINUTE_IN_SECONDS')) {
 	define('MINUTE_IN_SECONDS', 60);
 }
+// `wpdb::get_results()` output_type constants — production code passes ARRAY_A.
+if (!defined('ARRAY_A')) {
+	define('ARRAY_A', 'ARRAY_A');
+}
+if (!defined('ARRAY_N')) {
+	define('ARRAY_N', 'ARRAY_N');
+}
+if (!defined('OBJECT')) {
+	define('OBJECT', 'OBJECT');
+}
 if (!function_exists('get_transient')) {
 	function get_transient($key)
 	{
@@ -182,6 +192,60 @@ if (!function_exists('delete_transient')) {
 		}
 		unset($wp_transients_mock[$key]);
 		return true;
+	}
+}
+
+// WP HTTP helpers — never actually invoked in unit tests (SBRelay::call is
+// mocked at the `onlyMethods(['call'])` level), but reverify_token_via_register
+// has a `function_exists` defense-in-depth guard that bails early if these
+// helpers aren't defined. Without these stubs the guard fires in tests and
+// reverify never reaches the mocked `call()`.
+if (!function_exists('wp_remote_post')) {
+	function wp_remote_post($url, $args = [])
+	{
+		return [];
+	}
+}
+if (!function_exists('wp_remote_get')) {
+	function wp_remote_get($url, $args = [])
+	{
+		return [];
+	}
+}
+if (!function_exists('is_wp_error')) {
+	function is_wp_error($thing)
+	{
+		return false;
+	}
+}
+if (!function_exists('wp_remote_retrieve_body')) {
+	function wp_remote_retrieve_body($response)
+	{
+		return '';
+	}
+}
+
+// Cron API stubs — namespace-fallback resolution requires these to live in
+// the global namespace so callers in `SmashBalloon\Reviews\Pro\Services\BulkUpdate`
+// (and elsewhere) can find them via PHP's fallback lookup.
+if (!function_exists('wp_schedule_single_event')) {
+	function wp_schedule_single_event($timestamp, $hook, $args = [])
+	{
+		return true;
+	}
+}
+
+if (!function_exists('wp_next_scheduled')) {
+	function wp_next_scheduled($hook, $args = [])
+	{
+		return false;
+	}
+}
+
+if (!function_exists('wp_clear_scheduled_hook')) {
+	function wp_clear_scheduled_hook($hook, $args = [], $wp_error = false)
+	{
+		return 0;
 	}
 }
 

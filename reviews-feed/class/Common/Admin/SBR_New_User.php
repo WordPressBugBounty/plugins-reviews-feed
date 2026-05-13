@@ -304,7 +304,7 @@ class SBR_New_User extends SBR_Notifications {
 			// check if this is a review notice
 			if ($type == 'review') {
 				$review_consent        = get_option('sbr_review_consent');
-				$sbr_open_feedback_url = 'https://smashballoon.com/feedback/?plugin=reviews-pro';
+				$sbr_open_feedback_url = 'https://smashballoon.com/feedback/?plugin=reviews-pro&utm_campaign=reviews-pro&utm_source=notifications&utm_medium=feedback';
 				// step #1 for the review notice
 				if (! $review_consent) {
 					?>

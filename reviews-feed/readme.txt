@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.5.4
+Stable tag: 2.5.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,12 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.5.5 =
+* Fix: Background cron update optimizations — feed processing batches more efficiently, reducing Google Places API requests on sites with multiple feeds.
+* Fix: Connection stability under transient server conditions such as cache events, brief deploys, and high-traffic parallel requests.
+* Fix: Site URL recognition across proxy formats (Cloudflare, AWS, Nginx), www variations, and trailing-dot domain forms for consistent connectivity behind any hosting setup.
+* Tweak: Update external links.
+
 = 2.5.4 =
 * Fix: Resolved a registration loop on multilingual sites (WPML, Polylang) where WordPress's home URL emitted different language paths across requests.
 * Fix: Hardened the registration retry limiter so it correctly stops repeated requests even when the plugin successfully registers in a loop.

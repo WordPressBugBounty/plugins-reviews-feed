@@ -97,11 +97,31 @@ class FeedCacheUpdateService extends ServiceProvider {
 			$sql = "
 			SELECT * FROM $feed_cache_table_name;";
 		} else {
+			// Group by feed_id so each unique feed contributes ONE batch entry
+			// instead of one entry per cache_type. `update_or_insert()` flags
+			// both 'posts' and 'header' rows with `cron_update = 'yes'`, so a
+			// feed with both rows >12h-stale was previously yielding two batch
+			// entries, and FeedCacheUpdater::do_updates triggered a full
+			// Feed::get_set_cache() per entry — fetching reviews + header
+			// for the same feed twice in the same cron cycle. Customer
+			// Google Places API spend was 2x what it needed to be.
+			//
+			// MIN(id) / MIN(last_updated) make the query strict-mode safe
+			// when sql_mode includes ONLY_FULL_GROUP_BY; the LIMIT
+			// (`RESULTS_PER_CRON_UPDATE`) budget now yields that many
+			// unique feeds per cron tick instead of half as many feeds
+			// (when both rows for the same feed were stale).
+			//
+			// FeedCacheUpdater::do_updates only reads `feed_id` from each row,
+			// so collapsing duplicates is invisible to the caller — same feeds
+			// processed, half the HTTP fetches, no behavior change downstream.
 			$sql = $wpdb->prepare(
 				"
-				SELECT * FROM $feed_cache_table_name
+				SELECT MIN(id) AS id, feed_id, MIN(last_updated) AS last_updated
+				FROM $feed_cache_table_name
 				WHERE cron_update = 'yes'
 				AND last_updated < %s
+				GROUP BY feed_id
 				ORDER BY last_updated ASC
 				LIMIT %d;",
 				gmdate('Y-m-d H:i:s', time() - 12 * HOUR_IN_SECONDS),

@@ -181,6 +181,46 @@ class Feed
 		}
 	}
 
+	/**
+	 * Acquire a per-feed single-flight refresh lock using `add_option` for
+	 * MySQL-level atomicity (UNIQUE constraint on `option_name` makes the
+	 * underlying INSERT a CAS — only one concurrent worker wins, the rest
+	 * see false). Stores `time()` as the lock value so a crashed worker's
+	 * orphaned lock can be detected and re-taken after the TTL elapses.
+	 *
+	 * @param string $lock_key  Unique key per feed_id + cache_type.
+	 * @param int    $ttl       Seconds after which a held lock is considered stale.
+	 * @return bool             True if the caller now owns the lock.
+	 *
+	 * @since 2.5.6
+	 */
+	private function acquire_refresh_lock(string $lock_key, int $ttl): bool
+	{
+		if (add_option($lock_key, time(), '', 'no')) {
+			return true;
+		}
+		// Option already exists. Check whether the lock is stale.
+		$held_since = (int) get_option($lock_key, 0);
+		if ($held_since > 0 && (time() - $held_since) < $ttl) {
+			return false;
+		}
+		// Stale lock — likely a crashed prior worker. Take it over.
+		update_option($lock_key, time(), false);
+		return true;
+	}
+
+	/**
+	 * Release the single-flight refresh lock acquired by acquire_refresh_lock().
+	 *
+	 * @param string $lock_key
+	 *
+	 * @since 2.5.6
+	 */
+	private function release_refresh_lock(string $lock_key): void
+	{
+		delete_option($lock_key);
+	}
+
 	public function update_posts_cache()
 	{
 		$settings = $this->get_settings();
@@ -188,29 +228,48 @@ class Feed
 		if (empty($settings['sources'])) {
 			return array();
 		}
-		$remote_posts = $this->get_remote_posts($settings);
 
-		foreach ($remote_posts as $provider_remote_posts) {
-			if (isset($provider_remote_posts['data']['reviews'])) {
-				$this->cache_single_posts_from_set($provider_remote_posts['data']['reviews'], $provider_remote_posts['provider_id']);
-			}
+		// Single-flight: if another worker (cron or another visitor render)
+		// is already fetching upstream for this feed, skip the duplicate HTTP
+		// round-trip and return whatever's locally available. The lock holder
+		// will populate the cache and the next render will see warm data.
+		//
+		// TTL is 60s — covers cold-staging upstream worst case observed at 46s
+		// with comfortable headroom. On lock-held, returns posts_from_db()
+		// which reads `wp_sbr_reviews_posts` (review rows preserved across
+		// clear_plugin_cache, only the images_done flag is reset, so the
+		// lock-loser still serves real review text/ratings).
+		$lock_key = 'sbr_refresh_lock_posts_' . $this->feed_id;
+		if (! $this->acquire_refresh_lock($lock_key, 60)) {
+			return $this->posts_from_db();
 		}
 
+		try {
+			$remote_posts = $this->get_remote_posts($settings);
 
-		$posts = $this->posts_from_db();
-		if (empty($posts)) {
-			$no_posts_found = __('No Posts Found.', 'reviews-feed');
-			if ($this->statuses['post_found_before_filter']) {
-				$this->add_error($no_posts_found, sprintf(__('There were no posts that fit your filters. Try modifying the filters set or add more sources with reviews that fit the filter by %sediting your feed%s', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
-			} else {
-				$this->add_error($no_posts_found, sprintf(__('There were no posts found for the sources selected. Make sure reviews are available for this source or change the source by %sediting your feed%s', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
+			foreach ($remote_posts as $provider_remote_posts) {
+				if (isset($provider_remote_posts['data']['reviews'])) {
+					$this->cache_single_posts_from_set($provider_remote_posts['data']['reviews'], $provider_remote_posts['provider_id']);
+				}
 			}
+
+			$posts = $this->posts_from_db();
+			if (empty($posts)) {
+				$no_posts_found = __('No Posts Found.', 'reviews-feed');
+				if ($this->statuses['post_found_before_filter']) {
+					$this->add_error($no_posts_found, sprintf(__('There were no posts that fit your filters. Try modifying the filters set or add more sources with reviews that fit the filter by %sediting your feed%s', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
+				} else {
+					$this->add_error($no_posts_found, sprintf(__('There were no posts found for the sources selected. Make sure reviews are available for this source or change the source by %sediting your feed%s', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
+				}
+			}
+
+			$posts = $this->maybe_encrypt_cached_posts($posts);
+			$this->update_cache($posts);
+
+			return $posts;
+		} finally {
+			$this->release_refresh_lock($lock_key);
 		}
-
-		$posts = $this->maybe_encrypt_cached_posts($posts);
-		$this->update_cache($posts);
-
-		return $posts;
 	}
 
 
@@ -266,39 +325,50 @@ class Feed
 		if (empty($settings['sources'])) {
 			return array();
 		}
-		$remote_header_data = $this->get_remote_header_data($settings);
 
-		if (!empty($remote_header_data) && isset($remote_header_data[0]) && isset($remote_header_data[0]['info']) && isset($remote_header_data[0]['info']['id'])) {
-			// Use get_provider_for_source to match the correct provider for the first header entry
-			$first_header_id = $remote_header_data[0]['info']['id'];
-			$first_header_provider = $this->get_provider_for_source($first_header_id, $settings['sources']);
-			$persistent_business_data_cache = new BusinessDataCache();
-			$persistent_business_data_cache->update_data($first_header_provider ?: ($settings['sources'][0]['provider'] ?? ''), $first_header_id, $remote_header_data);
-			$this->feed_cache->update_or_insert('header', json_encode($remote_header_data));
-
-			// Update ALL sources in DB, not just the first one
-			foreach ($remote_header_data as $index => $source_data) {
-				if (empty($source_data['info']['id'])) {
-					continue;
-				}
-				$provider = $this->get_provider_for_source($source_data['info']['id'], $settings['sources']);
-				// Fall back to index-based provider when ID lookup fails (e.g., type mismatch)
-				if (empty($provider) && isset($settings['sources'][$index]['provider'])) {
-					$provider = $settings['sources'][$index]['provider'];
-				}
-				if (empty($provider)) {
-					continue;
-				}
-				$source_to_update = [
-					'id'           => $source_data['info']['id'],
-					'provider'     => $provider,
-					'last_updated' => date('Y-m-d H:i:s'),
-					'info'         => json_encode($source_data['info'])
-				];
-				SBR_Sources::update($source_to_update);
-			}
+		// Single-flight: see update_posts_cache() for rationale.
+		$lock_key = 'sbr_refresh_lock_header_' . $this->feed_id;
+		if (! $this->acquire_refresh_lock($lock_key, 60)) {
+			return $this->update_header_cache_from_source();
 		}
-		return $remote_header_data;
+
+		try {
+			$remote_header_data = $this->get_remote_header_data($settings);
+
+			if (!empty($remote_header_data) && isset($remote_header_data[0]) && isset($remote_header_data[0]['info']) && isset($remote_header_data[0]['info']['id'])) {
+				// Use get_provider_for_source to match the correct provider for the first header entry
+				$first_header_id = $remote_header_data[0]['info']['id'];
+				$first_header_provider = $this->get_provider_for_source($first_header_id, $settings['sources']);
+				$persistent_business_data_cache = new BusinessDataCache();
+				$persistent_business_data_cache->update_data($first_header_provider ?: ($settings['sources'][0]['provider'] ?? ''), $first_header_id, $remote_header_data);
+				$this->feed_cache->update_or_insert('header', json_encode($remote_header_data));
+
+				// Update ALL sources in DB, not just the first one
+				foreach ($remote_header_data as $index => $source_data) {
+					if (empty($source_data['info']['id'])) {
+						continue;
+					}
+					$provider = $this->get_provider_for_source($source_data['info']['id'], $settings['sources']);
+					// Fall back to index-based provider when ID lookup fails (e.g., type mismatch)
+					if (empty($provider) && isset($settings['sources'][$index]['provider'])) {
+						$provider = $settings['sources'][$index]['provider'];
+					}
+					if (empty($provider)) {
+						continue;
+					}
+					$source_to_update = [
+						'id'           => $source_data['info']['id'],
+						'provider'     => $provider,
+						'last_updated' => date('Y-m-d H:i:s'),
+						'info'         => json_encode($source_data['info'])
+					];
+					SBR_Sources::update($source_to_update);
+				}
+			}
+			return $remote_header_data;
+		} finally {
+			$this->release_refresh_lock($lock_key);
+		}
 	}
 
 	/**

@@ -87,21 +87,61 @@ class SiteMigrationRecoveryTest extends TestCase
 		);
 	}
 
-	/** Host-only form drops scheme and path — used for migration detection. */
-	public function test_url_normalization_host_only_drops_scheme_and_path(): void
+	/**
+	 * Host-only form drops scheme, path, port, leading "www.", and trailing dot.
+	 * Used for migration detection — same site identity on the same WordPress
+	 * install should normalize to the same value regardless of reverse-proxy
+	 * port injection or canonical-URL drift.
+	 */
+	public function test_url_normalization_host_only_drops_scheme_path_port_www_and_trailing_dot(): void
 	{
 		$harness = new class {
 			use UrlNormalization;
 		};
 
+		// Baseline — scheme, case, path, query, fragment all dropped.
 		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com'));
 		$this->assertSame('example.com', $harness->normalize_url_host_only('http://Example.COM/'));
 		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com/pt-br/'));
-		$this->assertSame('example.com:8443', $harness->normalize_url_host_only('https://example.com:8443/any/path'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com/?utm=x'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com/#anchor'));
+
+		// Port stripped — covers the SMASH-1274 residual loop where a
+		// reverse-proxy injects ":80"/":443" inconsistently and the same
+		// site oscillates against itself. Non-default ports also folded.
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com:443'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('http://example.com:80'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com:8443/any/path'));
+
+		// Leading www. stripped — covers canonical-URL drift on
+		// non-canonical permalinks and multisite alias mapping where
+		// get_home_url() can return either form across requests.
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://www.example.com'));
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://WWW.Example.COM/'));
+
+		// Trailing dot stripped — FQDN form vs short form is the same
+		// WordPress install.
+		$this->assertSame('example.com', $harness->normalize_url_host_only('https://example.com.'));
+
+		// All-together cocktail — every quirk at once still collapses.
+		$this->assertSame(
+			'example.com',
+			$harness->normalize_url_host_only('https://www.example.com:443/blog/?lang=en')
+		);
+
+		// Genuinely different domains must NOT collapse — protects against
+		// a too-eager normalizer accidentally flagging real migrations as
+		// no-ops.
 		$this->assertNotSame(
 			$harness->normalize_url_host_only('https://foo.com'),
 			$harness->normalize_url_host_only('https://bar.com')
 		);
+		$this->assertNotSame(
+			$harness->normalize_url_host_only('https://example.com'),
+			$harness->normalize_url_host_only('https://shop.example.com')
+		);
+
+		// Empty string preserved.
 		$this->assertSame('', $harness->normalize_url_host_only(''));
 	}
 
@@ -981,9 +1021,14 @@ class SiteMigrationRecoveryTest extends TestCase
 
 	public function test_silent_reactivation_not_triggered_on_non_migration_invalid_token_wipe(): void
 	{
-		// Generic invalidToken (no discriminator) — wipes only access_token.
-		// Must NOT trigger silent re-activation (there's no migration,
-		// the user probably just needs to re-verify email or similar).
+		// Generic invalidToken (no discriminator) — must NOT trigger silent
+		// re-activation (the migration-only flow). Since the
+		// reverify-before-wipe patch landed, this path now takes one extra
+		// /auth/register round-trip first to confirm the 401 wasn't a false
+		// positive. Here we make that reverify return an empty body, so the
+		// caller falls back to the old wipe path; license_info stays
+		// preserved (only access_token is cleared on the no-discriminator
+		// branch — same as the original BC contract).
 		global $wp_options_mock, $wp_home_url_mock;
 		$wp_options_mock['sbr_settings'] = [
 			'access_token'      => 'stale-token',
@@ -991,18 +1036,163 @@ class SiteMigrationRecoveryTest extends TestCase
 			'license_info'      => ['license' => 'valid'],
 			'website_url'       => 'https://example.com',
 		];
+		$wp_home_url_mock = 'https://example.com';
 
 		$relay = $this->getMockBuilder(SBRelay::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['call'])
 			->getMock();
 
-		$relay->expects($this->never())->method('call');
+		// Reverify reaches the relay exactly once. We return an empty body
+		// to force the wipe-fallback path. This is the only call we expect:
+		// silent_reactivation (which would fire BOTH /auth/register AND
+		// /auth/license) must NOT run because there's no migration.
+		$relay->expects($this->once())
+			->method('call')
+			->with('auth/register', $this->anything(), 'POST', false)
+			->willReturn([]);
 
 		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);
 
 		$this->assertArrayNotHasKey('access_token', $wp_options_mock['sbr_settings']);
 		$this->assertSame(['license' => 'valid'], $wp_options_mock['sbr_settings']['license_info'], 'Generic invalidToken preserves license_info');
+		$this->assertSame('ABC-123', $wp_options_mock['sbr_settings']['license_key'], 'license_key preserved');
+	}
+
+	/*
+	|--------------------------------------------------------------------------
+	| reverify_token_via_register — false-positive 401 + silent rotation paths
+	|--------------------------------------------------------------------------
+	*/
+
+	public function test_reverify_keeps_token_when_relay_returns_same_token(): void
+	{
+		// Simulates a transient 401 (WAF, deployment blip, parallel-call race).
+		// The plugin's stored token is still the canonical one for this URL —
+		// reverify confirms by calling /auth/register and getting the same
+		// token back. No wipe, no rotation; subsequent calls in the same
+		// request can keep using the token.
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok-canonical',
+			'license_key'  => 'ABC-123',
+			'license_info' => ['license' => 'valid'],
+			'website_url'  => 'https://example.com',
+		];
+		$wp_home_url_mock = 'https://example.com';
+
+		$relay = $this->getMockBuilder(SBRelay::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['call'])
+			->getMock();
+
+		// Seed the in-memory token to match the option (constructor was
+		// disabled so we set it via reflection — same as production where
+		// the constructor reads sbr_settings into $this->access_token).
+		$ref = new \ReflectionClass(SBRelay::class);
+		$prop = $ref->getProperty('access_token');
+		$prop->setAccessible(true);
+		$prop->setValue($relay, 'tok-canonical');
+
+		$relay->expects($this->once())
+			->method('call')
+			->with('auth/register', ['url' => 'https://example.com'], 'POST', false)
+			->willReturn(['data' => ['token' => 'tok-canonical']]);
+
+		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);
+
+		// Token preserved — reverify returned the same value.
+		$this->assertSame('tok-canonical', $wp_options_mock['sbr_settings']['access_token']);
+		$this->assertSame('tok-canonical', $prop->getValue($relay), 'in-memory token also preserved');
+		// License state untouched.
+		$this->assertSame(['license' => 'valid'], $wp_options_mock['sbr_settings']['license_info']);
+		$this->assertSame('ABC-123', $wp_options_mock['sbr_settings']['license_key']);
+	}
+
+	public function test_reverify_silently_rotates_token_when_relay_returns_different_token(): void
+	{
+		// Server-side token rotation: relay's DB has a different token for
+		// this URL than what the plugin's option holds (e.g. operator manually
+		// re-issued, or a DB cleanup recreated rows). Reverify reads the new
+		// canonical token and silently updates sbr_settings — no full reset,
+		// no migration cascade, license/email state intact.
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok-stale',
+			'license_key'  => 'ABC-123',
+			'license_info' => ['license' => 'valid'],
+			'license_status' => 'valid',
+			'website_url'  => 'https://example.com',
+			'email'        => 'user@example.com',
+		];
+		$wp_home_url_mock = 'https://example.com';
+
+		$relay = $this->getMockBuilder(SBRelay::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['call'])
+			->getMock();
+
+		$ref = new \ReflectionClass(SBRelay::class);
+		$prop = $ref->getProperty('access_token');
+		$prop->setAccessible(true);
+		$prop->setValue($relay, 'tok-stale');
+
+		$relay->expects($this->once())
+			->method('call')
+			->with('auth/register', ['url' => 'https://example.com'], 'POST', false)
+			->willReturn(['data' => ['token' => 'tok-rotated']]);
+
+		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);
+
+		// Token silently rotated to relay's canonical value.
+		$this->assertSame('tok-rotated', $wp_options_mock['sbr_settings']['access_token']);
+		$this->assertSame('tok-rotated', $prop->getValue($relay), 'in-memory token also rotated');
+		// website_url updated to current home_url (kept consistent).
+		$this->assertSame('https://example.com', $wp_options_mock['sbr_settings']['website_url']);
+		// License + email + customer credentials untouched.
+		$this->assertSame('valid', $wp_options_mock['sbr_settings']['license_status']);
+		$this->assertSame(['license' => 'valid'], $wp_options_mock['sbr_settings']['license_info']);
+		$this->assertSame('ABC-123', $wp_options_mock['sbr_settings']['license_key']);
+		$this->assertSame('user@example.com', $wp_options_mock['sbr_settings']['email']);
+	}
+
+	public function test_reverify_falls_back_to_wipe_when_call_throws(): void
+	{
+		// Reverify itself fails (network failure, RelayResponseException, etc.).
+		// The one-shot guard inside reverify wraps the call in try-catch, so
+		// the exception becomes a "reverify failed" signal and the caller
+		// falls back to the original wipe-only path — preserving the
+		// pre-patch contract for the case where we genuinely can't confirm.
+		global $wp_options_mock, $wp_home_url_mock;
+		$wp_options_mock['sbr_settings'] = [
+			'access_token' => 'tok-stale',
+			'license_key'  => 'ABC-123',
+			'license_info' => ['license' => 'valid'],
+			'website_url'  => 'https://example.com',
+		];
+		$wp_home_url_mock = 'https://example.com';
+
+		$relay = $this->getMockBuilder(SBRelay::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['call'])
+			->getMock();
+
+		$ref = new \ReflectionClass(SBRelay::class);
+		$prop = $ref->getProperty('access_token');
+		$prop->setAccessible(true);
+		$prop->setValue($relay, 'tok-stale');
+
+		$relay->expects($this->once())
+			->method('call')
+			->willThrowException(new \RuntimeException('network error'));
+
+		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);
+
+		// Wipe fallback engaged (option + in-memory both cleared).
+		$this->assertArrayNotHasKey('access_token', $wp_options_mock['sbr_settings']);
+		$this->assertNull($prop->getValue($relay), 'in-memory token also cleared on wipe');
+		// Customer credentials preserved (no migration → narrow wipe).
+		$this->assertSame('ABC-123', $wp_options_mock['sbr_settings']['license_key']);
 	}
 
 	public function test_silent_reactivation_survives_non_array_settings_after_wipe(): void
@@ -1026,5 +1216,154 @@ class SiteMigrationRecoveryTest extends TestCase
 		$this->assertIsArray($wp_options_mock['sbr_settings']);
 		$this->assertSame('fresh', $wp_options_mock['sbr_settings']['access_token']);
 		$this->assertSame('valid', $wp_options_mock['sbr_settings']['license_status']);
+	}
+
+	/*
+	|--------------------------------------------------------------------------
+	| refresh_access_token_from_settings — race fix for register-then-license
+	|--------------------------------------------------------------------------
+	| Issue 2 (LR3 register-then-license race): when admin_init runs both the
+	| RegisterWebsiteRoutine and constructs the DI'd SBRelay used by license
+	| handlers, ordering is undefined. If the DI'd SBRelay is constructed first
+	| (empty token) and the routine writes a fresh token to sbr_settings AFTER,
+	| the next authenticated call from license handlers sends an empty Bearer
+	| → 401. The refresh method lets license handlers re-read the post-write
+	| sbr_settings on demand. See SMASH-1274 LR3.
+	*/
+
+	/**
+	 * Helper: build SBRelay without running the constructor. Lets us seed
+	 * `access_token` directly (mimicking various pre-refresh in-memory states)
+	 * without depending on the test-bootstrap-loaded SBR_RELAY_BASE_URL constant
+	 * resolving in the namespaced class const.
+	 */
+	private function buildRelayWithToken(string $token): SBRelay
+	{
+		$relay = $this->getMockBuilder(SBRelay::class)
+			->disableOriginalConstructor()
+			->onlyMethods([])
+			->getMock();
+		$ref = new \ReflectionProperty(SBRelay::class, 'access_token');
+		$ref->setAccessible(true);
+		$ref->setValue($relay, $token);
+		return $relay;
+	}
+
+	public function test_refresh_access_token_from_settings_picks_up_post_construction_writes(): void
+	{
+		// Simulating "DI'd at admin_init before RegisterWebsiteRoutine ran" —
+		// the in-memory token is empty even though sbr_settings now has one.
+		global $wp_options_mock;
+		$relay = $this->buildRelayWithToken('');
+		$this->assertFalse($relay->isConfigured());
+
+		// External code path (routine, silent_reactivation, cron) wrote a fresh
+		// token AFTER this instance was constructed.
+		$wp_options_mock['sbr_settings'] = ['access_token' => 'rotated-fresh-token'];
+
+		// Refresh re-reads. The next require_auth call now sees the new token.
+		$relay->refresh_access_token_from_settings();
+		$this->assertTrue($relay->isConfigured(), 'refresh must promote the persisted token');
+	}
+
+	public function test_refresh_access_token_from_settings_is_a_noop_on_corrupted_settings(): void
+	{
+		// Corrupted sbr_settings (string/bool) must NOT wipe the in-memory token.
+		// Other recovery paths re-write to a clean array; refresh stays defensive.
+		global $wp_options_mock;
+		$relay = $this->buildRelayWithToken('stable-token');
+		$this->assertTrue($relay->isConfigured());
+
+		$wp_options_mock['sbr_settings'] = 'this is not an array';
+		$relay->refresh_access_token_from_settings();
+		$this->assertTrue(
+			$relay->isConfigured(),
+			'corrupted sbr_settings must not wipe the existing in-memory token'
+		);
+	}
+
+	public function test_refresh_access_token_from_settings_clears_when_settings_dropped_token(): void
+	{
+		// Inverse case: settings exist but no longer contain a token (post-reset).
+		global $wp_options_mock;
+		$relay = $this->buildRelayWithToken('before-reset');
+		$this->assertTrue($relay->isConfigured());
+
+		$wp_options_mock['sbr_settings'] = []; // post-reset shape
+		$relay->refresh_access_token_from_settings();
+		$this->assertFalse(
+			$relay->isConfigured(),
+			'refresh must reflect a missing token field as not-configured'
+		);
+	}
+
+	public function test_refresh_access_token_from_settings_coerces_non_string_token_to_empty(): void
+	{
+		// Defensive: malformed sbr_settings with non-string access_token (array,
+		// int, bool) shouldn't TypeError when concatenated into the Bearer header.
+		global $wp_options_mock;
+		$relay = $this->buildRelayWithToken('seed-token');
+		$wp_options_mock['sbr_settings'] = ['access_token' => ['accidental-array']];
+		$relay->refresh_access_token_from_settings();
+		$this->assertFalse($relay->isConfigured());
+	}
+
+	/*
+	|--------------------------------------------------------------------------
+	| Issue 1: license_key preservation through deactivate
+	|--------------------------------------------------------------------------
+	| LicenseManagerService::ajax_deactivate_license used to explicitly wipe
+	| license_key by passing 'license_key' => '' to SettingsManagerService.
+	| The fix removes that key from the update array so the array_merge in
+	| update_settings leaves the existing license_key untouched. The contract
+	| this test locks: customer can re-Activate without re-pasting the key.
+	*/
+
+	public function test_deactivate_partial_update_preserves_license_key(): void
+	{
+		// Pre-state: license active with key persisted.
+		global $wp_options_mock;
+		$wp_options_mock['sbr_settings'] = [
+			'license_key'    => 'CUSTOMER-LICENSE-KEY-93976af1',
+			'license_status' => 'valid',
+			'license_info'   => ['expires' => '2027-01-01', 'price_id' => 4],
+			'access_token'   => 'tok-canonical',
+			'website_url'    => 'https://example.com',
+		];
+
+		// Mirror the post-fix update set from LicenseManagerService::ajax_deactivate_license.
+		// license_key is INTENTIONALLY absent so array_merge keeps the existing value.
+		$settings_service = new \SmashBalloon\Reviews\Common\Services\SettingsManagerService();
+		$settings_service->update_settings([
+			'license_status' => '',
+			'license_info'   => '',
+		]);
+
+		$after = $wp_options_mock['sbr_settings'];
+		$this->assertSame(
+			'CUSTOMER-LICENSE-KEY-93976af1',
+			$after['license_key'],
+			'license_key MUST persist through deactivate so re-Activate is one-click'
+		);
+		$this->assertSame('', $after['license_status']);
+		$this->assertSame('', $after['license_info']);
+		$this->assertSame('tok-canonical', $after['access_token'], 'token unaffected by partial update');
+	}
+
+	public function test_deactivate_partial_update_with_pre_existing_empty_license_key_remains_empty(): void
+	{
+		// Edge: customer never had a key (Free plugin), deactivate flow shouldn't
+		// magically populate a key field. array_merge keeps the empty string.
+		global $wp_options_mock;
+		$wp_options_mock['sbr_settings'] = [
+			'license_key'    => '',
+			'license_status' => '',
+		];
+		$settings_service = new \SmashBalloon\Reviews\Common\Services\SettingsManagerService();
+		$settings_service->update_settings([
+			'license_status' => '',
+			'license_info'   => '',
+		]);
+		$this->assertSame('', $wp_options_mock['sbr_settings']['license_key']);
 	}
 }

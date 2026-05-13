@@ -32,6 +32,32 @@ class SBRelay
 	private $access_token;
 
 	/**
+	 * Per-instance one-shot guard for `reverify_token_via_register()`.
+	 * Multiple invalidToken responses on the same SBRelay instance only
+	 * trigger one reverify round-trip; subsequent ones treat the token
+	 * as already-confirmed (whatever state it ended in).
+	 *
+	 * Multiple SBRelay instances within a single PHP request can each
+	 * trigger their own reverify, but each round-trip hits PR #84's relay-side
+	 * cache (~10ms warm), and each successive instance reads the
+	 * post-reverify sbr_settings so its first-time reverify is correct
+	 * for the current state. Trade-off: bounded N-per-request (where N is
+	 * the number of SBRelay constructions, typically 1-3) instead of
+	 * strictly 1-per-request via a class-level static — the latter would
+	 * leak state between PHPUnit test cases.
+	 *
+	 * Note: untyped property declaration. The codebase's `phpcs.xml` sets
+	 * `testVersion = "7.1-"` so PHPCompatibility flags PHP 7.4+
+	 * typed-property syntax even though composer.json + readme declare
+	 * PHP >= 7.4. Aligning the phpcs target with composer is a separate
+	 * follow-up; for now the codebase is uniformly on docblock-only
+	 * properties to satisfy the existing CI.
+	 *
+	 * @var bool
+	 */
+	private $reverify_attempted = false;
+
+	/**
 	 * A list of endpoints that needs a bigger timeout
 	 *
 	 * @var array
@@ -101,6 +127,38 @@ class SBRelay
 			'sources/aliexpress',
 			'reviews/aliexpress',
 		];
+	}
+
+	/**
+	 * Re-read the stored access_token from `sbr_settings` into this instance.
+	 *
+	 * Required when an external code path (RegisterWebsiteRoutine running via
+	 * admin_init, silent_reactivation during migration recovery, cron handlers)
+	 * persisted a fresh token to wp_options AFTER this SBRelay was constructed.
+	 * Without this refresh the in-memory `$access_token` stays at whatever was
+	 * loaded at construction (typically empty if the constructor ran before the
+	 * register-routine wrote the token), and the next authenticated call sends
+	 * an empty/old Bearer → 401 → customer must click twice. See SMASH-1274 LR3.
+	 *
+	 * Callers that know they're racing with a parallel rotation (license
+	 * activate/deactivate handlers, post-migration recovery flows) should call
+	 * this immediately before `call(..., require_auth: true)`. Idempotent and
+	 * safe to call repeatedly; non-array sbr_settings is treated as a no-op
+	 * (keeps existing in-memory token rather than wiping it on corrupted state).
+	 */
+	public function refresh_access_token_from_settings(): void
+	{
+		if (!function_exists('get_option')) {
+			return;
+		}
+		$settings = get_option('sbr_settings', []);
+		if (!is_array($settings)) {
+			// Corrupted state — keep current in-memory token rather than wipe;
+			// the rest of the recovery flow handles non-array settings already.
+			return;
+		}
+		$token = $settings['access_token'] ?? '';
+		$this->access_token = is_string($token) ? $token : '';
 	}
 
 	/**
@@ -203,6 +261,30 @@ class SBRelay
 			'Content-Type' => 'application/json'
 		];
 		if (true === $require_auth) {
+			// Re-read the persisted token from `sbr_settings` before every
+			// authenticated call. This SBRelay instance is DI'd at admin_init,
+			// BEFORE RegisterWebsiteRoutine (also wired to admin_init) writes
+			// the canonical token. Without this refresh the in-memory
+			// `$this->access_token` stays at its construction-time value —
+			// typically empty for cold starts, or stale after a server-side
+			// rotation — sending the wrong Bearer to the relay → 401
+			// `invalidToken` → spurious recovery / customer-visible error
+			// (e.g. `email/check-status` and the email-verify confirm-link
+			// path observed during SMASH-1274 staging QA).
+			//
+			// Generalizes the round-15 caller-side refresh
+			// (LicenseManagerService::ajax_activate_license / ajax_deactivate_license)
+			// to ALL authenticated callers in one place. `get_option` is
+			// hot-cached by WP autoload so the cost is microseconds. Existing
+			// caller-side refreshes remain as defensive duplicates and are
+			// no-ops once the in-memory token matches sbr_settings.
+			//
+			// Bound math: zero new requests. The refresh is a pure local read
+			// (no HTTP, no recursion path), and it eliminates the spurious
+			// 401 → reverify_register cycle that the in-memory race used to
+			// trigger — so the typical authenticated call drops from
+			// 3 requests (call → 401 → register → retry) to 1 request.
+			$this->refresh_access_token_from_settings();
 			$headers['Authorization'] = 'Bearer ' . $this->access_token;
 		}
 
@@ -389,7 +471,141 @@ class SBRelay
 		$is_migration = !empty($response['discriminator'])
 			&& $response['discriminator'] === 'url_mismatch';
 
-		$this->reset_registration_state($is_migration);
+		// Migration confirmed by relay (url_mismatch discriminator) — wipe
+		// immediately. No reverify needed: the relay just told us the token
+		// belongs to a different URL, so the site moved domains. This path
+		// drives attempt_silent_reactivation() with full state cleanup.
+		if ($is_migration) {
+			// Clear in-memory token BEFORE the reset_registration_state(true)
+			// call, NOT after. reset_registration_state(true) can run
+			// attempt_silent_reactivation → persist_fresh_registration, which
+			// sets $this->access_token to a freshly minted token for the
+			// remainder of this request. Clearing afterwards would clobber
+			// that successful silent reactivation and leave subsequent
+			// SBRelay->call() invocations in the same page load
+			// unauthenticated → cascading invalidToken 401s. Clearing first
+			// prevents the stale Bearer from leaking out during the small
+			// window between wipe-of-options and silent-reactivation, while
+			// preserving any token the reactivation establishes downstream.
+			$this->access_token = null;
+			$this->reset_registration_state(true);
+
+			return;
+		}
+
+		// Bare invalidToken — could be a real revocation, but could also be
+		// transient (relay deployment 401, WAF, stale cache, parallel-call race,
+		// load balancer mid-failover). Don't wipe on a single 401: re-verify
+		// via /auth/register first. PR #84 cache replay makes this near-free
+		// (~10ms on warm cache). Only wipe if the reverify itself can't
+		// confirm a working token.
+		if (! $this->reverify_token_via_register()) {
+			$this->reset_registration_state(false);
+			// Same in-memory cleanup as above — see comment in migration path.
+			$this->access_token = null;
+		}
+	}
+
+	/**
+	 * Confirm or recover the access_token via an idempotent /auth/register call.
+	 *
+	 * Prevents the "false-positive 401 → wipe → register loop" pattern observed
+	 * on sites with broken transient storage where the 5-minute cooldown gate
+	 * doesn't engage. Instead of trusting a single invalidToken response, ask
+	 * the relay what the canonical token for this URL is.
+	 *
+	 * Outcomes:
+	 *   - Same token returned     → 401 was a false positive. Keep token. Return true.
+	 *   - Different token returned → token was rotated server-side. Silently
+	 *                                 update access_token + website_url; license
+	 *                                 / email state preserved (URL unchanged).
+	 *                                 Return true.
+	 *   - No usable response       → reverify failed; caller falls back to wipe.
+	 *                                 Return false.
+	 *
+	 * Per-instance one-shot via the `$reverify_attempted` instance flag —
+	 * multiple invalidToken responses on the same SBRelay instance trigger
+	 * at most one reverify round-trip. Multiple SBRelay constructions
+	 * within a single request CAN each trigger their own reverify; that's
+	 * acceptable because each one hits PR #84's cache (~10ms warm) and
+	 * each successive instance reads the post-reverify sbr_settings so
+	 * its first 401 evaluation is fresh and correct. See the property
+	 * docblock for the rationale on per-instance vs per-request scope.
+	 */
+	private function reverify_token_via_register(): bool
+	{
+		if ($this->reverify_attempted) {
+			// Already reverified once on this SBRelay instance. Treat the
+			// token as already-confirmed (whatever state it ended in) —
+			// don't wipe on subsequent 401s. A fresh SBRelay instantiated
+			// later in the same request reads the post-reverify
+			// sbr_settings, so its first-time reverify is correct.
+			return true;
+		}
+		$this->reverify_attempted = true;
+
+		if (! function_exists('get_home_url')) {
+			return false;
+		}
+		$url = (string) get_home_url();
+		if ($url === '') {
+			return false;
+		}
+
+		// WP HTTP helpers guard. SBRelay::call() depends on wp_remote_post +
+		// is_wp_error + wp_remote_retrieve_body. In non-WP contexts (CLI
+		// loaded outside WP, static analysis scaffolding, partial bootstraps)
+		// those may be undefined — calling through would fatal. Bail to
+		// caller's wipe-fallback path so the calling SBRelay path stays
+		// safe even in unusual hosting contexts.
+		if (
+			! function_exists('wp_remote_post')
+			|| ! function_exists('is_wp_error')
+			|| ! function_exists('wp_remote_retrieve_body')
+		) {
+			return false;
+		}
+
+		// Idempotent register — relay returns the existing token for existing
+		// users (res_code 201, success:true). PR #84 serves this from cache
+		// after the first hit. Auth not required.
+		// Wrapped in try-catch matching the pattern used by silent_reregister:
+		// any exception surfaced by call() (RelayResponseException, transport
+		// errors) becomes a clean reverify-failed signal so the caller can fall
+		// back to the old wipe path instead of bubbling up.
+		try {
+			$response = $this->call('auth/register', ['url' => $url], 'POST', false);
+		} catch (\Throwable $e) {
+			return false;
+		}
+		if (! is_array($response)) {
+			return false;
+		}
+		// Read nested-then-flat token defensively. Pre-PHP 8 returned null
+		// silently when `data` was null/scalar; PHP 8+ raises TypeError on
+		// `null['token']` / `"string"['token']`. is_array guard protects
+		// the nested read; flat fallback covers the new-user response shape
+		// (token at top level only).
+		$nested = (isset($response['data']) && is_array($response['data']))
+			? ($response['data']['token'] ?? null)
+			: null;
+		$relay_token = $nested ?? $response['token'] ?? null;
+		if (! is_string($relay_token) || $relay_token === '') {
+			return false;
+		}
+
+		if ($relay_token === $this->access_token) {
+			// Same token — original 401 was a false positive. Keep it.
+			return true;
+		}
+
+		// Token rotated server-side (DB cleanup, manual reset, etc.). Save the
+		// new value without a full reset — URL didn't change, so license + email
+		// state remains valid for this site. Reuse the existing helper so the
+		// "fresh registration persisted" code path stays single-source.
+		$this->persist_fresh_registration($relay_token, $url);
+
+		return true;
 	}
 
 	/**

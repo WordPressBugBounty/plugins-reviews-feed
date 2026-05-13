@@ -654,7 +654,7 @@ class SBR_Notifications extends ServiceProvider
 				$step1_img_html = sprintf('<div class="bell"><img src="%s" alt="notice"></div>', $step1_img);
 
 				$review_consent = get_option('sbr_review_consent');
-				$sbr_open_feedback_url = 'https://smashballoon.com/feedback/?plugin=reviews-lite';
+				$sbr_open_feedback_url = 'https://smashballoon.com/feedback/?plugin=reviews-lite&utm_campaign=reviews-free&utm_source=notifications&utm_medium=feedback';
 				// step #1 for the review notice
 				if (! $review_consent) {
 					$step1_btns = sprintf(

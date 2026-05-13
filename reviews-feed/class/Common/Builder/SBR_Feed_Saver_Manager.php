@@ -28,6 +28,7 @@ use SmashBalloon\Reviews\Common\Util;
 use SmashBalloon\Reviews\Common\FeedCache;
 use SmashBalloon\Reviews\Common\Helpers\Data_Encryption;
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_External_Reviews_Update;
+use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_Reviews_Update;
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_WooCommerce_Reviews_Update;
 
 class SBR_Feed_Saver_Manager
@@ -74,6 +75,11 @@ class SBR_Feed_Saver_Manager
 
 
 		add_action('wp_ajax_sbr_clear_error_logs', array('SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler', 'clear_all_error_ajax'));
+
+		// After the post-clear background cron refresh repopulates wp_sbr_feed_caches,
+		// re-flush 3rd-party page caches so any HTML they baked during the warm-up
+		// window (when feed cache was empty) is evicted. See flush_third_party_caches().
+		add_action('sbr_after_cron_refresh', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'flush_third_party_caches'));
 	}
 
 	/**
@@ -1168,6 +1174,19 @@ class SBR_Feed_Saver_Manager
 		// Reset bulk update states to allow re-fetching of new reviews
 		self::reset_bulk_update_states();
 
+		// Trigger an immediate cache refresh so users don't have to wait for
+		// either the hourly cron or the next frontend visit. Two steps:
+		//  1. Backdate `last_updated` on the rows we just emptied so the cron
+		//     query (`last_updated < now-12h` in FeedCacheUpdateService) picks
+		//     them up — clear_plugin_cache only nulls cache_value.
+		//  2. Enqueue an immediate single event + spawn_cron loopback so the
+		//     refresh runs within ~1-2s, non-blocking for this AJAX response.
+		// Gated by a filter so support can disable via mu-plugin if a customer
+		// hits a runaway-fetch / quota incident without needing a redeploy.
+		if (apply_filters('sbr_enable_immediate_refresh_on_clear', true)) {
+			self::trigger_immediate_refresh();
+		}
+
 		echo wp_json_encode([
 			'success' => true
 		]);
@@ -1176,9 +1195,59 @@ class SBR_Feed_Saver_Manager
 	}
 
 	/**
+	 * Trigger an immediate cron-driven refresh of just-cleared feed caches.
+	 *
+	 * Scoped to the admin AJAX path (NOT inside clear_plugin_cache) so the
+	 * 4 bulk-update finalizers that also call clear_plugin_cache stay
+	 * unchanged — they immediately rewrite their own rows and would only
+	 * waste a cron tick if backdated here.
+	 *
+	 * @since 2.5.6
+	 */
+	private static function trigger_immediate_refresh(): void
+	{
+		global $wpdb;
+
+		// Backdate `last_updated` so the cron query picks the cleared rows up.
+		// This is idempotent — repeated clicks just re-write the same epoch
+		// sentinel. Safe to do even when the cron-trigger guard below skips
+		// the schedule + spawn_cron — the hourly cron will catch up.
+		$cache_table = $wpdb->prefix . 'sbr_feed_caches';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"UPDATE $cache_table
+			 SET last_updated = '1970-01-01 00:00:00'
+			 WHERE cache_key NOT IN ('posts_backup', 'header_backup')"
+		);
+
+		// Application-level dedup: if a refresh was already triggered within
+		// the last 60s, skip scheduling a second cron + spawn_cron loopback.
+		// WP's wp_schedule_single_event dedup window is 10 minutes, but the
+		// loopback removes the event from the queue as soon as cron PHP starts
+		// (before upstream completes), so a 2nd click ~1s later could schedule
+		// a fresh event and double-fetch. This transient locks at our layer.
+		$trigger_guard = 'sbreviews_immediate_refresh_in_progress';
+		if (false !== get_transient($trigger_guard)) {
+			return;
+		}
+		set_transient($trigger_guard, 1, 60);
+
+		if (function_exists('wp_schedule_single_event')) {
+			wp_schedule_single_event(time(), \SmashBalloon\Reviews\Common\Services\FeedCacheUpdateService::CRON_JOB_NAME);
+		}
+
+		if (function_exists('spawn_cron')) {
+			spawn_cron();
+		}
+	}
+
+	/**
 	 * Reset bulk update states for all providers
 	 *
 	 * This triggers a full resync of reviews from all sources:
+	 * - Google + Yelp: Drop the per-source bulk-history option so the
+	 *   "Unable to retrieve reviews history" warning clears, and reschedule
+	 *   bulk-history for any source whose provider has an API key configured
 	 * - External providers (Airbnb, Booking, AliExpress): Re-fetch from relay API
 	 * - WooCommerce: Resync from wp_comments table
 	 *
@@ -1191,6 +1260,26 @@ class SBR_Feed_Saver_Manager
 	 */
 	private static function reset_bulk_update_states(): void
 	{
+		// Google + Yelp: drop the per-source bulk-history state so the source
+		// list warning clears, then reschedule bulk-history for any provider
+		// with an API key configured. Same gating as BulkHistoryRoutine — keyless
+		// customers stay keyless, but they no longer see a permanent warning
+		// rooted in a stale option (regression-pin: pre-fix Bulk_Reviews_Update
+		// could leave entries at {retry: true, is_done: false} indefinitely with
+		// no UI path to clear them).
+		if (Util::sbr_is_pro() && class_exists(Bulk_Reviews_Update::class)) {
+			delete_option('sbr_bulk_sources');
+			// Clear any in-flight bulk-cron events before rescheduling so a
+			// repeated "Clear All Caches" click doesn't enqueue a backlog.
+			// schedule_task uses wp_schedule_single_event which dedupes within
+			// 10 minutes for identical args, but Clear All Caches is on a manual
+			// click cadence — defensive cleanup is the safer contract.
+			if (function_exists('wp_clear_scheduled_hook')) {
+				wp_clear_scheduled_hook('sbr_reviews_bulk_cron');
+			}
+			Bulk_Reviews_Update::schedule_needed_sources_history();
+		}
+
 		// External providers (Airbnb, Booking, AliExpress): Reset and schedule background fetch
 		if (Util::sbr_is_pro() && class_exists(Bulk_External_Reviews_Update::class)) {
 			Bulk_External_Reviews_Update::reset_all_sources(true);
@@ -1256,15 +1345,33 @@ class SBR_Feed_Saver_Manager
 			WHERE `option_name` LIKE ('%\_transient\_timeout\_sbr\_%')
 			");
 
-		//Clear cache of major caching plugins
+		self::flush_third_party_caches();
+	}
+
+	/**
+	 * Purge known 3rd-party page-cache plugins (WP Rocket, W3TC, LiteSpeed, etc).
+	 *
+	 * Called twice per Clear-All-Caches cycle:
+	 *  1. Inside clear_plugin_cache() — clears stale HTML right after the feed
+	 *     cache is emptied.
+	 *  2. After the async cron refresh completes (via `sbr_after_cron_refresh`
+	 *     handler in register()) — re-flushes so page caches that rebaked the
+	 *     empty-feed render during the 5-30s warm-up window are evicted and
+	 *     the next visitor gets a fresh render off the now-warm feed cache.
+	 *
+	 * @since 2.5.6
+	 */
+	public static function flush_third_party_caches(): void
+	{
+		// Clear cache of major caching plugins.
 		if (isset($GLOBALS['wp_fastest_cache']) && method_exists($GLOBALS['wp_fastest_cache'], 'deleteCache')) {
 			$GLOBALS['wp_fastest_cache']->deleteCache();
 		}
-		//WP Super Cache
+		// WP Super Cache.
 		if (function_exists('wp_cache_clear_cache')) {
 			wp_cache_clear_cache();
 		}
-		//W3 Total Cache
+		// W3 Total Cache.
 		if (function_exists('w3tc_flush_all')) {
 			w3tc_flush_all();
 		}

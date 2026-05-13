@@ -11,6 +11,7 @@ if (! defined('ABSPATH')) {
 }
 
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_External_Reviews_Update;
+use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_Reviews_Update;
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_WooCommerce_Reviews_Update;
 use Smashballoon\Stubs\Services\ServiceProvider;
 
@@ -67,6 +68,9 @@ class Clear_Cache extends ServiceProvider
 	 * Reset bulk update states for all providers
 	 *
 	 * This triggers a full resync of reviews from all sources:
+	 * - Google + Yelp: Drop the per-source bulk-history option so the
+	 *   "Unable to retrieve reviews history" warning clears, and reschedule
+	 *   bulk-history for any source whose provider has an API key configured
 	 * - External providers (Airbnb, Booking, AliExpress): Re-fetch from relay API
 	 * - WooCommerce: Resync from wp_comments table
 	 *
@@ -79,6 +83,26 @@ class Clear_Cache extends ServiceProvider
 	 */
 	private function reset_bulk_update_states(): void
 	{
+		// Google + Yelp: drop the per-source bulk-history state so the source
+		// list warning clears, then reschedule bulk-history for any provider
+		// with an API key configured. Same gating as BulkHistoryRoutine — keyless
+		// customers stay keyless, but they no longer see a permanent warning
+		// rooted in a stale option (regression-pin: pre-fix Bulk_Reviews_Update
+		// could leave entries at {retry: true, is_done: false} indefinitely with
+		// no UI path to clear them).
+		if (Util::sbr_is_pro() && class_exists(Bulk_Reviews_Update::class)) {
+			delete_option('sbr_bulk_sources');
+			// Clear any in-flight bulk-cron events before rescheduling so a
+			// repeated "Clear All Caches" click doesn't enqueue a backlog.
+			// schedule_task uses wp_schedule_single_event which dedupes within
+			// 10 minutes for identical args, but Clear All Caches is on a manual
+			// click cadence — defensive cleanup is the safer contract.
+			if (function_exists('wp_clear_scheduled_hook')) {
+				wp_clear_scheduled_hook('sbr_reviews_bulk_cron');
+			}
+			Bulk_Reviews_Update::schedule_needed_sources_history();
+		}
+
 		// External providers (Airbnb, Booking, AliExpress): Reset and schedule background fetch
 		if (Util::sbr_is_pro() && class_exists(Bulk_External_Reviews_Update::class)) {
 			Bulk_External_Reviews_Update::reset_all_sources(true);

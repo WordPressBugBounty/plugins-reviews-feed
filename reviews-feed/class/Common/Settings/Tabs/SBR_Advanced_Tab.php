@@ -86,7 +86,7 @@ class SBR_Advanced_Tab extends SB_SettingsPage_Tab {
 				'info'      => sprintf(
 				/* translators: %s: Opening and closing anchor HTML tags */
 					__('This helps us prevent plugin and theme conflicts by sending a report in the background once per week about your settings and relevant site stats. It does not send sensitive information like access tokens, email addresses, or user info. This will not affect your site performace as well. %sLearn More%s', 'reviews-feed'),
-					'<a href="https://smashballoon.com/doc/usage-tracking-reviews/" target="_blank" rel="noopener noreferrer">',
+					'<a href="https://smashballoon.com/doc/usage-tracking-reviews/?utm_campaign=reviews-free&utm_source=settings&utm_medium=docs" target="_blank" rel="noopener noreferrer">',
 					'</a>'
 				),
 				'options' => [
