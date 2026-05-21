@@ -681,6 +681,7 @@ function sbr_get_no_media_providers()
 	return [
 		'facebook',
 		'woocommerce',
+		'edd',
 		'airbnb',
 		'booking',
 		'aliexpress'

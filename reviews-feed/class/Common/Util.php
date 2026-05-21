@@ -8,6 +8,7 @@ namespace SmashBalloon\Reviews\Common;
 use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
 use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler;
+use SmashBalloon\Reviews\Pro\Integrations\Providers\EDD;
 
 class Util
 {
@@ -46,6 +47,35 @@ class Util
 		$flags = self::get_feature_flags();
 		$disabled = isset($flags['disabled_providers']) ? $flags['disabled_providers'] : [];
 		return in_array($provider_type, $disabled, true);
+	}
+
+	/**
+	 * Resolve EDD's pluginRequired / pluginRequiredMessage for the customizer
+	 * provider tile. Strict: in Pro the gate requires both EDD core AND the
+	 * EDD Reviews extension — otherwise the modal would let users add a source
+	 * the integration can't actually capture new reviews for.
+	 *
+	 * Free builds may not ship class/Pro/Integrations/Providers/EDD.php, so
+	 * fall back to the prior core-only check there. Free never reaches this
+	 * tile in the disabled-from-extension state anyway (EDD shows as an
+	 * upsell, not a regular provider), but the fallback keeps parity with
+	 * pre-existing behavior.
+	 *
+	 * @return array Two-key map: pluginRequired (bool), pluginRequiredMessage (string)
+	 */
+	private static function get_edd_provider_status()
+	{
+		if (class_exists(EDD::class)) {
+			return [
+				'pluginRequired'        => ! EDD::is_active_static(),
+				'pluginRequiredMessage' => EDD::plugin_required_message(),
+			];
+		}
+
+		return [
+			'pluginRequired'        => ! ( class_exists('Easy_Digital_Downloads') || defined('EDD_VERSION') ),
+			'pluginRequiredMessage' => __('Enable Easy Digital Downloads plugin to use it as a source', 'reviews-feed'),
+		];
 	}
 
 	public static function get_providers()
@@ -104,6 +134,17 @@ class Util
 				'pluginRequired' => ! ( class_exists('WooCommerce') || function_exists('WC') ),
 				'pluginRequiredMessage' => __('Enable WooCommerce plugin to use it as a source', 'reviews-feed'),
 			],
+			array_merge(
+				[
+					'type' => 'edd',
+					'name' => 'Easy Digital Downloads',
+					'heading' => __('Download', 'reviews-feed'),
+					'placeholder' => __('Select a download', 'reviews-feed'),
+					'onlyDetails' => true,
+					'isLocal' => true,
+				],
+				self::get_edd_provider_status()
+			),
 			[
 				'type' => 'airbnb',
 				'name' => 'Airbnb',
@@ -1045,6 +1086,16 @@ class Util
 				'buttons' => [
 					'lite' => 'https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_campaign=reviews-free&utm_source=all-feeds&utm_medium=woocommerce-modal&utm_content=LiteUsers50OFF',
 					'upgrade' => 'https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_campaign=reviews-free&utm_source=customizer&utm_medium=woocommerce-modal&utm_content=Upgrade'
+				],
+				'includeContent' => true
+			],
+			'eddProvider' => [
+				'heading' => __('Upgrade to Pro to display Easy Digital Downloads reviews', 'reviews-feed'),
+				'description' => __('Upgrade to our "Plus" tier to display download reviews from your EDD store.', 'reviews-feed'),
+				'image' => 'upsell-woocommerce.png',
+				'buttons' => [
+					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=all-feeds&utm_medium=edd-modal&utm_content=LiteUsers50OFF',
+					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=customizer&utm_medium=edd-modal&utm_content=Upgrade'
 				],
 				'includeContent' => true
 			],

@@ -92,6 +92,17 @@ class Parser {
 	public function get_average_rating($businesses)
 	{
 		if (is_array($businesses)) {
+			// SMASH-1412: prefer the plugin-computed dedup'd aggregate when
+			// present. EDD / WooCommerce multi-source feeds stamp this on every
+			// source.info so the first one wins. Older feeds without the field
+			// fall through to the per-source mean below — correct for
+			// independent businesses (Yelp / Google / Trustpilot / WP.org).
+			foreach ($businesses as $business) {
+				if (! empty($business['info']['feed_aggregated'])) {
+					return round(floatval($business['info']['feed_average_rating'] ?? 0), 1);
+				}
+			}
+
 			$average_rating = 0;
 			$number = 0;
 			foreach ($businesses as $business) {
@@ -111,6 +122,13 @@ class Parser {
 	public function get_num_ratings($businesses)
 	{
 		if (is_array($businesses)) {
+			// SMASH-1412: see get_average_rating() — prefer feed-level dedup.
+			foreach ($businesses as $business) {
+				if (! empty($business['info']['feed_aggregated'])) {
+					return intval($business['info']['feed_total_review_count'] ?? 0);
+				}
+			}
+
 			$total_rating = 0;
 			foreach ($businesses as $business) {
 				// Check for total_rating first, then fall back to review_count for WooCommerce multi-product sources

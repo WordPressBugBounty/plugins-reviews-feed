@@ -522,7 +522,12 @@ class SBR_Support_Tool  extends ServiceProvider
 
 		echo '<h3>Results</h3>';
 		echo '<pre>';
-		var_dump($data_response_text, json_decode($data_response_text, true));
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Support tool output
+		// nosemgrep: php-debug-print-r
+		print_r(esc_html($data_response_text));
+		echo "\n\nDecoded:\n";
+		// nosemgrep: php-debug-print-r
+		print_r(json_decode($data_response_text, true));
 		echo '</pre>';
 		echo '<hr>';
 	}

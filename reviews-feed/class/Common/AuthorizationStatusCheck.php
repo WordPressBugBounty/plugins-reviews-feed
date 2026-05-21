@@ -100,6 +100,7 @@ class AuthorizationStatusCheck {
 			'facebook' => 2,
 			'trustpilot' => 2,
 			'woocommerce' => 2,
+			'edd' => 2,
 			'airbnb' => 2,
 			'booking' => 2,
 			'aliexpress' => 2,
@@ -126,6 +127,7 @@ class AuthorizationStatusCheck {
 				$allowed[] = 'facebook';
 				$allowed[] = 'trustpilot';
 				$allowed[] = 'woocommerce';
+				$allowed[] = 'edd';
 				$allowed[] = 'airbnb';
 				$allowed[] = 'booking';
 				$allowed[] = 'aliexpress';

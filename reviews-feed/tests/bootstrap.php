@@ -195,6 +195,28 @@ if (!function_exists('delete_transient')) {
 	}
 }
 
+// Stub is_plugin_active for provider-detection tests (EDD provider gate).
+// Backed by $wp_active_plugins_mock so tests can flip plugin-presence per case
+// without touching real wp-admin includes.
+if (!function_exists('is_plugin_active')) {
+	function is_plugin_active($plugin_path)
+	{
+		global $wp_active_plugins_mock;
+		if (!is_array($wp_active_plugins_mock)) {
+			return false;
+		}
+		return in_array($plugin_path, $wp_active_plugins_mock, true);
+	}
+}
+
+// i18n stub used by translatable strings in tested code paths.
+if (!function_exists('__')) {
+	function __($text, $domain = null)
+	{
+		return $text;
+	}
+}
+
 // WP HTTP helpers — never actually invoked in unit tests (SBRelay::call is
 // mocked at the `onlyMethods(['call'])` level), but reverify_token_via_register
 // has a `function_exists` defense-in-depth guard that bails early if these

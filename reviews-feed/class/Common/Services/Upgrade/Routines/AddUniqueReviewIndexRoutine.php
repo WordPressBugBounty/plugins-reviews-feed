@@ -82,6 +82,7 @@ class AddUniqueReviewIndexRoutine extends ServiceProvider
 		if ($result === false) {
 			// Log the error for debugging
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional logging for migration failure
+			// nosemgrep: php-debug-error-log
 			error_log('SBR Migration Error: Failed to add unique index idx_unique_review. Error: ' . $wpdb->last_error);
 			return false;
 		}

@@ -22,7 +22,9 @@ use SmashBalloon\Reviews\Common\Util;
 use SmashBalloon\Reviews\Pro\Integrations\Providers\AliExpress;
 use SmashBalloon\Reviews\Pro\Integrations\Providers\Airbnb;
 use SmashBalloon\Reviews\Pro\Integrations\Providers\BookingCom;
+use SmashBalloon\Reviews\Pro\Integrations\Providers\EDD;
 use SmashBalloon\Reviews\Pro\Integrations\Providers\WooCommerce;
+use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_EDD_Reviews_Update;
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_External_Reviews_Update;
 use Smashballoon\Stubs\Services\ServiceProvider;
 
@@ -43,6 +45,14 @@ class SBR_New_Providers_Manager extends ServiceProvider
 		add_action('wp_ajax_sbr_get_woocommerce_tags', [self::class, 'get_woocommerce_tags']);
 		add_action('wp_ajax_sbr_add_woocommerce_source_multi', [self::class, 'add_woocommerce_source_multi']);
 		add_action('wp_ajax_sbr_update_woocommerce_source_multi', [self::class, 'update_woocommerce_source_multi']);
+
+		// EDD AJAX handlers
+		add_action('wp_ajax_sbr_add_edd_source', [self::class, 'add_edd_source']);
+		add_action('wp_ajax_sbr_add_edd_source_multi', [self::class, 'add_edd_source_multi']);
+		add_action('wp_ajax_sbr_update_edd_source_multi', [self::class, 'update_edd_source_multi']);
+		add_action('wp_ajax_sbr_get_edd_downloads', [self::class, 'get_edd_downloads']);
+		add_action('wp_ajax_sbr_get_edd_categories', [self::class, 'get_edd_categories']);
+		add_action('wp_ajax_sbr_get_edd_tags', [self::class, 'get_edd_tags']);
 	}
 
 	/**
@@ -698,7 +708,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			$posts_table = $wpdb->prefix . SBR_POSTS_TABLE;
 
 			// Get comment IDs (reviews) that belong to removed products and this source
-			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 			$product_placeholders = implode(',', array_fill(0, count($removed_product_ids), '%d'));
 			$reviews_to_delete = $wpdb->get_col(
 				$wpdb->prepare(
@@ -721,7 +731,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 					)
 				);
 			}
-			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		}
 
 		// Find new products that weren't in the old list
@@ -1831,5 +1841,739 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				'message'  => $e->getMessage(),
 			]);
 		}
+	}
+
+	/**
+	 * Add single EDD download source
+	 *
+	 * @since 2.5.0
+	 * @requires Pro version
+	 */
+	public static function add_edd_source()
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+
+		// Pro version required for EDD
+		if (! self::require_pro_version('EDD')) {
+			return;
+		}
+
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Unauthorized access' ]);
+			return;
+		}
+
+		// Strict gate (matches Util::get_providers UI tile). is_edd_active()
+		// is intentionally retained on the display side; see EDD::is_active_static.
+		if (! EDD::is_active_static()) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'EDD or EDD Reviews is not active' ]);
+			return;
+		}
+		$edd = new EDD();
+
+		// Get download ID from URL or direct ID
+		$download_url = isset($_POST['download_url']) ? sanitize_text_field(wp_unslash($_POST['download_url'])) : '';
+		$download_id  = isset($_POST['download_id']) ? absint($_POST['download_id']) : 0;
+
+		// Extract ID from URL if provided
+		if (! empty($download_url) && empty($download_id)) {
+			$download_id = EDD::extract_download_id($download_url);
+		}
+
+		if (! $download_id) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Invalid download ID or URL' ]);
+			return;
+		}
+
+		// Validate download exists
+		$download = get_post($download_id);
+		if (! $download || $download->post_type !== 'download') {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Download not found' ]);
+			return;
+		}
+
+		// Check if source already exists
+		$existing_source = self::get_existing_source((string) $download_id, 'edd');
+		if ($existing_source) {
+			self::respond_with_existing_source($existing_source, 'EDD');
+			return;
+		}
+
+		// Get download info
+		$source_info = $edd->get_source_info($download);
+
+		// Fetch initial reviews
+		$reviews = $edd->fetch_reviews($download_id, 1, 20);
+		$normalized_reviews = $edd->normalize_reviews($reviews, $download);
+
+		// Get thumbnail
+		$image_id  = get_post_thumbnail_id($download_id);
+		$image_url = $image_id ? wp_get_attachment_url($image_id) : '';
+
+		$source_data = [
+			'id'           => (string) $download_id,
+			'provider'     => 'edd',
+			'name'         => $download->post_title,
+			'url'          => get_permalink($download_id),
+			'image'        => $image_url,
+			'rating'       => $source_info['rating'],
+			'review_count' => $source_info['review_count'],
+			'account_id'   => (string) $download_id,
+			'access_token' => '',
+			'info'         => wp_json_encode([
+				'id'           => $download_id,
+				'name'         => $download->post_title,
+				'url'          => get_permalink($download_id),
+				'image'        => $image_url,
+				'rating'       => $source_info['rating'],
+				'total_rating' => $source_info['review_count'],
+				'review_count' => $source_info['review_count'],
+				'provider'     => 'edd'
+			]),
+			'error'        => '',
+			'expires'      => gmdate('Y-m-d H:i:s', strtotime('+1 year')),
+			'last_updated' => current_time('mysql'),
+			'author'       => get_current_user_id()
+		];
+
+		// Save source
+		SBR_Sources::update_or_insert($source_data);
+
+		// Cache reviews
+		self::cache_reviews($normalized_reviews, 'edd', (string) $download_id);
+
+		// Schedule bulk update if needed
+		if ($source_info['review_count'] > 20) {
+			$bulk_update = new Bulk_EDD_Reviews_Update();
+			$bulk_update->schedule_task([
+				'download_id' => (string) $download_id
+			]);
+		}
+
+		wp_send_json([
+			'success'      => true,
+			'message'      => 'addedSource', // Must match frontend expectation in AddSourceModal.js
+			'source'       => $source_data,
+			'sourcesList'  => SBR_Sources::get_sources_list(),
+			'sourcesCount' => SBR_Sources::get_sources_count()
+		]);
+	}
+
+	/**
+	 * Add multi-download EDD source
+	 *
+	 * @since 2.5.0
+	 * @requires Pro version
+	 */
+	public static function add_edd_source_multi()
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+
+		// Pro version required
+		if (! self::require_pro_version('EDD')) {
+			return;
+		}
+
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Unauthorized access' ]);
+			return;
+		}
+
+		// Strict gate (matches Util::get_providers UI tile). is_edd_active()
+		// is intentionally retained on the display side; see EDD::is_active_static.
+		if (! EDD::is_active_static()) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'EDD or EDD Reviews is not active' ]);
+			return;
+		}
+		$edd = new EDD();
+
+		// Maximum allowed items per selection type (prevent memory exhaustion)
+		$max_items = 100;
+
+		// Get download_ids, category_ids, and tag_ids (all optional but at least one required).
+		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- array_map with absint sanitizes the values
+		$direct_download_ids = isset($_POST['download_ids']) && is_array($_POST['download_ids']) ? array_map('absint', $_POST['download_ids']) : [];
+		$category_ids        = isset($_POST['category_ids']) && is_array($_POST['category_ids']) ? array_map('absint', $_POST['category_ids']) : [];
+		$tag_ids             = isset($_POST['tag_ids']) && is_array($_POST['tag_ids']) ? array_map('absint', $_POST['tag_ids']) : [];
+		// phpcs:enable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		// Enforce maximum limits to prevent memory exhaustion attacks
+		if (count($direct_download_ids) > $max_items || count($category_ids) > $max_items || count($tag_ids) > $max_items) {
+			wp_send_json([ 'error' => 'api_error', 'message' => sprintf('Maximum %d items allowed per selection type', $max_items) ]);
+			return;
+		}
+
+		// Filter out zeros.
+		$direct_download_ids = array_filter($direct_download_ids);
+		$category_ids        = array_filter($category_ids);
+		$tag_ids             = array_filter($tag_ids);
+
+		// Validate at least one selection type is provided.
+		if (empty($direct_download_ids) && empty($category_ids) && empty($tag_ids)) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'At least one download, category, or tag must be selected' ]);
+			return;
+		}
+
+		// Validate source_name is provided
+		if (! isset($_POST['source_name']) || empty(trim(sanitize_text_field(wp_unslash($_POST['source_name']))))) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Source name is required' ]);
+			return;
+		}
+
+		$source_name = sanitize_text_field(wp_unslash($_POST['source_name']));
+
+		// Resolve category and tag selections to download IDs
+		$category_download_ids = $edd->get_downloads_by_categories($category_ids);
+		$tag_download_ids      = $edd->get_downloads_by_tags($tag_ids);
+
+		// Merge and limit download IDs
+		$merge_result = self::merge_and_limit_download_ids($direct_download_ids, $category_download_ids, $tag_download_ids);
+		$download_ids = $merge_result['download_ids'];
+
+		if (empty($download_ids)) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'No downloads selected' ]);
+			return;
+		}
+
+		// Generate unique source ID
+		$source_id = 'edd_multi_' . wp_generate_uuid4();
+
+		// Build downloads info
+		$downloads_info      = [];
+		$total_review_count  = 0;
+		$weighted_rating_sum = 0;
+
+		foreach ($download_ids as $download_id) {
+			$download = get_post($download_id);
+			if (! $download || $download->post_type !== 'download') {
+				continue;
+			}
+
+			$stats = $edd->get_download_review_stats($download_id);
+			$review_count   = $stats['review_count'];
+			$average_rating = $stats['average_rating'];
+
+			$image_id  = get_post_thumbnail_id($download_id);
+			$image_url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
+
+			$downloads_info[] = [
+				'id'             => $download_id,
+				'name'           => $download->post_title,
+				'image'          => $image_url,
+				'url'            => get_permalink($download_id),
+				'review_count'   => $review_count,
+				'average_rating' => $average_rating
+			];
+
+			$total_review_count  += $review_count;
+			$weighted_rating_sum += $average_rating * $review_count;
+		}
+
+		// Calculate weighted average
+		$average_rating = $total_review_count > 0 ? round($weighted_rating_sum / $total_review_count, 1) : 0;
+
+		// Use first download's image as source image
+		$source_image = ! empty($downloads_info[0]['image']) ? $downloads_info[0]['image'] : '';
+
+		// Build categories info
+		$categories_info = [];
+		foreach ($category_ids as $cat_id) {
+			$term = get_term($cat_id, 'download_category');
+			if ($term && ! is_wp_error($term)) {
+				$categories_info[] = [
+					'id'             => $term->term_id,
+					'name'           => $term->name,
+					'slug'           => $term->slug,
+					'download_count' => $term->count,
+				];
+			}
+		}
+
+		// Build tags info
+		$tags_info = [];
+		foreach ($tag_ids as $tag_id_item) {
+			$term = get_term($tag_id_item, 'download_tag');
+			if ($term && ! is_wp_error($term)) {
+				$tags_info[] = [
+					'id'             => $term->term_id,
+					'name'           => $term->name,
+					'slug'           => $term->slug,
+					'download_count' => $term->count,
+				];
+			}
+		}
+
+		$source_data = [
+			'id'           => $source_id,
+			'provider'     => 'edd',
+			'name'         => $source_name,
+			'url'          => '',
+			'image'        => $source_image,
+			'rating'       => $average_rating,
+			'review_count' => $total_review_count,
+			'account_id'   => $source_id,
+			'access_token' => '',
+			'info'         => wp_json_encode([
+				'type'              => 'multi_download',
+				'source_name'       => $source_name,
+				'downloads'         => $downloads_info,
+				'download_ids'      => array_values($download_ids),
+				'direct_download_ids' => array_values($direct_download_ids),
+				'category_ids'      => array_values($category_ids),
+				'tag_ids'           => array_values($tag_ids),
+				'categories'        => $categories_info,
+				'tags'              => $tags_info,
+				'direct_downloads'  => array_values(array_filter($downloads_info, function ($d) use ($direct_download_ids) {
+					return in_array($d['id'], $direct_download_ids, true);
+				})),
+				'download_count'    => count($downloads_info),
+				'total_rating'      => $total_review_count,
+				'review_count'      => $total_review_count,
+				'average_rating'    => $average_rating,
+				'provider'          => 'edd'
+			]),
+			'error'        => '',
+			'expires'      => gmdate('Y-m-d H:i:s', strtotime('+1 year')),
+			'last_updated' => current_time('mysql'),
+			'author'       => get_current_user_id()
+		];
+
+		// Save source
+		SBR_Sources::update_or_insert($source_data);
+
+		// Fetch and cache initial reviews
+		$reviews = $edd->fetch_reviews_multi($download_ids, 20, 0);
+		$normalized_reviews = $edd->normalize_reviews_multi($reviews);
+
+		if (! empty($normalized_reviews)) {
+			self::cache_reviews($normalized_reviews, 'edd', $source_id);
+		}
+
+		// Schedule bulk update if needed
+		if ($total_review_count > 20) {
+			$bulk_update = new Bulk_EDD_Reviews_Update();
+			$bulk_update->schedule_task([
+				'source_id'    => $source_id,
+				'download_ids' => $download_ids,
+				'type'         => 'multi_download',
+			]);
+		}
+
+		wp_send_json([
+			'success'      => true,
+			'message'      => 'addedSource', // Must match frontend expectation in AddSourceModal.js
+			'source'       => $source_data,
+			'sourcesList'  => SBR_Sources::get_sources_list(),
+			'sourcesCount' => SBR_Sources::get_sources_count()
+		]);
+	}
+
+	/**
+	 * Update multi-download EDD source
+	 *
+	 * @since 2.5.0
+	 * @requires Pro version
+	 */
+	public static function update_edd_source_multi()
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+
+		if (! self::require_pro_version('EDD')) {
+			return;
+		}
+
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Unauthorized access' ]);
+			return;
+		}
+
+		// Strict gate (matches Util::get_providers UI tile). is_edd_active()
+		// is intentionally retained on the display side; see EDD::is_active_static.
+		if (! EDD::is_active_static()) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'EDD or EDD Reviews is not active' ]);
+			return;
+		}
+		$edd = new EDD();
+
+		$source_id = isset($_POST['source_id']) ? sanitize_text_field(wp_unslash($_POST['source_id'])) : '';
+		if (empty($source_id)) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Source ID is required' ]);
+			return;
+		}
+
+		// Get current source
+		$current_source = SBR_Sources::get_single_source_info([
+			'id'       => $source_id,
+			'provider' => 'edd'
+		]);
+
+		if (! $current_source) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Source not found' ]);
+			return;
+		}
+
+		// Get old download IDs for comparison
+		$old_info = ! empty($current_source['info']) ? json_decode($current_source['info'], true) : [];
+		$old_download_ids = $old_info['download_ids'] ?? [];
+
+		// Maximum allowed items per selection type (prevent memory exhaustion)
+		$max_items = 100;
+
+		// Get new selection data (download_ids, category_ids, tag_ids - all optional but at least one required).
+		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- array_map with absint sanitizes the values
+		$direct_download_ids = isset($_POST['download_ids']) && is_array($_POST['download_ids']) ? array_map('absint', $_POST['download_ids']) : [];
+		$category_ids        = isset($_POST['category_ids']) && is_array($_POST['category_ids']) ? array_map('absint', $_POST['category_ids']) : [];
+		$tag_ids             = isset($_POST['tag_ids']) && is_array($_POST['tag_ids']) ? array_map('absint', $_POST['tag_ids']) : [];
+		// phpcs:enable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		// Enforce maximum limits to prevent memory exhaustion attacks
+		if (count($direct_download_ids) > $max_items || count($category_ids) > $max_items || count($tag_ids) > $max_items) {
+			wp_send_json([ 'error' => 'api_error', 'message' => sprintf('Maximum %d items allowed per selection type', $max_items) ]);
+			return;
+		}
+
+		// Filter out zeros.
+		$direct_download_ids = array_filter($direct_download_ids);
+		$category_ids        = array_filter($category_ids);
+		$tag_ids             = array_filter($tag_ids);
+
+		// Validate at least one selection type is provided.
+		if (empty($direct_download_ids) && empty($category_ids) && empty($tag_ids)) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'At least one download, category, or tag must be selected' ]);
+			return;
+		}
+
+		$source_name = isset($_POST['source_name']) ? sanitize_text_field(wp_unslash($_POST['source_name'])) : ($old_info['source_name'] ?? __('EDD Downloads', 'reviews-feed'));
+
+		// Resolve to download IDs
+		$category_download_ids = $edd->get_downloads_by_categories($category_ids);
+		$tag_download_ids      = $edd->get_downloads_by_tags($tag_ids);
+
+		$merge_result = self::merge_and_limit_download_ids($direct_download_ids, $category_download_ids, $tag_download_ids);
+		$download_ids = $merge_result['download_ids'];
+
+		if (empty($download_ids)) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'No downloads selected' ]);
+			return;
+		}
+
+		// Build new downloads info
+		$downloads_info      = [];
+		$total_review_count  = 0;
+		$weighted_rating_sum = 0;
+
+		foreach ($download_ids as $download_id) {
+			$download = get_post($download_id);
+			if (! $download || $download->post_type !== 'download') {
+				continue;
+			}
+
+			$stats = $edd->get_download_review_stats($download_id);
+			$review_count   = $stats['review_count'];
+			$average_rating = $stats['average_rating'];
+
+			$image_id  = get_post_thumbnail_id($download_id);
+			$image_url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
+
+			$downloads_info[] = [
+				'id'             => $download_id,
+				'name'           => $download->post_title,
+				'image'          => $image_url,
+				'url'            => get_permalink($download_id),
+				'review_count'   => $review_count,
+				'average_rating' => $average_rating
+			];
+
+			$total_review_count  += $review_count;
+			$weighted_rating_sum += $average_rating * $review_count;
+		}
+
+		$average_rating = $total_review_count > 0 ? round($weighted_rating_sum / $total_review_count, 1) : 0;
+		$source_image = ! empty($downloads_info[0]['image']) ? $downloads_info[0]['image'] : '';
+
+		// Build categories/tags info
+		$categories_info = [];
+		foreach ($category_ids as $cat_id) {
+			$term = get_term($cat_id, 'download_category');
+			if ($term && ! is_wp_error($term)) {
+				$categories_info[] = [
+					'id'             => $term->term_id,
+					'name'           => $term->name,
+					'slug'           => $term->slug,
+					'download_count' => $term->count,
+				];
+			}
+		}
+
+		$tags_info = [];
+		foreach ($tag_ids as $tag_id_item) {
+			$term = get_term($tag_id_item, 'download_tag');
+			if ($term && ! is_wp_error($term)) {
+				$tags_info[] = [
+					'id'             => $term->term_id,
+					'name'           => $term->name,
+					'slug'           => $term->slug,
+					'download_count' => $term->count,
+				];
+			}
+		}
+
+		$source_data = [
+			'id'           => $source_id,
+			'provider'     => 'edd',
+			'name'         => $source_name,
+			'url'          => '',
+			'image'        => $source_image,
+			'rating'       => $average_rating,
+			'review_count' => $total_review_count,
+			'account_id'   => $source_id,
+			'access_token' => '',
+			'info'         => wp_json_encode([
+				'type'              => 'multi_download',
+				'source_name'       => $source_name,
+				'downloads'         => $downloads_info,
+				'download_ids'      => array_values($download_ids),
+				'direct_download_ids' => array_values($direct_download_ids),
+				'category_ids'      => array_values($category_ids),
+				'tag_ids'           => array_values($tag_ids),
+				'categories'        => $categories_info,
+				'tags'              => $tags_info,
+				'direct_downloads'  => array_values(array_filter($downloads_info, function ($d) use ($direct_download_ids) {
+					return in_array($d['id'], $direct_download_ids, true);
+				})),
+				'download_count'    => count($downloads_info),
+				'total_rating'      => $total_review_count,
+				'review_count'      => $total_review_count,
+				'average_rating'    => $average_rating,
+				'provider'          => 'edd'
+			]),
+			'error'        => '',
+			'expires'      => gmdate('Y-m-d H:i:s', strtotime('+1 year')),
+			'last_updated' => current_time('mysql'),
+			'author'       => get_current_user_id()
+		];
+
+		// Update source
+		SBR_Sources::update_or_insert($source_data);
+
+		// Find downloads that were removed
+		$removed_download_ids = array_diff($old_download_ids, $download_ids);
+
+		// Delete reviews for removed downloads
+		if (! empty($removed_download_ids)) {
+			global $wpdb;
+			$posts_table = $wpdb->prefix . SBR_POSTS_TABLE;
+
+			$placeholders = implode(',', array_fill(0, count($removed_download_ids), '%d'));
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$reviews_to_delete = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT p.id FROM {$posts_table} p
+					 INNER JOIN {$wpdb->comments} c ON p.post_id = c.comment_ID
+					 WHERE p.provider_id = %s
+					 AND p.provider = 'edd'
+					 AND c.comment_post_ID IN ($placeholders)",
+					...array_merge([ $source_id ], array_values($removed_download_ids))
+				)
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+			if (! empty($reviews_to_delete)) {
+				$delete_placeholders = implode(',', array_fill(0, count($reviews_to_delete), '%d'));
+				// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+				$wpdb->query(
+					$wpdb->prepare(
+						"DELETE FROM {$posts_table} WHERE id IN ($delete_placeholders)",
+						...$reviews_to_delete
+					)
+				);
+				// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+				// Clear feed cache after deleting reviews to prevent stale data
+				SBR_Feed_Saver_Manager::clear_plugin_cache();
+			}
+		}
+
+		// Find new downloads
+		$new_download_ids = array_diff($download_ids, $old_download_ids);
+
+		// Fetch and cache reviews for new downloads
+		if (! empty($new_download_ids)) {
+			$reviews = $edd->fetch_reviews_multi($new_download_ids, 20, 0);
+			$normalized_reviews = $edd->normalize_reviews_multi($reviews);
+
+			if (! empty($normalized_reviews)) {
+				self::cache_reviews($normalized_reviews, 'edd', $source_id);
+			}
+
+			// Schedule bulk update if needed
+			if ($total_review_count > 20) {
+				$accounts_list = get_option('sbr_bulk_edd', []);
+				if (isset($accounts_list[ $source_id ])) {
+					$accounts_list[ $source_id ]['is_done']      = false;
+					$accounts_list[ $source_id ]['offset']       = 20;
+					$accounts_list[ $source_id ]['download_ids'] = $download_ids;
+					update_option('sbr_bulk_edd', $accounts_list);
+				}
+
+				$bulk_update = new Bulk_EDD_Reviews_Update();
+				$bulk_update->schedule_task([
+					'source_id'    => $source_id,
+					'download_ids' => $download_ids,
+					'type'         => 'multi_download',
+				]);
+			}
+		}
+
+		wp_send_json([
+			'success'      => true,
+			'message'      => 'updatedSource',
+			'source'       => $source_data,
+			'sourcesList'  => SBR_Sources::get_sources_list(),
+			'sourcesCount' => SBR_Sources::get_sources_count()
+		]);
+	}
+
+	/**
+	 * Get EDD downloads for selector
+	 *
+	 * @since 2.5.0
+	 * @requires Pro version
+	 */
+	public static function get_edd_downloads()
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+
+		if (! self::require_pro_version('EDD')) {
+			return;
+		}
+
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Unauthorized access' ]);
+			return;
+		}
+
+		// Strict gate (matches Util::get_providers UI tile). is_edd_active()
+		// is intentionally retained on the display side; see EDD::is_active_static.
+		if (! EDD::is_active_static()) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'EDD or EDD Reviews is not active' ]);
+			return;
+		}
+		$edd = new EDD();
+
+		$search    = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+		$downloads = $edd->get_sb_edd_downloads($search);
+
+		wp_send_json_success([
+			'downloads' => $downloads,
+		]);
+	}
+
+	/**
+	 * Get EDD categories
+	 *
+	 * @since 2.5.0
+	 * @requires Pro version
+	 */
+	public static function get_edd_categories()
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+
+		if (! self::require_pro_version('EDD')) {
+			return;
+		}
+
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Unauthorized access' ]);
+			return;
+		}
+
+		// Strict gate (matches Util::get_providers UI tile). is_edd_active()
+		// is intentionally retained on the display side; see EDD::is_active_static.
+		if (! EDD::is_active_static()) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'EDD or EDD Reviews is not active' ]);
+			return;
+		}
+		$edd = new EDD();
+
+		$categories = $edd->get_download_categories();
+
+		wp_send_json_success([
+			'categories' => $categories
+		]);
+	}
+
+	/**
+	 * Get EDD tags
+	 *
+	 * @since 2.5.0
+	 * @requires Pro version
+	 */
+	public static function get_edd_tags()
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+
+		if (! self::require_pro_version('EDD')) {
+			return;
+		}
+
+		if (! sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'Unauthorized access' ]);
+			return;
+		}
+
+		// Strict gate (matches Util::get_providers UI tile). is_edd_active()
+		// is intentionally retained on the display side; see EDD::is_active_static.
+		if (! EDD::is_active_static()) {
+			wp_send_json([ 'error' => 'api_error', 'message' => 'EDD or EDD Reviews is not active' ]);
+			return;
+		}
+		$edd = new EDD();
+
+		$tags = $edd->get_download_tags();
+
+		wp_send_json_success([
+			'tags' => $tags
+		]);
+	}
+
+	/**
+	 * Merge and limit download IDs
+	 *
+	 * @since 2.5.0
+	 * @param array $direct_download_ids   Downloads selected directly
+	 * @param array $category_download_ids Downloads from categories
+	 * @param array $tag_download_ids      Downloads from tags
+	 * @return array Array with download_ids, truncated flag, and total count
+	 */
+	private static function merge_and_limit_download_ids($direct_download_ids, $category_download_ids, $tag_download_ids)
+	{
+		$download_ids = array_unique(array_merge(
+			$direct_download_ids,
+			$category_download_ids,
+			$tag_download_ids
+		));
+
+		$total_count = count($download_ids);
+
+		/**
+		 * Filter the maximum number of downloads allowed in a multi-download EDD source.
+		 *
+		 * @since 2.5.0
+		 * @param int $max_downloads Maximum downloads allowed. Default 500.
+		 */
+		$max_downloads = apply_filters('sbr_edd_max_downloads', 500);
+
+		$truncated = $total_count > $max_downloads;
+
+		if ($truncated) {
+			$download_ids = array_slice($download_ids, 0, $max_downloads);
+		}
+
+		return [
+			'download_ids' => $download_ids,
+			'truncated'    => $truncated,
+			'total'        => $total_count,
+		];
 	}
 }

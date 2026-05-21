@@ -1,6 +1,6 @@
 <?php
 
-// phpcs:disable Generic.Metrics.CyclomaticComplexity.MaxExceeded
+// phpcs:disable Generic.Metrics.CyclomaticComplexity.MaxExceeded,Generic.Metrics.CyclomaticComplexity.TooHigh
 // Note: Legacy file with complex feed rendering logic. Refactoring planned.
 
 /**
@@ -335,6 +335,17 @@ class Feed
 		try {
 			$remote_header_data = $this->get_remote_header_data($settings);
 
+			// SMASH-1412: same dedup'd feed aggregate as update_header_cache_from_source().
+			// Both paths persist the header cache, so both must stamp the aggregate.
+			$feed_aggregate = $this->compute_feed_level_aggregate($settings['sources']);
+			if ($feed_aggregate !== null && !empty($remote_header_data)) {
+				foreach ($remote_header_data as $key => $entry) {
+					$remote_header_data[$key]['info']['feed_total_review_count'] = $feed_aggregate['count'];
+					$remote_header_data[$key]['info']['feed_average_rating']     = $feed_aggregate['rating'];
+					$remote_header_data[$key]['info']['feed_aggregated']         = true;
+				}
+			}
+
 			if (!empty($remote_header_data) && isset($remote_header_data[0]) && isset($remote_header_data[0]['info']) && isset($remote_header_data[0]['info']['id'])) {
 				// Use get_provider_for_source to match the correct provider for the first header entry
 				$first_header_id = $remote_header_data[0]['info']['id'];
@@ -429,6 +440,22 @@ class Feed
 			];
 		}
 
+		// SMASH-1412: per-source counts double-count when two EDD (or Woo) sources
+		// overlap on the same underlying download/product. Compute a dedup'd feed
+		// aggregate here so the customizer reads one correct number instead of
+		// summing per-source. For providers without overlap semantics (Yelp,
+		// Google, Trustpilot, TripAdvisor, WP.org) the helper returns null and
+		// the customizer falls back to summing — which is correct because each
+		// source represents an independent business.
+		$feed_aggregate = $this->compute_feed_level_aggregate($settings['sources']);
+		if ($feed_aggregate !== null && !empty($remote_header_data)) {
+			foreach ($remote_header_data as $key => $entry) {
+				$remote_header_data[$key]['info']['feed_total_review_count'] = $feed_aggregate['count'];
+				$remote_header_data[$key]['info']['feed_average_rating']     = $feed_aggregate['rating'];
+				$remote_header_data[$key]['info']['feed_aggregated']         = true;
+			}
+		}
+
 		if (!empty($remote_header_data)) {
 			$first_source = $remote_header_data[0]['info'] ?? [];
 			$first_source_id = $first_source['id'] ?? '';
@@ -446,7 +473,161 @@ class Feed
 		return $remote_header_data;
 	}
 
+	/**
+	 * Compute a deduplicated feed-level review-count + weighted average rating
+	 * across all sources in the feed. Groups sources by provider so each
+	 * provider's class can dedup its own entity space (EDD = downloads,
+	 * Woo = products). Sums totals across provider groups at the end since
+	 * different providers represent independent business surfaces.
+	 *
+	 * Returns null when there's nothing to aggregate (no sources / no
+	 * recognised providers / no review data) — the caller treats null as
+	 * "let the customizer fall back to its existing per-source sum".
+	 *
+	 * @since SMASH-1412
+	 * @param array $sources Sources array from feed settings
+	 * @return array{count:int,rating:float}|null
+	 */
+	private function compute_feed_level_aggregate(array $sources)
+	{
+		if (empty($sources)) {
+			return null;
+		}
 
+		$by_provider = [];
+		foreach ($sources as $src) {
+			$provider = $src['provider'] ?? '';
+			if (empty($provider)) {
+				continue;
+			}
+			$by_provider[$provider][] = $src;
+		}
+		if (empty($by_provider)) {
+			return null;
+		}
+
+		$total_count = 0;
+		$weighted_sum = 0.0;
+		$any_dedup = false;
+
+		foreach ($by_provider as $provider => $provider_sources) {
+			$agg = $this->compute_provider_aggregate($provider, $provider_sources);
+			if ($agg === null) {
+				// No dedup available — sum per-source (correct for independent
+				// businesses: Yelp, Google, Trustpilot, TripAdvisor, WP.org).
+				foreach ($provider_sources as $src) {
+					$info = $src['info'] ?? [];
+					if (is_string($info)) {
+						$info = json_decode($info, true) ?: [];
+					}
+					$count  = (int) ($info['review_count'] ?? $info['total_rating'] ?? 0);
+					$rating = (float) ($info['rating'] ?? $info['average_rating'] ?? 0);
+					$total_count  += $count;
+					$weighted_sum += $rating * $count;
+				}
+			} else {
+				$any_dedup = true;
+				$total_count  += $agg['count'];
+				$weighted_sum += $agg['rating'] * $agg['count'];
+			}
+		}
+
+		// Only return an aggregate when at least one provider actually deduped
+		// something. Otherwise let the customizer use its existing per-source
+		// sum so we don't pay the BC cost on non-EDD/Woo feeds.
+		if (! $any_dedup) {
+			return null;
+		}
+
+		return [
+			'count'  => $total_count,
+			'rating' => $total_count > 0 ? round($weighted_sum / $total_count, 1) : 0.0,
+		];
+	}
+
+	/**
+	 * Provider-specific deduplicated aggregate. Returns null when the provider
+	 * doesn't expose a dedup hook (treated as "use per-source sum" by the
+	 * caller). EDD + WooCommerce dedup over the union of download / product
+	 * IDs respectively. Other providers (Google / Yelp / Trustpilot /
+	 * TripAdvisor / WP.org) return null on purpose because each source is its
+	 * own business — summing is mathematically correct there.
+	 *
+	 * @since SMASH-1412
+	 * @param string $provider Provider name (edd, woocommerce, …)
+	 * @param array  $sources  Subset of feed sources matching this provider
+	 * @return array{count:int,rating:float}|null
+	 */
+	private function compute_provider_aggregate(string $provider, array $sources)
+	{
+		if ($provider === 'edd') {
+			$download_ids = [];
+			foreach ($sources as $src) {
+				$info = $src['info'] ?? [];
+				if (is_string($info)) {
+					$info = json_decode($info, true) ?: [];
+				}
+				$downloads = $info['downloads'] ?? $info['direct_downloads'] ?? [];
+				foreach ($downloads as $d) {
+					if (! empty($d['id'])) {
+						$download_ids[(int) $d['id']] = true;
+					}
+				}
+			}
+			$download_ids = array_keys($download_ids);
+			if (empty($download_ids)) {
+				return null;
+			}
+			$class = '\\SmashBalloon\\Reviews\\Pro\\Integrations\\Providers\\EDD';
+			if (! class_exists($class)) {
+				return null;
+			}
+			$edd = new $class();
+			if (! method_exists($edd, 'get_multi_source_info')) {
+				return null;
+			}
+			$info = $edd->get_multi_source_info($download_ids, 'feed_aggregate', []);
+			return [
+				'count'  => (int) ($info['review_count'] ?? 0),
+				'rating' => (float) ($info['average_rating'] ?? $info['rating'] ?? 0),
+			];
+		}
+
+		if ($provider === 'woocommerce') {
+			$product_ids = [];
+			foreach ($sources as $src) {
+				$info = $src['info'] ?? [];
+				if (is_string($info)) {
+					$info = json_decode($info, true) ?: [];
+				}
+				$products = $info['products'] ?? $info['direct_products'] ?? $info['downloads'] ?? [];
+				foreach ($products as $p) {
+					if (! empty($p['id'])) {
+						$product_ids[(int) $p['id']] = true;
+					}
+				}
+			}
+			$product_ids = array_keys($product_ids);
+			if (empty($product_ids)) {
+				return null;
+			}
+			$class = '\\SmashBalloon\\Reviews\\Pro\\Integrations\\Providers\\WooCommerce';
+			if (! class_exists($class)) {
+				return null;
+			}
+			$woo = new $class();
+			if (! method_exists($woo, 'get_multi_source_info')) {
+				return null;
+			}
+			$info = $woo->get_multi_source_info($product_ids, 'feed_aggregate', []);
+			return [
+				'count'  => (int) ($info['review_count'] ?? 0),
+				'rating' => (float) ($info['average_rating'] ?? $info['rating'] ?? 0),
+			];
+		}
+
+		return null;
+	}
 
 
 	public function get_remote_posts($settings)
@@ -660,6 +841,129 @@ class Feed
 									'info' => $woocommerce->get_source_info($product)
 								]
 								];
+							}
+						}
+					}
+				}
+			} elseif ($request['provider'] === 'edd') {
+				// Check if Pro version is active (EDD provider is Pro-only)
+				if (!Util::sbr_is_pro() || !class_exists('\SmashBalloon\Reviews\Pro\Integrations\Providers\EDD')) {
+					$new_data = [
+						'data' => [
+							'error' => __('EDD sources require Reviews Feed Pro.', 'reviews-feed')
+						],
+						'message' => __('Please upgrade to Reviews Feed Pro to display EDD reviews.', 'reviews-feed')
+					];
+				} else {
+					// EDD is a local provider, fetch reviews directly from database
+					$edd_provider = new \SmashBalloon\Reviews\Pro\Integrations\Providers\EDD();
+
+					// Check if EDD with reviews capability is active
+					if (!$edd_provider->is_edd_active()) {
+						// Provide specific error based on what's missing
+						if ($edd_provider->is_edd_core_only_active()) {
+							// EDD core is active but Reviews extension is missing
+							$new_data = [
+								'data' => [
+									'error' => __('EDD Reviews extension is not active.', 'reviews-feed')
+								],
+								'message' => __('Please install and activate the EDD Reviews extension to display download reviews.', 'reviews-feed')
+							];
+						} else {
+							// EDD core is not active
+							$new_data = [
+								'data' => [
+									'error' => __('Easy Digital Downloads plugin is not active.', 'reviews-feed')
+								],
+								'message' => __('Please activate Easy Digital Downloads to display reviews from this source.', 'reviews-feed')
+							];
+						}
+					} else {
+						// EDD is fully active - fetch reviews
+						$is_multi_download = strpos($request['account_id'], 'edd_multi_') === 0;
+
+						if ($type === 'reviews') {
+							if ($is_multi_download) {
+								// Multi-download source: extract download IDs from info
+								$download_ids = [];
+								if (!empty($request['info']['downloads']) && is_array($request['info']['downloads'])) {
+									foreach ($request['info']['downloads'] as $download_info) {
+										if (!empty($download_info['id'])) {
+											$download_ids[] = absint($download_info['id']);
+										}
+									}
+								}
+
+								if (!empty($download_ids)) {
+									$reviews = $edd_provider->fetch_reviews_multi($download_ids);
+									$normalized_reviews = $edd_provider->normalize_reviews_multi($reviews);
+									$new_data = [
+										'data' => [
+											'reviews' => $normalized_reviews
+										]
+									];
+								} else {
+									$new_data = [
+										'data' => [
+											'error' => __('No valid downloads found in EDD multi-download source.', 'reviews-feed')
+										],
+										'message' => __('The EDD source has no valid downloads configured.', 'reviews-feed')
+									];
+								}
+							} else {
+								// Single download source
+								$download = get_post($request['account_id']);
+								if ($download && $download->post_type === 'download') {
+									$reviews = $edd_provider->fetch_reviews($request['account_id']);
+									$normalized_reviews = $edd_provider->normalize_reviews($reviews, $download);
+									$new_data = [
+										'data' => [
+											'reviews' => $normalized_reviews
+										]
+									];
+								} else {
+									// Download not found or deleted
+									$new_data = [
+										'data' => [
+											'error' => __('EDD download not found or has been deleted.', 'reviews-feed')
+										],
+										'message' => sprintf(
+											/* translators: %s: download ID */
+											__('The EDD download (ID: %s) no longer exists. Please update or remove this source.', 'reviews-feed'),
+											esc_html($request['account_id'])
+										)
+									];
+								}
+							}
+						} elseif ($type === 'sources') {
+							if ($is_multi_download) {
+								// Multi-download source: aggregate info from all downloads
+								$download_ids = [];
+								if (!empty($request['info']['downloads']) && is_array($request['info']['downloads'])) {
+									foreach ($request['info']['downloads'] as $download_info) {
+										if (!empty($download_info['id'])) {
+											$download_ids[] = absint($download_info['id']);
+										}
+									}
+								}
+
+								if (!empty($download_ids)) {
+									$new_data = [
+										'data' => [
+											'info' => $edd_provider->get_multi_source_info($download_ids, $request['account_id'], $request['info'])
+										]
+									];
+								}
+							} else {
+								// Single download source
+								$download = get_post($request['account_id']);
+								if ($download && $download->post_type === 'download') {
+									$new_data = [
+										'data' => [
+											'info' => $edd_provider->get_source_info($download)
+										]
+									];
+								}
 							}
 						}
 					}

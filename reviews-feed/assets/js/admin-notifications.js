@@ -244,7 +244,7 @@ jQuery(document).ready(function($) {
 
 			},
 			success: function(result){
-				console.log('notice dismissed');
+				// Notice dismissed successfully
 		  	}
 		});
 	});

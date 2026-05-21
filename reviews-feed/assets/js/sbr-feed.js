@@ -3318,6 +3318,7 @@ if(!sbr_js_exists) {
 				if (newRes > currentRes || currentUrl === feed.placeholderURL || forceChange) {
 					if (feed.settings.debugEnabled) {
 						var reason = currentUrl === feed.placeholderURL ? 'was placeholder' : 'too small';
+						// nosemgrep: js-console-log -- Intentional debug logging when debugEnabled is true
 						console.log('rais res for ' + currentUrl, reason);
 					}
 					var newUrl = imgSrcSet[newRes];
@@ -3352,6 +3353,7 @@ if(!sbr_js_exists) {
 							feed.afterResize();
 						}, 1500)
 					} else {
+						// nosemgrep: js-console-log -- Intentional error logging for debugging image load failures
 						console.log('unfixed error ' + $(this).attr('src'));
 					}
 				});

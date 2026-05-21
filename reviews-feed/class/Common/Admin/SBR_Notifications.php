@@ -638,7 +638,7 @@ class SBR_Notifications extends ServiceProvider
 					);
 				} else {
 					$image_html = '<div class="thumb">';
-					$img_src = SBR_PLUGIN_URL . 'assets/images/img/' . sanitize_text_field(str_replace('sbi', 'sbr', $notification['image']));
+					$img_src = SBR_PLUGIN_URL . 'assets/images/' . sanitize_text_field(str_replace('sbi', 'sbr', $notification['image']));
 					$image_html .= '<img src="' . esc_url($img_src) . '" alt="notice">';
 
 					if (isset($notification['image_overlay'])) {
