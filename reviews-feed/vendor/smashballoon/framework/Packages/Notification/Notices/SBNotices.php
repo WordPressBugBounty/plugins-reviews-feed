@@ -231,6 +231,10 @@ class SBNotices
                         unset($notices[$key]);
                     }
                 }
+                // Check if current user has dismissed this notice.
+                if (isset($notices[$key]) && !empty($notice['dismissible']) && get_user_meta(get_current_user_id(), 'sb_notice_' . $key . '_dismissed', \true)) {
+                    unset($notices[$key]);
+                }
             }
             // Notices are duplicate so unset them.
             $notices = array_unique($notices, \SORT_REGULAR);

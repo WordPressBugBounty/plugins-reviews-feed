@@ -116,7 +116,9 @@ class NoticeFields
     {
         // Check if image is a url.
         if (isset($image) && filter_var($image, \FILTER_VALIDATE_URL)) {
-            $image_html = '<img src="' . esc_url($image) . '" />';
+            // Decorative fallback image; accessible name (when any) is carried by
+            // the surrounding notice content, so we expose an empty alt to AT.
+            $image_html = '<img src="' . esc_url($image) . '" alt="" />';
         }
         if (isset($image) && is_array($image)) {
             $src = isset($image['src']) ? 'src="' . esc_url($image['src']) . '"' : '';
@@ -236,7 +238,8 @@ class NoticeFields
         $dismiss_html = '';
         if (isset($dismiss) && is_array($dismiss)) {
             $icon = isset($dismiss['icon']) ? esc_url($dismiss['icon']) : '';
-            $image_html = '<img src="' . esc_url($icon) . '" />';
+            // Decorative icon; the wrapping element exposes the accessible name via its title attribute below.
+            $image_html = '<img src="' . esc_url($icon) . '" alt="" />';
             $title = isset($dismiss['title']) ? esc_attr($dismiss['title']) : esc_attr__('Dismiss this message', 'sb-common');
             $class = isset($dismiss['class']) ? esc_attr($dismiss['class']) : '';
             $tag = isset($dismiss['tag']) ? esc_attr($dismiss['tag']) : 'a';
@@ -277,7 +280,8 @@ class NoticeFields
                 $item_class = isset($item['class']) ? esc_attr($item['class']) : '';
                 $item_tag = isset($item['tag']) ? esc_attr($item['tag']) : 'a';
                 $icon = isset($item['icon']) ? esc_url($item['icon']) : '';
-                $image_html = '<img src="' . esc_url($icon) . '" />';
+                // Decorative icon; the wrapping nav item exposes the accessible name via its title attribute below.
+                $image_html = '<img src="' . esc_url($icon) . '" alt="" />';
                 $title = isset($item['title']) ? esc_attr($item['title']) : '';
                 $attr = isset($item['attr']) ? esc_attr($item['attr']) : '';
                 $item_html .= '<' . $item_tag . ' class="' . $item_class . '" title="' . $title . '" ' . $attr . '>' . $image_html . '</' . $item_tag . '>';

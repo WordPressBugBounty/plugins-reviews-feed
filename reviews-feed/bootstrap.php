@@ -156,10 +156,12 @@ if (class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\F
 		: SBR_PLUGIN_DIR . 'sb-reviews.php';
 
 	\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Feedback\FeedbackManager::init([
-		'plugin_slug'    => $sbr_plugin_slug,
-		'plugin_name'    => 'Smash Balloon Reviews Feed',
-		'plugin_version' => SBRVER,
-		'plugin_file'    => $sbr_plugin_file,
-		'support_url'    => 'https://smashballoon.com/support/',
+		'plugin_slug'        => $sbr_plugin_slug,
+		'plugin_name'        => 'Smash Balloon Reviews Feed',
+		'plugin_version'     => SBRVER,
+		'plugin_file'        => $sbr_plugin_file,
+		'support_url'        => 'https://smashballoon.com/support/',
+		'enable_help_widget' => true,
+		'help_url'           => 'https://smashballoon.com/docs/reviews/',
 	]);
 }

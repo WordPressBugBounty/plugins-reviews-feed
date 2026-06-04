@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.6.0
+Stable tag: 2.6.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.6.2 =
+* Fix: Improved reliability on PHP 8 — when a review source can't be reached, the plugin now logs the issue quietly in the background instead of interrupting the feed builder.
+* Tweak: Refreshed the Easy Digital Downloads source icon to match EDD's current branding.
+
 = 2.6.0 =
 * Tweak: Cleaner small-icon notice graphics — admin notification thumbnails now keep their aspect ratio instead of being stretched into a square.
 * Tweak: Notification icons load reliably across the admin area; the small "Reviews Feed" thumbnails that occasionally appeared as broken images now resolve to the correct file.

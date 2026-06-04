@@ -126,7 +126,7 @@ abstract class License_Tier
     {
         $license_data = (array) get_option($this->license_data_option_name);
         $license_tier = $this->license_tier_free_name;
-        if (is_array($license_data) && !empty($license_data['item_id']) && !empty($license_data['price_id'])) {
+        if (is_array($license_data) && !empty($license_data['item_id']) && isset($license_data['price_id'])) {
             $license_tier = $this->convert_to_readable_plan_name($license_data);
         }
         $this->license_data = $license_data;

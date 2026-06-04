@@ -557,9 +557,15 @@ class DisplayElements {
 
 	public static function get_star_icon()
 	{
-		// Matches customizer/sb-common/sb-customizer/assets/icons/popup-star.svg
-		return '<svg viewBox="0 0 24 24" fill="currentColor">
-					<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+		// Mirrors customizer/sb-common/sb-customizer/assets/icons/star.svg so
+		// the frontend feed-header stars and the customizer admin preview
+		// render the same glyph at the same size. Previous version used the
+		// `popup-star.svg` path inside a 24x24 viewBox — the glyph only
+		// filled the inner ~20 units, so at width:18px the visible star was
+		// only ~15px (17% smaller than the customizer's 18px star). Path +
+		// viewBox below match star.svg exactly so width:18px renders 18px.
+		return '<svg viewBox="0 0 20 20" fill="currentColor">
+					<path d="M10.0001 16.0074L14.8499 18.9407C15.7381 19.4783 16.8249 18.6836 16.5912 17.6786L15.3057 12.1626L19.5946 8.44634C20.3776 7.76853 19.9569 6.48303 18.9285 6.40122L13.2839 5.92208L11.0752 0.709949C10.6779 -0.236649 9.32225 -0.236649 8.92491 0.709949L6.71618 5.91039L1.07165 6.38954C0.043251 6.47134 -0.377459 7.75685 0.405529 8.43466L4.69444 12.1509L3.40893 17.6669C3.17521 18.6719 4.26204 19.4666 5.15021 18.929L10.0001 16.0074V16.0074Z"/>
 				</svg>';
 	}
 

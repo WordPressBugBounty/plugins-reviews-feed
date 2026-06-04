@@ -183,6 +183,9 @@ class DeactivationSurvey
 							class="sb-deactivation-textarea"
 							rows="4"
 							placeholder=""
+							aria-label="<?php 
+        esc_attr_e('Additional feedback', 'sb-common');
+        ?>"
 						></textarea>
 					</div>
 

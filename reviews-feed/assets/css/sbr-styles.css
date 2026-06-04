@@ -87,6 +87,22 @@
     display: inline-flex;
     justify-content: center;
 }
+/* Frontend-only line-height pin on the stars wrap. The wrap holds only
+   SVG stars (no text), so it has no business inheriting the host theme's
+   body line-height (Kadence 1.6 inflates the wrap to ~29px against 18px
+   stars, pushing the stars 5px above the subtext baseline). Scoped to
+   body:not(.wp-admin) so the customizer admin preview keeps its own
+   rendering (the React build's sb-common.css governs that surface, and
+   the wp-admin body's 1.4 line-height already collapses the wrap there). */
+body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
+    line-height: 1;
+}
+/* No float on the star svg. The legacy float:left collapsed the icon wrappers
+   against host themes (e.g. Twenty Twenty-Four), so the header stars lost
+   vertical alignment and the half/last star broke. The inline-flex row doesn't
+   need it. The frontend loads only this stylesheet (sb-common.css is admin-only),
+   so dropping it here fixes the frontend; the customizer admin preview keeps its
+   own float via sb-common.css and renders unchanged. SMASH-1544. */
 [id^=sb-reviews-container-] .sb-feed-header-rating-icons svg{
     margin: 0 7px;
     display: inline-flex;
@@ -94,7 +110,6 @@
     width: 18px;
     fill: currentColor;
     margin: 0 2px;
-    float: left;
 }
 
 /*Posts Loop*/
@@ -1286,7 +1301,8 @@
 [id^=sb-reviews-container-] .sb-item-title {
     margin-bottom: 8px;
     font-weight: 600;
-    font-size: 1.05em;
+    font-size: 16px;
+    clear: both;
 }
 
 [id^=sb-reviews-container-] .sb-item-pros-cons {

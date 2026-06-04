@@ -198,18 +198,28 @@ class FeedDisplay {
 	public function star_rating_display($post, $settings)
 	{
 		$star_rating = intval($this->parser->get_rating($post));
-		$return = '';
+		if ( $star_rating <= 0 ) {
+			$aria_label = __( 'Not rated', 'reviews-feed' );
+		} else {
+			$aria_label = sprintf(
+				/* translators: %d: numeric rating out of 5 */
+				__( '%d out of 5 stars', 'reviews-feed' ),
+				$star_rating
+			);
+		}
+		$return = '<span role="img" aria-label="' . esc_attr( $aria_label ) . '">';
 		for ($i = 0; $i < 5; $i++) {
 			$iconClass = $star_rating - $i < 1 ? ' sb-item-rating-icon-dimmed' : '';
 			if ($star_rating - $i === 0.5) {
-				$return .= '<span class="sb-item-rating-icon sb-feed-item-icon-half">
+				$return .= '<span class="sb-item-rating-icon sb-feed-item-icon-half" aria-hidden="true">
                     <span class="sb-item-rating-icon sb-item-rating-icon-dimmed">' . DisplayElements::get_star_icon() . '</span>
                     <span class="sb-item-rating-icon-halfdimmed">' . DisplayElements::get_star_icon() . '</span>
                 </span>';
 			} else {
-				$return .= '<span class="sb-item-rating-icon ' . $iconClass . '">' . DisplayElements::get_star_icon() . '</span>';
+				$return .= '<span class="sb-item-rating-icon ' . $iconClass . '" aria-hidden="true">' . DisplayElements::get_star_icon() . '</span>';
 			}
 		}
+		$return .= '</span>';
 
 		return $return;
 	}
@@ -217,19 +227,29 @@ class FeedDisplay {
 	public function overall_star_rating_display($business, $settings)
 	{
 		$star_rating = floatval($this->parser->get_average_rating($business));
-		$return = '';
+		$display_rating = ( floor( $star_rating * 2 ) / 2 );
+		if ( $display_rating <= 0 ) {
+			$aria_label = __( 'Not rated', 'reviews-feed' );
+		} else {
+			$aria_label = sprintf(
+				/* translators: %s: numeric rating out of 5 (may include half-stars) */
+				__( '%s out of 5 stars', 'reviews-feed' ),
+				$display_rating
+			);
+		}
+		$return = '<span role="img" aria-label="' . esc_attr( $aria_label ) . '">';
 		for ($i = 0; $i < 5; $i++) {
 			$iconClass = $star_rating - $i < 1 ? ' sb-item-rating-icon-dimmed' : '';
 			if ($star_rating - $i < 1 && $star_rating - $i >= 0.5) {
-				$return .= '<span class="sb-feed-item-icon sb-feed-item-icon-half">
+				$return .= '<span class="sb-feed-item-icon sb-feed-item-icon-half" aria-hidden="true">
                     <span class="sb-feed-header-icon sb-item-rating-icon-dimmed">' . DisplayElements::get_star_icon() . '</span>
                     <span class="sb-item-rating-icon-halfdimmed">' . DisplayElements::get_star_icon() . '</span>
                 </span>';
 			} else {
-				$return .= '<span class="sb-feed-header-icon ' . $iconClass . '">' . DisplayElements::get_star_icon() . '</span>';
+				$return .= '<span class="sb-feed-header-icon ' . $iconClass . '" aria-hidden="true">' . DisplayElements::get_star_icon() . '</span>';
 			}
 		}
-
+		$return .= '</span>';
 
 		return $return;
 	}

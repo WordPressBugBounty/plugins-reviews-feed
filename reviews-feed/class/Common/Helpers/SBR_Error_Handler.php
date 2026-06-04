@@ -27,7 +27,15 @@ class SBR_Error_Handler
 	 */
 	public static function get_errors()
 	{
-		return get_option(self::$errors_opt, []);
+		$errors = get_option(self::$errors_opt, []);
+
+		// get_option() returns the stored value whenever the option row exists,
+		// even when that value is falsy (false / '' from a corrupted, legacy or
+		// third-party write) — the [] default only applies when the row is
+		// absent. Coerce any non-array to [] so the foreach() in check_error(),
+		// the array_push() in log_error() and the array_merge() in
+		// update_errors() never receive a bool and fatal on PHP 8. SMASH-1544.
+		return is_array($errors) ? $errors : [];
 	}
 
 	/**
