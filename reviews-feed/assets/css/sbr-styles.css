@@ -560,6 +560,12 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
     opacity: 0.9;
     display: none;
 }
+/* WP 7.0+ iframed block editor canvas: sbr-feed.js's chained Lightbox init
+   appends #sbr_lightbox to <body> but doesn't reliably reach its trailing
+   .hide() call inside the iframe, so the container renders visible. jQuery
+   .fadeIn() on open sets inline display:block which beats this rule, so the
+   lightbox still opens normally when triggered. */
+#sbr_lightbox { display: none; }
 .sbr_lightbox {
     position: absolute;
     left: 0;

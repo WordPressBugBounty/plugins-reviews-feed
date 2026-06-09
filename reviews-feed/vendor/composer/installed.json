@@ -225,13 +225,13 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-customizer.git",
-                "reference": "1b41f89f1539b253b3ca773b2ae416ce4fca9fa8"
+                "reference": "e3e219fb0b1a2c2647308e1e7801474b1c4cc411"
             },
             "require": {
                 "smashballoon\/framework": "dev-master",
                 "smashballoon\/stubs": "dev-master"
             },
-            "time": "2026-06-04T10:25:14+00:00",
+            "time": "2026-06-05T11:42:40+00:00",
             "type": "library",
             "installation-source": "source",
             "autoload": {
@@ -254,12 +254,12 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-common.git",
-                "reference": "4dbefa7f6d5d9d4a56e70199b641d8abe8e2c413"
+                "reference": "7d98a252e7a338c8cd506aad5a3d862eaa4f50f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https:\/\/api.github.com\/repos\/awesomemotive\/sb-common\/zipball\/4dbefa7f6d5d9d4a56e70199b641d8abe8e2c413",
-                "reference": "4dbefa7f6d5d9d4a56e70199b641d8abe8e2c413",
+                "url": "https:\/\/api.github.com\/repos\/awesomemotive\/sb-common\/zipball\/7d98a252e7a338c8cd506aad5a3d862eaa4f50f3",
+                "reference": "7d98a252e7a338c8cd506aad5a3d862eaa4f50f3",
                 "shasum": ""
             },
             "require": {
@@ -276,7 +276,7 @@
                 "phpcompatibility\/php-compatibility": "^9.3",
                 "squizlabs\/php_codesniffer": "^3.7"
             },
-            "time": "2026-06-02T15:13:46+00:00",
+            "time": "2026-06-04T14:48:21+00:00",
             "default-branch": true,
             "type": "library",
             "installation-source": "dist",

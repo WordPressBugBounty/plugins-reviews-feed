@@ -244,7 +244,7 @@ class HelpWidget
     {
         $asset_dir = dirname(__FILE__) . '/assets/';
         // Try to resolve URL from wp-content.
-        $content_dir = wp_normalize_path(WP_CONTENT_DIR);
+        $content_dir = wp_normalize_path(\WP_CONTENT_DIR);
         $asset_path = wp_normalize_path($asset_dir);
         if (strpos($asset_path, $content_dir) === 0) {
             $relative = substr($asset_path, strlen($content_dir));
@@ -607,7 +607,7 @@ class HelpWidget
             // a flaky upstream can't fill the host's error log in
             // production. The do_action below is the production-grade
             // integration point.
-            if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+            if (defined('WP_DEBUG') && \WP_DEBUG && defined('WP_DEBUG_LOG') && \WP_DEBUG_LOG) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- dev-only diagnostics, gated above.
                 error_log(sprintf('[SB Feature Request] Transport error for %s: %s', $slug, $response->get_error_message()));
             }

@@ -234,13 +234,15 @@ class Feed
 		// round-trip and return whatever's locally available. The lock holder
 		// will populate the cache and the next render will see warm data.
 		//
-		// TTL is 60s — covers cold-staging upstream worst case observed at 46s
-		// with comfortable headroom. On lock-held, returns posts_from_db()
-		// which reads `wp_sbr_reviews_posts` (review rows preserved across
-		// clear_plugin_cache, only the images_done flag is reset, so the
-		// lock-loser still serves real review text/ratings).
+		// TTL is 75s — sits just above the relay's reviews fetch timeout (now 60s
+		// on the RapidAPI Google/Yelp review calls) plus a little relay overhead,
+		// so a slow-but-alive lock holder isn't mistaken for stale and double-
+		// fetched. On lock-held, returns posts_from_db() which reads
+		// `wp_sbr_reviews_posts` (review rows preserved across clear_plugin_cache,
+		// only the images_done flag is reset, so the lock-loser still serves real
+		// review text/ratings).
 		$lock_key = 'sbr_refresh_lock_posts_' . $this->feed_id;
-		if (! $this->acquire_refresh_lock($lock_key, 60)) {
+		if (! $this->acquire_refresh_lock($lock_key, 75)) {
 			return $this->posts_from_db();
 		}
 
@@ -248,7 +250,10 @@ class Feed
 			$remote_posts = $this->get_remote_posts($settings);
 
 			foreach ($remote_posts as $provider_remote_posts) {
-				if (isset($provider_remote_posts['data']['reviews'])) {
+				// Only dispatch when the reviews payload is actually a list. An
+				// error-shaped relay response can leave 'reviews' as a scalar,
+				// which would otherwise foreach-warn / fatal downstream (SMASH-1578).
+				if (isset($provider_remote_posts['data']['reviews']) && is_array($provider_remote_posts['data']['reviews'])) {
 					$this->cache_single_posts_from_set($provider_remote_posts['data']['reviews'], $provider_remote_posts['provider_id']);
 				}
 			}
@@ -326,9 +331,9 @@ class Feed
 			return array();
 		}
 
-		// Single-flight: see update_posts_cache() for rationale.
+		// Single-flight: see update_posts_cache() for rationale (75s TTL).
 		$lock_key = 'sbr_refresh_lock_header_' . $this->feed_id;
-		if (! $this->acquire_refresh_lock($lock_key, 60)) {
+		if (! $this->acquire_refresh_lock($lock_key, 75)) {
 			return $this->update_header_cache_from_source();
 		}
 
@@ -659,6 +664,11 @@ class Feed
 	public function cache_single_posts_from_set($posts, $provider_id)
 	{
 		foreach ($posts as $single_review) {
+			// Skip scalar entries from a malformed upstream payload (SMASH-1578);
+			// downstream caching assumes an associative review array.
+			if (! is_array($single_review)) {
+				continue;
+			}
 			$single_post_cache = new SinglePostCache($single_review);
 			$single_post_cache->set_provider_id($provider_id);
 
@@ -1026,10 +1036,23 @@ class Feed
 
 	public function add_source_to_post_set($source, $post_set)
 	{
-		if (! isset($post_set['data']['reviews'][0])) {
+		// `reviews` must be a real list before we iterate. On an error-shaped
+		// payload the container can itself be a scalar (e.g. 'reviews' => 'error
+		// message'); `isset($reviews[0])` alone is fooled by string-offset
+		// semantics (isset($str[0]) is true), which would make the foreach below
+		// emit a "foreach() argument must be of type array|object" warning. Guard
+		// that it's an array first (SMASH-1578 / PR #478 review).
+		if (! is_array($post_set['data']['reviews'] ?? null) || ! isset($post_set['data']['reviews'][0])) {
 			return $post_set;
 		}
 		foreach ($post_set['data']['reviews'] as $index => $review) {
+			// Skip non-array entries from a malformed/error-shaped payload
+			// (SMASH-1578): the write below assigns a 'source' offset, which on a
+			// scalar (string) entry is a fatal TypeError on PHP 8.0+. This runs
+			// upstream of cache_single_posts_from_set, so it must guard too.
+			if (! is_array($review)) {
+				continue;
+			}
 			$post_set['data']['reviews'][ $index ]['source'] = array(
 				'id' => $source['info']['id'] ?? $source['account_id'] ?? '',
 				'url' => $source['info']['url'] ?? '',

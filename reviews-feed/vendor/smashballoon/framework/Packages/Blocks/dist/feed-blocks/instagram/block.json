@@ -1,0 +1,25 @@
+{
+  "apiVersion": 3,
+  "name": "smashballoon/instagram-feed",
+  "title": "Instagram Feed",
+  "category": "smashballoon",
+  "icon": "instagram",
+  "description": "Select and display any of your Instagram feeds",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "instagram-feed",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "feedId": {
+      "type": "string",
+      "default": ""
+    },
+    "preview": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

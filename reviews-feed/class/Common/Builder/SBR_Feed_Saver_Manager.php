@@ -1495,6 +1495,12 @@ class SBR_Feed_Saver_Manager
 		$providers_no_media,
 		$providers_lang
 	) {
+		// Malformed upstream payloads can hand us a scalar instead of a review
+		// array; the `$single_review['source'] = $provider` write below would
+		// fatal on a string offset (SMASH-1578). Bail out on non-array input.
+		if (! is_array($single_review)) {
+			return;
+		}
 		// Decode HTML entities in review text and reviewer name (fixes Danish characters, emojis, etc.)
 		if (isset($single_review['text'])) {
 			$single_review['text'] = html_entity_decode($single_review['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');

@@ -1,0 +1,25 @@
+{
+  "apiVersion": 3,
+  "name": "smashballoon/reviews-feed",
+  "title": "Reviews Feed",
+  "category": "smashballoon",
+  "icon": "star-filled",
+  "description": "Select and display any of your Reviews feeds",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "reviews-feed",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "feedId": {
+      "type": "string",
+      "default": ""
+    },
+    "preview": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

@@ -57,7 +57,7 @@ class DeactivationSurvey
     {
         $asset_dir = dirname(__FILE__) . '/assets/';
         // Try to resolve URL from wp-content.
-        $content_dir = wp_normalize_path(WP_CONTENT_DIR);
+        $content_dir = wp_normalize_path(\WP_CONTENT_DIR);
         $asset_path = wp_normalize_path($asset_dir);
         if (strpos($asset_path, $content_dir) === 0) {
             $relative = substr($asset_path, strlen($content_dir));

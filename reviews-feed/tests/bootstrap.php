@@ -104,6 +104,27 @@ if (!function_exists('wp_json_encode')) {
 	}
 }
 
+if (!function_exists('trailingslashit')) {
+	function trailingslashit($string)
+	{
+		return rtrim($string, '/\\') . '/';
+	}
+}
+
+if (!function_exists('wp_upload_dir')) {
+	function wp_upload_dir($time = null, $create_dir = true, $refresh_cache = false)
+	{
+		return [
+			'path'    => '/tmp/uploads',
+			'url'     => 'https://example.test/wp-content/uploads',
+			'subdir'  => '',
+			'basedir' => '/tmp/uploads',
+			'baseurl' => 'https://example.test/wp-content/uploads',
+			'error'   => false,
+		];
+	}
+}
+
 // Stubs that let tests `require_once 'class/sbr-functions.php'` without
 // triggering WordPress-only bootstrap calls at the top level.
 if (!function_exists('register_activation_hook')) {

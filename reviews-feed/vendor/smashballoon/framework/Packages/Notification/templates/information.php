@@ -26,9 +26,9 @@ if (!$notice) {
 /*
  * Fires before the notices are displayed.
  */
-do_action('sb_notices_before_information_notice');
+\do_action('sb_notices_before_information_notice');
 echo $notice;
 /*
  * Fires after the notices are displayed.
  */
-do_action('sb_notices_after_information_notice');
+\do_action('sb_notices_after_information_notice');

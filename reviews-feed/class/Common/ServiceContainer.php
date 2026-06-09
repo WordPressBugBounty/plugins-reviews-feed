@@ -31,6 +31,7 @@ use SmashBalloon\Reviews\Common\Admin\SBR_About_Builder;
 use SmashBalloon\Reviews\Common\Admin\SBR_Support_Builder;
 use SmashBalloon\Reviews\Common\Tooltip_Wizard;
 use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
+use SmashBalloon\Reviews\Common\Integrations\Elementor\SBR_Elementor_Base;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Service;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Frontend;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_ReviewAlert_Builder;
@@ -74,6 +75,7 @@ class ServiceContainer extends ServiceProvider
 		SBR_Upgrader::class,
 		SBR_Collections_Builder::class,
 		SBR_Support_Tool::class,
+		SBR_Elementor_Base::class,
 		Error_Reporter::class,
 		// Review Alert Services
 		SBR_Review_Alert_Service::class,

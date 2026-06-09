@@ -17,6 +17,7 @@
         ServerSideRender = _wp$serverSideRender === void 0 ? wp.components.ServerSideRender : _wp$serverSideRender,
         _ref = wp.blockEditor || wp.editor,
         InspectorControls = _ref.InspectorControls,
+        useBlockProps = _ref.useBlockProps,
         _wp$components = wp.components,
         TextareaControl = _wp$components.TextareaControl,
         SelectControl = _wp$components.SelectControl,
@@ -24,6 +25,93 @@
         PanelBody = _wp$components.PanelBody,
         Placeholder = _wp$components.Placeholder,
         registerBlockType = wp.blocks.registerBlockType;
+
+    // Locate the WP 7.0 block editor canvas iframe. Returns null if the
+    // iframe doesn't exist yet or its contentDocument isn't reachable.
+    function getEditorIframe() {
+        var selectors = [
+            'iframe[name="editor-canvas"]',
+            'iframe.edit-post-visual-editor__content-area',
+            'iframe.editor-canvas'
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+            var el = document.querySelector(selectors[i]);
+            if (el && el.contentDocument && el.contentDocument.head) {
+                return el;
+            }
+        }
+        return null;
+    }
+
+    // Inject sbr-feed.min.js (and its config + jQuery if needed) into the
+    // editor iframe's <head>, so window.sbr_init exists inside the iframe
+    // and can find the feed DOM that ServerSideRender mounts there.
+    var iframeAssetsPromise = null;
+    function ensureIframeFeedAssets() {
+        if (iframeAssetsPromise) {
+            return iframeAssetsPromise;
+        }
+        iframeAssetsPromise = new Promise(function (resolve, reject) {
+            var attempts = 0;
+            var tryInject = function () {
+                attempts++;
+                var iframe = getEditorIframe();
+                if (!iframe) {
+                    if (attempts > 40) {
+                        reject(new Error('sbr: editor iframe not found'));
+                        return;
+                    }
+                    setTimeout(tryInject, 250);
+                    return;
+                }
+                var doc = iframe.contentDocument;
+                if (doc.documentElement.getAttribute('data-sbr-feed-assets-injected')) {
+                    resolve(iframe);
+                    return;
+                }
+                doc.documentElement.setAttribute('data-sbr-feed-assets-injected', '1');
+
+                var config = doc.createElement('script');
+                config.textContent =
+                    'window.sbrOptions = ' + JSON.stringify(sbr_block_editor.sbrOptions || {}) + ';';
+                doc.head.appendChild(config);
+
+                var loadScript = function (src) {
+                    return new Promise(function (res, rej) {
+                        var s = doc.createElement('script');
+                        s.src = src;
+                        s.onload = function () { res(); };
+                        s.onerror = function () { rej(new Error('sbr: failed to load ' + src)); };
+                        doc.head.appendChild(s);
+                    });
+                };
+
+                var chain = Promise.resolve();
+                if (!iframe.contentWindow.jQuery && sbr_block_editor.jqueryUrl) {
+                    chain = chain.then(function () { return loadScript(sbr_block_editor.jqueryUrl); });
+                }
+                if (sbr_block_editor.iframeScriptUrl) {
+                    chain = chain.then(function () { return loadScript(sbr_block_editor.iframeScriptUrl); });
+                }
+                chain.then(function () { resolve(iframe); }, reject);
+            };
+            tryInject();
+        });
+        return iframeAssetsPromise;
+    }
+
+    // Call sbr_init() inside the iframe (WP 7.0+) or in the outer scope as a
+    // fallback for pre-iframe editors.
+    function triggerSbrInit() {
+        var iframe = getEditorIframe();
+        if (iframe && iframe.contentWindow && typeof iframe.contentWindow.sbr_init === 'function') {
+            try { iframe.contentWindow.sbr_init(); } catch (e) {}
+            return;
+        }
+        if (!iframe && typeof sbr_init !== 'undefined') {
+            try { sbr_init(); } catch (e) {}
+        }
+    }
 
     var sbrIcon = createElement('svg', {
         width: 20,
@@ -36,6 +124,7 @@
     }));
 
     registerBlockType('sbr/sbr-feed-block', {
+        apiVersion: 3,
         title: 'Reviews Feed',
         icon: sbrIcon,
         category: 'widgets',
@@ -51,6 +140,7 @@
             }
         },
         edit: function edit(props) {
+            var blockProps = typeof useBlockProps === 'function' ? useBlockProps() : {};
             var _props = props,
                 setAttributes = _props.setAttributes,
                 _props$attributes = _props.attributes,
@@ -82,11 +172,15 @@
                     || typeof window.sbrGutenberg === 'undefined') {
                     window.sbr = true;
                     window.sbrGutenberg = true;
-                    setTimeout(function() { if (typeof sbr_init !== 'undefined') {sbr_init();}},1000);
-                    setTimeout(function() { if (typeof sbr_init !== 'undefined') {sbr_init();}},2000);
-                    setTimeout(function() { if (typeof sbr_init !== 'undefined') {sbr_init();}},3000);
-                    setTimeout(function() { if (typeof sbr_init !== 'undefined') {sbr_init();}},5000);
-                    setTimeout(function() { if (typeof sbr_init !== 'undefined') {sbr_init();}},10000);
+                    // Inject sbr-feed into the WP 7.0 iframe (no-op once injected),
+                    // then poll-trigger sbr_init in iframe scope. ServerSideRender
+                    // doesn't expose an onload callback, so we retry on intervals.
+                    ensureIframeFeedAssets().catch(function () {});
+                    setTimeout(triggerSbrInit, 1000);
+                    setTimeout(triggerSbrInit, 2000);
+                    setTimeout(triggerSbrInit, 3000);
+                    setTimeout(triggerSbrInit, 5000);
+                    setTimeout(triggerSbrInit, 10000);
                 }
                 setAttributes({
                     executed: true,
@@ -136,7 +230,7 @@
                 }, sbr_block_editor.i18n.preview)));
             }
 
-            return jsx;
+            return createElement('div', blockProps, jsx);
         },
         save: function save() {
             return null;

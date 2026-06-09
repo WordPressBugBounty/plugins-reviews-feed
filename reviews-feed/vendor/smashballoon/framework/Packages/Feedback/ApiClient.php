@@ -88,7 +88,7 @@ class ApiClient
             return \true;
         }
         // Check WordPress environment type (WP 5.5+).
-        if (function_exists('SmashBalloon\Reviews\Vendor\wp_get_environment_type')) {
+        if (function_exists('wp_get_environment_type')) {
             $env = wp_get_environment_type();
             if (in_array($env, ['local', 'development', 'staging'], \true)) {
                 return \true;

@@ -1,0 +1,25 @@
+{
+  "apiVersion": 3,
+  "name": "smashballoon/youtube-feed",
+  "title": "YouTube Feed",
+  "category": "smashballoon",
+  "icon": "youtube",
+  "description": "Select and display any of your YouTube feeds",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "feeds-for-youtube",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "feedId": {
+      "type": "string",
+      "default": ""
+    },
+    "preview": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

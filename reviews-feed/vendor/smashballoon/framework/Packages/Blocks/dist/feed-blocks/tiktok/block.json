@@ -1,0 +1,25 @@
+{
+  "apiVersion": 3,
+  "name": "smashballoon/tiktok-feed",
+  "title": "TikTok Feed",
+  "category": "smashballoon",
+  "icon": "format-video",
+  "description": "Select and display any of your TikTok feeds",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "feeds-for-tiktok",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "feedId": {
+      "type": "string",
+      "default": ""
+    },
+    "preview": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

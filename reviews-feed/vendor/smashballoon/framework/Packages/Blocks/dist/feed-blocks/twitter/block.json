@@ -1,0 +1,25 @@
+{
+  "apiVersion": 3,
+  "name": "smashballoon/twitter-feed",
+  "title": "Twitter Feed",
+  "category": "smashballoon",
+  "icon": "twitter",
+  "description": "Select and display any of your Twitter feeds",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "custom-twitter-feeds",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "feedId": {
+      "type": "string",
+      "default": ""
+    },
+    "preview": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
