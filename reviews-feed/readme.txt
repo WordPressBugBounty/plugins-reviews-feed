@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.6.3
+Stable tag: 2.6.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.6.4 =
+* Fix: Improved loading performance for the block editor and Reviews Feed dashboard, keeping these screens fast and responsive on sites with large amounts of content.
+* Fix: Corrected a few misspelled labels in several translations.
+
 = 2.6.3 =
 * New: A modern Reviews Feed block for the WordPress block editor, plus a new Elementor widget — pick one of your feeds and drop it onto any page or post visually, no shortcode needed.
 * Fix: Resolved a critical error on PHP 8 sites where an unexpected response from a review source could crash the page instead of being skipped over. Feeds now stay up and quietly ignore malformed review data.

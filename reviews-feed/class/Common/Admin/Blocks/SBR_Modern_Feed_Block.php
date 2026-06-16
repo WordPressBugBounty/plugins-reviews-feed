@@ -58,7 +58,12 @@ class SBR_Modern_Feed_Block extends SB_Feed_Block {
 	}
 
 	protected function get_editor_localize_data() {
-		$feeds = DB::get_feeds_list();
+		// Skip the shortcode-location scan: the block editor feed picker only needs
+		// each feed's id and name, never location/instance data. Without this the
+		// editor runs an unindexed full-table LIKE over post_content on every load
+		// and hangs on large sites. Mirrors SB_Reviews_Blocks::get_feed_list_options()
+		// (SMASH-1052). See SMASH-1591.
+		$feeds = DB::get_feeds_list( array(), true );
 
 		return array(
 			'feeds'    => ! empty( $feeds ) ? $feeds : array(),

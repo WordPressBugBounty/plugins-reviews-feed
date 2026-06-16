@@ -807,6 +807,16 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 
 		$feed_id = (int) $feed_id;
 
+		// The query below is a leading-wildcard LIKE over the post_content LONGTEXT
+		// column, which is unindexable and forces a full-table scan + filesort.
+		// Running it on every editor/admin page load hangs large sites, so cache the
+		// result for a short window. See SMASH-1591.
+		$cache_key = 'sbr_feed_loc_' . $feed_id . '_' . (int) $limit;
+		$cached    = get_transient($cache_key);
+		if (false !== $cached) {
+			return $cached;
+		}
+
 		// Search for shortcode patterns in post_content
 		// Matches: [reviews-feed feed=123] or [reviews-feed feed="123"] or [reviews-feed feed='123']
 		$results = $wpdb->get_results(
@@ -824,12 +834,8 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 			ARRAY_A
 		);
 
-		if (empty($results)) {
-			return array();
-		}
-
 		$locations = array();
-		foreach ($results as $row) {
+		foreach ((array) $results as $row) {
 			$page_text = ! empty($row['post_title']) ? $row['post_title'] : __('(no title)', 'reviews-feed');
 
 			// Add status indicator for non-published posts
@@ -854,6 +860,8 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 			);
 		}
 
+		set_transient($cache_key, $locations, 5 * MINUTE_IN_SECONDS);
+
 		return $locations;
 	}
 
@@ -876,6 +884,14 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 
 		$feed_id = (int) $feed_id;
 
+		// Same unindexable full-table LONGTEXT scan as get_feed_shortcode_locations();
+		// cache for a short window so it does not run on every page load. See SMASH-1591.
+		$cache_key = 'sbr_feed_loc_count_' . $feed_id;
+		$cached    = get_transient($cache_key);
+		if (false !== $cached) {
+			return (int) $cached;
+		}
+
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*)
@@ -886,6 +902,8 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 				'%[reviews-feed%feed=' . $wpdb->esc_like((string) $feed_id) . '%'
 			)
 		);
+
+		set_transient($cache_key, (int) $count, 5 * MINUTE_IN_SECONDS);
 
 		return (int) $count;
 	}

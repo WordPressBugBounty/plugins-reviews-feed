@@ -13,6 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Refreshed the Easy Digital Downloads source icon to the official blue cart mark, matching EDD's current branding. [SMASH-1569] (#474, customizer #171)
 
 ### Fixed
+- The block editor and the Reviews Feed admin page no longer hang on sites with a large posts table. [SMASH-1591] (#486)
 - A PHP 8 fatal error that occurred when the `sbr_errors` database option held a falsy value (e.g. `false` or an empty string from a corrupted or legacy write) no longer crashes the feed builder or WP-Cron cache update. (#474)
 
 ## [2.6.1] - 2026-06-02
