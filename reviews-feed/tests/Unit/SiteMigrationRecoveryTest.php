@@ -1049,7 +1049,9 @@ class SiteMigrationRecoveryTest extends TestCase
 		// /auth/license) must NOT run because there's no migration.
 		$relay->expects($this->once())
 			->method('call')
-			->with('auth/register', $this->anything(), 'POST', false)
+			// SMASH-1585: reverify now sends the bearer (require_auth=true) so a
+			// migration-aware relay can rebind instead of forking.
+			->with('auth/register', $this->anything(), 'POST', true)
 			->willReturn([]);
 
 		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);
@@ -1096,7 +1098,7 @@ class SiteMigrationRecoveryTest extends TestCase
 
 		$relay->expects($this->once())
 			->method('call')
-			->with('auth/register', ['url' => 'https://example.com'], 'POST', false)
+			->with('auth/register', ['url' => 'https://example.com'], 'POST', true) // SMASH-1585: reverify authenticates
 			->willReturn(['data' => ['token' => 'tok-canonical']]);
 
 		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);
@@ -1139,7 +1141,7 @@ class SiteMigrationRecoveryTest extends TestCase
 
 		$relay->expects($this->once())
 			->method('call')
-			->with('auth/register', ['url' => 'https://example.com'], 'POST', false)
+			->with('auth/register', ['url' => 'https://example.com'], 'POST', true) // SMASH-1585: reverify authenticates
 			->willReturn(['data' => ['token' => 'tok-rotated']]);
 
 		$relay->check_token_validity(['success' => false, 'id' => 'invalidToken']);

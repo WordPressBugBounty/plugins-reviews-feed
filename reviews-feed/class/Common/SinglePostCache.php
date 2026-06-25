@@ -29,7 +29,10 @@ class SinglePostCache {
 
 	public function __construct($post_data, $media_finder = null, $provider_id = null)
 	{
-		$this->post_data = $post_data;
+		// SMASH-1587: coerce a scalar 'provider' slug into ['name' => ...] before
+		// any $this->post_data['provider']['name'] read in this class (which would
+		// fatal on PHP 8). Shared normalizer in Util — single source of truth.
+		$this->post_data = Util::normalize_review_shape($post_data);
 
 		$upload = wp_upload_dir();
 		$upload_dir = $upload['basedir'];
@@ -104,7 +107,10 @@ class SinglePostCache {
 		foreach ($image_sizes as $image_size) {
 			$i = 0;
 			foreach ($image_source_set as $image_file_to_resize) {
-				if ($i < 10  && $image_file_to_resize['type'] === 'image') {
+				// A scalar element (e.g. a flat URL string in reviews_photos) would
+				// fatal the ['type'] read on PHP 8; a partial array element (no
+				// 'type'/'url') would notice. Guard both (SMASH-1587 + PR #482 Copilot).
+				if ($i < 10  && is_array($image_file_to_resize) && isset($image_file_to_resize['type'], $image_file_to_resize['url']) && $image_file_to_resize['type'] === 'image') {
 					$this_image_file_name = $new_file_name . '-' . $i . '-' .  $image_size . '.jpg';
 
 					$image_editor = wp_get_image_editor($image_file_to_resize['url']);

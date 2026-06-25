@@ -692,6 +692,32 @@ class Feed
 
 
 
+	/**
+	 * Push a source's stored `info` into the header results so the source is
+	 * still counted when its fresh remote fetch is skipped (API key limit or
+	 * free-tier per-provider call cap). Without this, a rate-limited source
+	 * vanishes from the multi-source header total — the front-end then
+	 * under-reports the combined review count versus the Feed Builder preview,
+	 * which always aggregates every source's stored info (SMASH-1583 parity).
+	 *
+	 * No-op for review requests and for sources with no stored info.
+	 *
+	 * @param array  $data    Results accumulator (by reference).
+	 * @param mixed  $request The hydrated source request.
+	 * @param string $type    'sources' or 'reviews'.
+	 * @return void
+	 */
+	private function push_stored_source_info(&$data, $request, $type)
+	{
+		if ($type !== 'sources' || empty($request['info'])) {
+			return;
+		}
+		$info = is_string($request['info']) ? json_decode($request['info'], true) : $request['info'];
+		if (!empty($info) && is_array($info)) {
+			$data[] = ['info' => $info];
+		}
+	}
+
 	public function api_request($requests_needed, $type = 'reviews')
 	{
 		$data = array();
@@ -719,13 +745,21 @@ class Feed
 					: '';
 			}
 
-			// Skip if API limit reached for this provider
+			// Skip if API limit reached for this provider. For header (sources)
+			// requests still count the source via its stored info so a
+			// rate-limited source isn't dropped from the multi-source header
+			// count — the admin preview always aggregates every source, so the
+			// front-end must too (SMASH-1583 front-end parity).
 			if (SBR_Feed_Saver_Manager::check_api_limit($request['provider'])) {
+				$this->push_stored_source_info($data, $request, $type);
 				continue;
 			}
 
-			// Skip if provider call limit reached
+			// Skip if provider call limit reached — same stored-info fallback,
+			// otherwise a free-tier per-provider call cap silently removes the
+			// source from the header total (SMASH-1583).
 			if (SBR_Feed_Saver_Manager::limit_provider_api_calls($request['provider'], $request['account_id'])) {
+				$this->push_stored_source_info($data, $request, $type);
 				continue;
 			}
 

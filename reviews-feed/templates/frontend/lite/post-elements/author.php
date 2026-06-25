@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 	<div class="sb-item-author-ctn sb-relative">
 		<div class="sb-item-name-date">
 			<?php if ($this->should_show('author', 'name')) : ?>
-			<span class="sb-item-author-name sb-relative"><?php echo esc_html($this->parser->get_reviewer_name($post)); ?></span>
+			<span class="sb-item-author-name sb-relative"><?php echo sbr_neutralize_shortcodes(esc_html($this->parser->get_reviewer_name($post))); ?></span>
 			<?php endif; ?>
 
 			<?php if ($this->should_show('author', 'date')) : ?>

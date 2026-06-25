@@ -26,7 +26,7 @@ $cons_icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width=
 
 <?php if ($has_title) : ?>
 <div class="sb-item-title sb-fs" style="margin-bottom: 12px;">
-	<strong><?php echo esc_html($post['title']); ?></strong>
+	<strong><?php echo sbr_neutralize_shortcodes(esc_html($post['title'])); ?></strong>
 </div>
 <?php endif; ?>
 
@@ -50,14 +50,14 @@ if ($has_pros || $has_cons) :
 	<?php if ($has_pros) : ?>
 	<div class="sb-item-pros" style="display: flex; align-items: flex-start; margin-bottom: 8px; clear: both;">
 		<?php echo wp_kses($pros_icon, $allowed_svg); ?>
-		<span class="sb-pros-text"><?php echo wp_kses_post(nl2br($post['metadata']['pros'])); ?></span>
+		<span class="sb-pros-text"><?php echo sbr_neutralize_shortcodes(wp_kses_post(nl2br($post['metadata']['pros']))); ?></span>
 	</div>
 	<?php endif; ?>
 
 	<?php if ($has_cons) : ?>
 	<div class="sb-item-cons" style="display: flex; align-items: flex-start;">
 		<?php echo wp_kses($cons_icon, $allowed_svg); ?>
-		<span class="sb-cons-text"><?php echo wp_kses_post(nl2br($post['metadata']['cons'])); ?></span>
+		<span class="sb-cons-text"><?php echo sbr_neutralize_shortcodes(wp_kses_post(nl2br($post['metadata']['cons']))); ?></span>
 	</div>
 	<?php endif; ?>
 </div>

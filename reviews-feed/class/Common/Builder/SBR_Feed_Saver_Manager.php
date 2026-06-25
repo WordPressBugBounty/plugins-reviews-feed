@@ -21,6 +21,7 @@ use SmashBalloon\Reviews\Common\Error_Reporter;
 use SmashBalloon\Reviews\Common\Integrations\Providers\Google;
 use SmashBalloon\Reviews\Common\Integrations\Providers\Yelp;
 use SmashBalloon\Reviews\Common\Integrations\SBRelay;
+use SmashBalloon\Reviews\Common\Parser;
 use SmashBalloon\Reviews\Common\PostAggregator;
 use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
 use SmashBalloon\Reviews\Common\Traits\SBR_Feed_Templates_Settings;
@@ -289,15 +290,80 @@ class SBR_Feed_Saver_Manager
 				$return['settings'] = $preview_settings;
 			}
 			$return['posts'] = $posts;
-			$return['sourcesList'] = SBR_Sources::get_sources_list([
+			$sources_list = SBR_Sources::get_sources_list([
 				'id' => !empty($preview_settings['sources']) && isset($preview_settings['sources']) ? $preview_settings['sources'] : [],
 			]);
+			// SMASH-1583: the customizer header (Header.js) reads these source
+			// infos directly, so the admin preview must match the published feed.
+			// Backfill the same empty per-source counts the front-end backfills
+			// (Facebook recommendations report total_rating: 0) from the FULL
+			// cached review set, so the preview's combined count + weighted
+			// average line up with what visitors actually see.
+			$return['sourcesList'] = self::backfill_preview_source_counts($sources_list, $feed->get_posts());
 
 			echo sbr_json_encode(
 				$return
 			);
 		}
 		wp_die();
+	}
+
+	/**
+	 * SMASH-1583: backfill empty per-source review counts for the customizer
+	 * preview so the admin preview header reports the same combined count +
+	 * weighted average as the published feed (Facebook recommendations persist
+	 * total_rating: 0). The backfill RULE itself lives in exactly one place —
+	 * Parser::backfill_review_counts — and this method only adapts the
+	 * DB-sourced row shape: `info` arrives as a JSON string and the id the
+	 * Parser keys on may only exist as the row-level `account_id`. We decode
+	 * `info` to an array, delegate, then re-encode the rows that came in as
+	 * strings so React's SbUtils.jsonParse keeps receiving the shape it expects.
+	 *
+	 * Shared by both customizer-preview entry points — the fly-preview AJAX
+	 * (feed_customizer_fly_preview) and the initial feed-builder hydration
+	 * (SBR_Feed_Builder::customizer_feed_data) — so the preview shows the same
+	 * counts on first open as it does after the first edit.
+	 *
+	 * @param array $sources_list Raw source rows (info is usually a JSON string).
+	 * @param array $posts        Full normalized cached reviews (each with source.id).
+	 * @return array The source rows with info.total_rating backfilled where empty.
+	 */
+	public static function backfill_preview_source_counts($sources_list, $posts)
+	{
+		if (! is_array($sources_list)) {
+			return [];
+		}
+		if (empty($sources_list)) {
+			return $sources_list;
+		}
+
+		// Normalise DB JSON-string `info` to arrays so the shared Parser rule
+		// can run, remembering which rows to re-encode on the way out.
+		$was_string = [];
+		foreach ($sources_list as $key => $source) {
+			if (! is_array($source) || ! is_string($source['info'] ?? null)) {
+				continue;
+			}
+			$decoded = json_decode($source['info'], true);
+			if (! is_array($decoded)) {
+				continue;
+			}
+			// Parser keys on info.id; DB rows carry the id as account_id.
+			if (! isset($decoded['id']) && isset($source['account_id'])) {
+				$decoded['id'] = $source['account_id'];
+			}
+			$sources_list[$key]['info'] = $decoded;
+			$was_string[$key] = true;
+		}
+
+		$sources_list = (new Parser())->backfill_review_counts($sources_list, $posts);
+
+		foreach (array_keys($was_string) as $key) {
+			if (isset($sources_list[$key]['info']) && is_array($sources_list[$key]['info'])) {
+				$sources_list[$key]['info'] = wp_json_encode($sources_list[$key]['info']);
+			}
+		}
+		return $sources_list;
 	}
 
 	/**
@@ -447,6 +513,32 @@ class SBR_Feed_Saver_Manager
 	*
 	* @since 1.0
 	*/
+	/**
+	 * Did the relay's `source/remove` succeed (or was the source already gone)?
+	 *
+	 * SBRelay::call() returns the full body on success (`success: true`) and the
+	 * UNWRAPPED error envelope on failure (`{ id, code, success: false }` — no
+	 * `error` key). So a real failure is `success === false`; a `sourceNotFound`
+	 * / HTTP 404 means it's already gone (also "removed"); and an unreachable
+	 * relay yields an empty array, which we treat as removable (fail-open, the
+	 * prior behaviour). Without this, a failed remove read as success and the
+	 * local delete went ahead anyway — orphaning the relay-side source, which
+	 * then keeps counting against the per-license source cap.
+	 *
+	 * @param array $relay_response Decoded SBRelay::call() result.
+	 * @return bool True when it is safe to delete the source locally.
+	 */
+	private static function relay_source_removed(array $relay_response): bool
+	{
+		$failed = isset($relay_response['success']) && false === $relay_response['success'];
+		if (! $failed) {
+			return true;
+		}
+
+		return 'sourceNotFound' === ($relay_response['id'] ?? null)
+			|| 404 === (int) ($relay_response['code'] ?? 0);
+	}
+
 	public static function delete_souce()
 	{
 		check_ajax_referer('sbr-admin', 'nonce');
@@ -466,6 +558,12 @@ class SBR_Feed_Saver_Manager
 				'provider' => $provider
 			]);
 			$source_info = !empty($source_record['info']) ? json_decode($source_record['info'], true) : [];
+			// json_decode() returns null/false for malformed stored JSON; keep it an
+			// array so the relay_source_id read below can't emit a PHP 8 "array offset
+			// on null" warning (which would corrupt this AJAX handler's JSON response).
+			if (!is_array($source_info)) {
+				$source_info = [];
+			}
 
 			// For collections, just delete locally
 			if (isset($_POST['isCollection']) && $_POST['isCollection']) {
@@ -488,58 +586,51 @@ class SBR_Feed_Saver_Manager
 					];
 				}
 
-				$relay_response = null;
-				switch ($provider) {
-					case 'google':
-						$google = new Google($relay);
-						$relay_response = $google->removeSource($relay_args);
-						break;
-					case 'yelp':
-						$yelp = new Yelp($relay);
-						$relay_response = $yelp->removeSource($relay_args);
-						break;
-					case 'tripadvisor':
-						$tripadvisor = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TripAdvisor($relay);
-						$relay_response = $tripadvisor->removeSource($relay_args);
-						break;
-					case 'trustpilot':
-						$trustpilot = new \SmashBalloon\Reviews\Pro\Integrations\Providers\TrustPilot($relay);
-						$relay_response = $trustpilot->removeSource($relay_args);
-						break;
-					case 'wordpress.org':
-						$WordpressOrg = new \SmashBalloon\Reviews\Pro\Integrations\Providers\WordpressOrg($relay);
-						$relay_response = $WordpressOrg->removeSource($relay_args);
-						break;
-				}
+				// Remove the source from the relay. The `source/remove` endpoint is
+				// keyed by the source/place id and is provider-agnostic — every
+				// provider inherits the same BaseProvider::removeSource() and the
+				// provider name is never sent — so call it directly instead of
+				// instantiating a per-provider class. This keeps the relay-first
+				// delete working for every provider even when its class isn't loaded
+				// (e.g. a TripAdvisor / Trustpilot / WordPress.org source on a site
+				// where Pro is inactive after a downgrade), which previously fataled
+				// with "Class ... not found". SBRelay::call() always returns a decoded
+				// array, so we read it directly (the old per-provider removeSource()
+				// wrapped this same call in wp_json_encode(), which made the response
+				// check below dead code — a relay string is never an array).
+				$relay_response = $relay->call('source/remove', $relay_args, 'POST', true);
 
-				// Check relay response - only delete locally if relay succeeded or source doesn't exist
-				// Allow deletion if: success, source not found (already deleted), or no relay_source_id (local-only)
-				$relay_success = true;
-				if (is_array($relay_response)) {
-					// Check for error responses - but "not found" is OK (source already deleted from relay)
-					if (isset($relay_response['error']) && !empty($relay_response['error'])) {
-						$error_msg = is_string($relay_response['error']) ? $relay_response['error'] : '';
-						$is_not_found = stripos($error_msg, 'not found') !== false
-							|| stripos($error_msg, 'does not exist') !== false
-							|| (isset($relay_response['code']) && $relay_response['code'] === 404);
-
-						if (!$is_not_found) {
-							$relay_success = false;
-						}
-					}
-				}
-
-				if (!$relay_success) {
-					// Relay deletion failed - don't delete locally to prevent orphaned state
-					// Note: wp_send_json_error() terminates execution, no return needed
+				// Only block the local delete if the relay explicitly reported an error.
+				// A "not found" (or 404) means the source was already gone from the relay,
+				// which is fine. An unreachable relay returns no `error` key, so the local
+				// delete still proceeds rather than wedging the source forever.
+				// Only delete locally if the relay actually removed the source (or
+				// it was already gone). See self::relay_source_removed() for how the
+				// SBRelay envelope is interpreted. wp_send_json_error() terminates.
+				if (! self::relay_source_removed($relay_response)) {
 					wp_send_json_error([
 						'message' => __('Failed to delete source from server. Please try again.', 'reviews-feed'),
-						'relay_error' => isset($relay_response['error']) ? $relay_response['error'] : 'Unknown error'
+						'relay_error' => $relay_response['id'] ?? ($relay_response['message'] ?? 'Unknown error'),
 					]);
 				}
 
 				// Relay deletion succeeded (or source wasn't on relay) - safe to delete locally
 				SBR_Sources::delete_source($source_id);
+
+				// Also drop this source's cached reviews. wp_sbr_reviews_posts rows are
+				// keyed by provider_id = the source account id for every provider deleted
+				// here: the place_id for Google/Yelp, and the edd_multi_/wc_multi_ id for
+				// EDD/Woo multi-sources (set_provider_id($source_id) when caching). So this
+				// one call cleans them all — verified live (EDD multi-source 59 posts -> 0).
+				// Without it the posts orphan after the source row is gone, and for the free
+				// tier it also wedges re-adds: FreeRetriever's already_fetched() counts posts
+				// by provider + provider_id, so a free user who deletes their one Google/Yelp
+				// source still can't add one (nothing shows in the list, but the gate stays
+				// closed). Overlapping EDD/Woo multi-sources are safe — each keeps its own
+				// copies under its own account id, so deleting one never removes another
+				// source's reviews (verified: sibling source's posts untouched). Mirrors the
+				// cleanup the collection branch above already performs.
+				PostAggregator::delete_reviews_by_provide_id($source_account_id);
 			}
 		}
 		echo sbr_json_encode([
@@ -549,6 +640,20 @@ class SBR_Feed_Saver_Manager
 		]);
 		wp_die();
 	}
+
+	/**
+	 * Source reconciliation REMOVED (2026-06-24, SMASH-1585 follow-up).
+	 *
+	 * The relay's `sources/reconcile` treated an empty `place_ids` keep-list as
+	 * "remove all", so a single false-empty from the plugin (e.g. a transient DB
+	 * read error returning an empty set) could have wiped every relay-side source
+	 * for a paying customer on a routine Clear All Caches. The behaviour was
+	 * non-essential — the SMASH-1585 migration fix is the bearer-aware register
+	 * rebind, and the per-source delete path already keeps the relay in sync — so
+	 * the destructive sweep was removed rather than guarded. Do NOT reintroduce a
+	 * keep-list/diff reconcile without an explicit, confirmed remove-all signal and
+	 * cross-repo place_id + provider-list pinning tests.
+	 */
 
 	/**
 	 * Get impact data for deleting a source
@@ -1171,8 +1276,51 @@ class SBR_Feed_Saver_Manager
 
 		self::clear_plugin_cache();
 
+		// NOTE: relay source reconciliation was REMOVED in this release (SMASH-1585
+		// follow-up). An empty keep-list made the relay "remove all", risking
+		// deletion of every relay-side source for a paying customer on a routine
+		// Clear All Caches. It was non-essential — the migration fix is the
+		// bearer-aware register rebind, and per-source delete already syncs the relay.
+
 		// Reset bulk update states to allow re-fetching of new reviews
 		self::reset_bulk_update_states();
+
+		// SMASH-1614: lift the relay's per-source weekly update cap for THIS
+		// site's sources so the immediate refresh below can actually refetch.
+		// Without this, Clear All Caches empties the local cache but the relay
+		// refuses the refetch (once-per-week Pro limit), leaving the feed empty
+		// for up to 7 days. The relay endpoint is bearer-scoped + non-destructive
+		// (it only nulls last_fetched_at). Best-effort and filtered so support
+		// can disable without a redeploy. Runs BEFORE the refresh so the cron
+		// fetches that follow find the window already cleared.
+		if (apply_filters('sbr_reset_relay_fetch_window_on_clear', true)) {
+			self::reset_relay_fetch_window();
+		}
+
+		// Companion to the relay window reset above. The relay lifts the SERVER
+		// weekly cap, but the plugin also keeps a LOCAL "already fetched" belt
+		// (FreeRetriever::limit_review_api_call -> already_fetched / _week) that
+		// still skips the keyless relay call for a Google/Yelp source that
+		// already has cached reviews (the belt only applies to google/yelp;
+		// other providers short-circuit earlier in check_api_call). Clear All
+		// Caches keeps those rows (it only blanks the feed cache), so without
+		// this the immediate refresh below would still skip keyless Google/Yelp
+		// sources and the feed would never refetch. Set a short-lived flag the
+		// belt honours so the refresh can refetch during a brief window. The
+		// flag is TTL-bounded, NOT consumed per call; the relay's weekly window
+		// re-closes per source after the first fetch, which bounds the cost.
+		// Non-destructive: existing reviews stay until the refetch succeeds.
+		// Set AFTER clear_plugin_cache() (which purges `_transient_sbr_%`) and
+		// the flag uses the `sbreviews_` prefix so it is not swept by that purge.
+		// Note: a no-op for genuine free users — the relay still 429s them and
+		// doesn't reset the free fetched_count; it only helps Pro/keyed flows.
+		if (apply_filters('sbr_force_keyless_refetch_on_clear', true)) {
+			set_transient(
+				\SmashBalloon\Reviews\Common\Utils\FreeRetriever::FORCE_REFETCH_FLAG,
+				1,
+				5 * MINUTE_IN_SECONDS
+			);
+		}
 
 		// Trigger an immediate cache refresh so users don't have to wait for
 		// either the hourly cron or the next frontend visit. Two steps:
@@ -1192,6 +1340,39 @@ class SBR_Feed_Saver_Manager
 		]);
 
 		wp_die();
+	}
+
+	/**
+	 * Ask the relay to clear the per-source weekly fetch window for this site,
+	 * so a user-initiated Clear All Caches can refetch immediately instead of
+	 * waiting up to 7 days for the Pro weekly update cap (SMASH-1614).
+	 *
+	 * Best-effort: a relay hiccup must never block Clear All Caches, so every
+	 * failure is swallowed — the hourly cron still catches up later. The relay
+	 * side is bearer-scoped and only nulls `last_fetched_at` (non-destructive).
+	 *
+	 * Note: like every authenticated relay call, this routes through
+	 * SBRelay::call() → check_token_validity(), so on a migrated/cloned site
+	 * (url_mismatch → invalidToken) it can trigger the existing silent
+	 * re-registration recovery. That's benign/self-healing (the destructive
+	 * relay reconciliation was removed in SMASH-1585), not new behavior unique
+	 * to this path — but worth knowing it isn't strictly side-effect-free.
+	 *
+	 * @since 2.6.5
+	 */
+	private static function reset_relay_fetch_window(): void
+	{
+		try {
+			$relay = new SBRelay(new SettingsManagerService());
+			// SBRelay::call() returns a decoded array (it never throws on an
+			// error body — those are already logged via SBR_Error_Handler), so
+			// this catch only fires on an unexpected throw (e.g. construction).
+			$relay->call('source/reset-fetch-window', [], 'POST', true);
+		} catch (\Throwable $e) {
+			// Best-effort: never block Clear All Caches. Log so a silently
+			// failing cap-lift (feed stays empty up to 7 days) is diagnosable.
+			error_log('SBR: reset_relay_fetch_window failed — ' . $e->getMessage());
+		}
 	}
 
 	/**
@@ -1897,6 +2078,9 @@ class SBR_Feed_Saver_Manager
 
 			foreach ($collection_reviews as $s_review) {
 				$review_json = json_decode($s_review['json_data'], true);
+				// SMASH-1587: old json_data may store 'provider' as a scalar slug;
+				// the $review_json['provider']['name'] read below fatals on PHP 8 without this.
+				$review_json = Util::normalize_review_shape($review_json);
 				$review_id 	= $id . time() . wp_rand();
 
 				$sanitized_review = [

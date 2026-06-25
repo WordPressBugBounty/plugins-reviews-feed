@@ -5,6 +5,7 @@ namespace SmashBalloon\Reviews\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use SmashBalloon\Reviews\Pro\Feed as ProFeed;
 use SmashBalloon\Reviews\Common\Feed as CommonFeed;
+use SmashBalloon\Reviews\Common\Util;
 
 // SinglePostCache / MediaFinder reference this plugin constant at load time;
 // the plugin defines it in bootstrap.php, which the unit-test bootstrap does
@@ -160,5 +161,200 @@ class FeedMalformedPayloadTest extends TestCase
 		$feed->cache_single_posts_from_set($this->malformed_payload(), 'ChIJJZ44LtE9O4gRzgkq8Gh6KWk');
 
 		$this->assertTrue(true, 'malformed payload did not fatal in Common::cache_single_posts_from_set');
+	}
+
+	/**
+	 * SMASH-1587: a review whose 'provider' is a scalar slug (e.g. 'google')
+	 * instead of ['name' => 'google'] crashed the front end — every
+	 * SinglePostCache read of $post['provider']['name'] (resize_avatar:146,
+	 * resize_image:88, store:293, …) is a "Cannot access offset of type string
+	 * on string" fatal on PHP 8. Both SinglePostCache constructors now route
+	 * post_data through normalize_review_shape(), coercing a string provider
+	 * into the array shape the cache + display code expects. SMASH-1578 guarded
+	 * the review + source shapes but not provider, so 2.6.3 still crashed.
+	 *
+	 * Single source of truth: Util::normalize_review_shape() — used by both
+	 * SinglePostCache constructors AND every raw/DB-decoded read site
+	 * (PostAggregator dedup, parse_single_review, duplicate_collection).
+	 */
+	private function normalizeProvider($input)
+	{
+		return Util::normalize_review_shape($input);
+	}
+
+	public function test_string_provider_is_coerced_to_array_shape(): void
+	{
+		$out = $this->normalizeProvider([
+			'provider'  => 'google',
+			'review_id' => 'abc',
+			'reviewer'  => ['name' => 'Jane'],
+		]);
+
+		$this->assertSame(['name' => 'google'], $out['provider'], 'scalar provider slug wrapped as [name => slug]');
+		// Now the previously-fatal read is a safe array access.
+		$this->assertSame('google', $out['provider']['name']);
+	}
+
+	public function test_array_provider_is_left_untouched(): void
+	{
+		$provider = ['name' => 'yelp', 'id' => 'biz-123'];
+		$out = $this->normalizeProvider(['provider' => $provider, 'review_id' => 'x']);
+
+		$this->assertSame($provider, $out['provider'], 'already-correct array provider is not altered');
+	}
+
+	public function test_missing_or_nonstring_provider_becomes_empty_named_array(): void
+	{
+		$missing = $this->normalizeProvider(['review_id' => 'x']);
+		$this->assertSame(['name' => ''], $missing['provider'], 'absent provider gets a safe [name => ""] shape');
+
+		$numeric = $this->normalizeProvider(['provider' => 123, 'review_id' => 'x']);
+		$this->assertSame(['name' => ''], $numeric['provider'], 'non-string scalar provider falls back to [name => ""]');
+	}
+
+	/**
+	 * PR #484 Copilot review: an array provider that is missing 'name' (or has a
+	 * non-string name) must still come out with a present string name — otherwise
+	 * the $review['provider']['name'] reads hit "Undefined array key" notices and
+	 * produce empty/incorrect dedup keys. Other provider keys are preserved.
+	 */
+	public function test_array_provider_missing_name_gets_empty_string_name(): void
+	{
+		$missingName = $this->normalizeProvider(['provider' => ['id' => 'biz-1'], 'review_id' => 'x']);
+		$this->assertSame('', $missingName['provider']['name'], 'missing name filled with empty string');
+		$this->assertSame('biz-1', $missingName['provider']['id'], 'other provider keys preserved');
+
+		$nonStringName = $this->normalizeProvider(['provider' => ['name' => 123], 'review_id' => 'x']);
+		$this->assertSame('', $nonStringName['provider']['name'], 'non-string name coerced to empty string');
+	}
+
+	public function test_non_array_post_data_is_passed_through_untouched(): void
+	{
+		// Scalar reviews are skipped by the Feed is_array() guards before
+		// construction; normalize must not choke on them either.
+		$this->assertSame('error-string', $this->normalizeProvider('error-string'));
+		$this->assertNull($this->normalizeProvider(null));
+	}
+
+	/**
+	 * WPSA-63160 follow-up: the dedup key build (remove_duplicated_posts_list,
+	 * 'json' branch, every front-end render) reads source['id'] + reviewer['name']
+	 * off the RAW post. A scalar reviewer/source — which the is_array($single_review)
+	 * -only cache guard lets through to store() — would fatal there on PHP 8 just
+	 * like the provider did. normalize_review_shape now coerces them too.
+	 */
+	public function test_scalar_reviewer_and_source_are_coerced_to_arrays(): void
+	{
+		$out = $this->normalizeProvider([
+			'provider' => 'google',
+			'reviewer' => 'Jane Doe',                 // scalar — would fatal at reviewer['name']
+			'source'   => 'ChIJscalarSource',         // scalar — would fatal at source['id'] in the json branch
+			'rating'   => 5,
+		]);
+
+		$this->assertIsArray($out['reviewer'], 'scalar reviewer coerced to array');
+		$this->assertSame('', $out['reviewer']['name'], 'reviewer name read key present + empty');
+		$this->assertSame('', $out['reviewer']['avatar'], 'reviewer avatar read key present');
+		$this->assertIsArray($out['source'], 'scalar source coerced to array');
+		$this->assertSame('', $out['source']['id'], 'source id read key present + empty');
+		$this->assertSame('', $out['source']['url'], 'source url read key present');
+
+		// The exact dedup key build that fatals pre-fix now runs clean.
+		$key = $out['source']['id'] . '-' . $out['rating'] . '-' . $out['reviewer']['name'] . '-' . $out['provider']['name'];
+		$this->assertSame('-5--google', $key);
+	}
+
+	public function test_healthy_reviewer_and_source_are_preserved(): void
+	{
+		$reviewer = ['name' => 'Jane', 'avatar' => 'https://x/a.png', 'first_name' => 'Jane'];
+		$source   = ['id' => 'place-9', 'url' => 'https://example.test'];
+		$out = $this->normalizeProvider([
+			'provider' => ['name' => 'google'],
+			'reviewer' => $reviewer,
+			'source'   => $source,
+		]);
+
+		$this->assertSame('Jane', $out['reviewer']['name'], 'healthy reviewer name untouched');
+		$this->assertSame('Jane', $out['reviewer']['first_name'], 'extra reviewer keys preserved');
+		$this->assertSame('place-9', $out['source']['id'], 'healthy source id untouched');
+		$this->assertSame('https://example.test', $out['source']['url'], 'healthy source url untouched');
+	}
+
+	public function test_array_reviewer_missing_name_gets_empty_string_name(): void
+	{
+		// reviewer present but missing the read keys (partial relay shape).
+		$out = $this->normalizeProvider(['reviewer' => ['first_name' => 'Jo'], 'source' => ['id' => 's1']]);
+		$this->assertSame('', $out['reviewer']['name'], 'missing reviewer name filled');
+		$this->assertSame('', $out['reviewer']['avatar'], 'missing reviewer avatar filled');
+		$this->assertSame('Jo', $out['reviewer']['first_name'], 'existing reviewer key preserved');
+		$this->assertSame('s1', $out['source']['id'], 'existing source id preserved');
+		$this->assertSame('', $out['source']['url'], 'missing source url filled');
+	}
+
+	/**
+	 * Audit follow-up: the image containers (media / reviews_photos) are iterated
+	 * by resize_images() + add_local_image_urls(). A scalar there fatals the
+	 * foreach / string-offset write on PHP 8 (verified raw on 8.4). normalize now
+	 * coerces a present non-array container to [] (element-level scalars are
+	 * additionally guarded at the loop sites).
+	 */
+	public function test_scalar_media_and_reviews_photos_coerced_to_arrays(): void
+	{
+		$out = $this->normalizeProvider(['provider' => 'google', 'media' => 'oops', 'reviews_photos' => 'x']);
+		$this->assertSame([], $out['media'], 'scalar media coerced to []');
+		$this->assertSame([], $out['reviews_photos'], 'scalar reviews_photos coerced to []');
+	}
+
+	public function test_absent_image_containers_are_not_added(): void
+	{
+		// media/reviews_photos are optional — don't fabricate keys (would flip !empty checks).
+		$out = $this->normalizeProvider(['provider' => 'google']);
+		$this->assertArrayNotHasKey('media', $out, 'absent media stays absent');
+		$this->assertArrayNotHasKey('reviews_photos', $out, 'absent reviews_photos stays absent');
+	}
+
+	public function test_healthy_media_array_preserved(): void
+	{
+		$media = [['type' => 'image', 'url' => 'https://x/1.jpg']];
+		$out = $this->normalizeProvider(['media' => $media, 'provider' => ['name' => 'google']]);
+		$this->assertSame($media, $out['media'], 'well-formed media array left intact');
+	}
+
+	/**
+	 * PR #482 Copilot: a non-string source['id'] must coerce safely — cast a scalar
+	 * (numeric id), but turn an array/object into '' rather than (string)-casting it
+	 * (which would emit an "Array to string conversion" notice — the opposite of the
+	 * normalizer's no-warning goal).
+	 */
+	public function test_non_string_source_id_coerced_without_array_to_string(): void
+	{
+		$arrayId = $this->normalizeProvider(['source' => ['id' => ['nested' => 'x'], 'url' => 'u']]);
+		$this->assertSame('', $arrayId['source']['id'], 'array source id -> empty string (no Array-to-string)');
+
+		$numericId = $this->normalizeProvider(['source' => ['id' => 12345]]);
+		$this->assertSame('12345', $numericId['source']['id'], 'numeric source id cast to string');
+	}
+
+	/**
+	 * End-to-end on the real Util::parse_single_review() — the store-path reader
+	 * (PostAggregator::get_related_reviews, duplicate_collection). A scalar
+	 * provider fatally crashed its $review['provider']['name'] read pre-fix;
+	 * now it's normalized at the method entry.
+	 */
+	public function test_parse_single_review_survives_string_provider(): void
+	{
+		$review = [
+			'time'     => '1700000000',
+			'rating'   => 5,
+			'text'     => 'Great service',
+			'reviewer' => ['name' => 'Jane Doe', 'avatar' => ''],
+			'provider' => 'google', // scalar slug — pre-fix this fatals at the provider read
+			'source'   => ['id' => 'p1', 'url' => 'https://example.test'],
+		];
+
+		$out = Util::parse_single_review($review, 'p1', 'r1');
+
+		$this->assertSame('google', $out['provider']['name'], 'string provider normalized + parsed, no fatal');
+		$this->assertSame('Jane Doe', $out['reviewer']['name']);
 	}
 }

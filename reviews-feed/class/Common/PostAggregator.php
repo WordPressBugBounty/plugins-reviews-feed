@@ -109,6 +109,9 @@ class PostAggregator {
 			}
 
 			if ($post_json !== null) {
+				// SMASH-1587: PHP 7-era json_data can hold a scalar 'provider' slug;
+				// the $post_json['provider']['name'] reads below fatal on PHP 8 without this.
+				$post_json = Util::normalize_review_shape($post_json);
 				$search_value = $post_json['source']['id'] . '-' . $post_json['rating'] . '-' . $post_json['reviewer']['name'] . '-' . $post_json['provider']['name'];
 				//IF EDD CHECK WITH TIME TOO SINCE A USER CAN POST MULTIPLE REVIEWS
 				$search_value .= $post_json['provider']['name'] === 'edd' ? $post_json['time'] : '';
@@ -120,7 +123,12 @@ class PostAggregator {
 
 				if (!in_array($search_value, $posts_db)) {
 					array_push($posts_db, $search_value);
-					array_push($posts_list_result, $post);
+					// For the 'json' path (cache-hit render, Feed.php:172) push the
+					// shape-normalized review so display readers (FeedDisplay/Parser)
+					// can't fatal on a scalar provider/reviewer/source from an old
+					// cache. The 'db' path returns raw rows that normalize_db_post_set
+					// re-decodes + normalizes, so it stays as-is. (SMASH-1587/WPSA-63160)
+					array_push($posts_list_result, $type === 'json' ? $post_json : $post);
 				}
 			}
 		}
@@ -174,6 +182,8 @@ class PostAggregator {
 		foreach ($results as $post) {
 			$post_json =  isset($post['json_data']) ? json_decode($post['json_data'], true) : null;
 			if ($post_json !== null) {
+				// SMASH-1587: scalar 'provider' in old json_data would fatal the reads below on PHP 8.
+				$post_json = Util::normalize_review_shape($post_json);
 				$search_value = $post_json['source']['id'] . '-' . $post_json['rating'] . '-' . $post_json['reviewer']['name'] . '-' . $post_json['provider']['name'];
 				//IF EDD CHECK WITH TIME TOO SINCE A USER CAN POST MULTIPLE REVIEWS
 				$search_value .= $post_json['provider']['name'] === 'edd' ? $post_json['time'] : '';
@@ -227,6 +237,12 @@ class PostAggregator {
 			if (! empty($result['json_data'])) {
 				$post = json_decode($result['json_data'], true);
 				if (! empty($post)) {
+					// SMASH-1587/WPSA-63160: PHP 7-era json_data can hold scalar
+					// provider/reviewer/source/media shapes. This is the render-path
+					// source (posts_from_db, moderation, media-finding), so coerce here
+					// once — covers add_local_image_urls below + every FeedDisplay /
+					// Parser reader downstream, which would otherwise fatal on PHP 8.
+					$post = Util::normalize_review_shape($post);
 					$post = self::add_local_image_urls($post, $result);
 				}
 				if ((int)$result['images_done'] === 0) {
@@ -255,6 +271,13 @@ class PostAggregator {
 			$sizes = ! empty($result['sizes']) ? json_decode($result['sizes']) : array();
 			$i     = 0;
 			foreach ($post['media'] as $single_image) {
+				// A scalar media element (e.g. a flat URL string) would make the
+				// $return['media'][$i]['local'] write below a string-offset write =
+				// PHP 8 fatal. Skip it (keep $i aligned to the media index). SMASH-1587.
+				if (! is_array($single_image)) {
+					$i++;
+					continue;
+				}
 				if (! empty($result['media_id']) && $result['media_id'] !== 'error') {
 					$return['media'][ $i ]['local'] = array();
 					$media_id                       = $result['media_id'];

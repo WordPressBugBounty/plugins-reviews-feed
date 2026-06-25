@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 6.9
-Stable tag: 2.6.4
+Stable tag: 2.6.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,16 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.6.5 =
+* Fix: Feeds that combine more than one source now show the correct total review count and a properly weighted average rating — on your published pages, not just in the Feed Builder preview.
+* Fix: Resolved a rare PHP error that could stop a feed from displaying.
+* Fix: Reviews feeds load faster on Elementor sites — the plugin no longer runs extra background database lookups on every page, which could slow down sites with a lot of feeds.
+* Fix: Fixed feeds dropping to only a few reviews after moving a site to a new domain — the plugin now reconnects to your existing account on the new address instead of getting stuck.
+* Fix: Removing a review source now works properly — deleting one could previously error out, or leave you unable to add a new source even when none was showing in your list.
+* Fix: Clicking Clear All Caches now refreshes your reviews right away, instead of sometimes leaving a feed empty until the next scheduled update.
+* Fix: Pro customers (including legacy All Access Bundle licenses) are no longer mistakenly shown a free-plan review limit — your full set of reviews loads as expected.
+* Fix: Addtional plugin hardening.
+
 = 2.6.4 =
 * Fix: Improved loading performance for the block editor and Reviews Feed dashboard, keeping these screens fast and responsive on sites with large amounts of content.
 * Fix: Corrected a few misspelled labels in several translations.

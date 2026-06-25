@@ -24,6 +24,22 @@ class FreeRetriever	extends ServiceProvider
 	public static $providers = ['google', 'yelp'];
 
 	/**
+	 * Transient flag that lets keyless Google/Yelp sources refetch within a
+	 * short window even though they already fetched this week/ever. Set by
+	 * SBR_Feed_Saver_Manager on an explicit "Clear All Caches" (which also
+	 * resets the relay weekly window), so the immediate refresh can refetch
+	 * instead of waiting up to 7 days. TTL-bounded (it is NOT consumed per
+	 * call) — the relay's weekly window is the real cap and re-closes per
+	 * source after the first fetch, which bounds the cost.
+	 *
+	 * Named with the `sbreviews_` prefix on purpose: clear_plugin_cache() purges
+	 * `_transient_sbr_%`, and a `sbr_`-prefixed name would be swept immediately.
+	 *
+	 * @var string
+	 */
+	public const FORCE_REFETCH_FLAG = 'sbreviews_force_keyless_refetch';
+
+	/**
 	 * Summary of api_keys
 	 * @var array
 	 */
@@ -49,6 +65,20 @@ class FreeRetriever	extends ServiceProvider
 		$this->api_keys = get_option('sbr_apikeys', []);
 		$this->sources 	= SBR_Sources::sources_by_providers(self::$providers);
 		$this->settings = $this->get_settings();
+	}
+
+	/**
+	 * Whether an explicit Clear All Caches has opened the keyless-refetch
+	 * window. Honoured by limit_review_api_call() (Common + Pro) to bypass the
+	 * already-fetched belt while the flag is set — the relay's weekly window is
+	 * the real cap and is reset alongside the flag. Non-destructive: cached
+	 * reviews stay put, so a failed refetch leaves the existing feed intact.
+	 *
+	 * @return bool
+	 */
+	protected static function should_force_refetch(): bool
+	{
+		return (bool) get_transient(self::FORCE_REFETCH_FLAG);
 	}
 
 	/**
@@ -178,9 +208,10 @@ class FreeRetriever	extends ServiceProvider
 			? $this->settings['providerInfo'][$provider]['sourcesNumber']
 			: 0;
 
-		//Reviews Already Fetched for this Source
+		//Reviews Already Fetched for this Source — but an explicit Clear All
+		//Caches opens a short refetch window (relay weekly window reset alongside).
 		$limit_current = SBR_Sources::already_fetched($provider, $provider_id);
-		if ($limit_current) {
+		if ($limit_current && ! self::should_force_refetch()) {
 			return true;
 		}
 

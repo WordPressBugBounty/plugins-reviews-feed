@@ -225,13 +225,20 @@ class SBR_Feed_Builder extends Feed_Builder {
 				shuffle($posts);
 			}
 
+			// SMASH-1583: backfill empty per-source counts (Facebook recommendations
+			// persist total_rating: 0) on the initial customizer hydration too, so the
+			// preview header is correct on first open — not only after the first edit
+			// triggers the fly-preview AJAX. Same helper, same rule as the front end.
+			$sources_list = SBR_Sources::get_sources_list([
+				'id' => !empty($settings['sources']) && isset($settings['sources']) ? $settings['sources'] : [],
+			]);
+			$sources_list = SBR_Feed_Saver_Manager::backfill_preview_source_counts($sources_list, $feed->get_posts());
+
 			return [
 				'feed_info' => $feed_db_data,
 				'settings' => $settings,
 				'posts' => !empty($posts) ? $posts : [],
-				'sourcesList' => SBR_Sources::get_sources_list([
-					'id' => !empty($settings['sources']) && isset($settings['sources']) ? $settings['sources'] : [],
-				])
+				'sourcesList' => $sources_list
 			];
 		}
 		return [];

@@ -574,7 +574,19 @@ class SBRelay
 		// errors) becomes a clean reverify-failed signal so the caller can fall
 		// back to the old wipe path instead of bubbling up.
 		try {
-			$response = $this->call('auth/register', ['url' => $url], 'POST', false);
+			// SMASH-1585 — send the bearer (require_auth=true). On a bare 401 the
+			// stored token is still present (this path does NOT wipe), so the
+			// relay receives the current token and, when it recognizes it
+			// (bearer-aware register, sb-relay SMASH-1585), rebinds the new URL
+			// onto the SAME user instead of forking a fresh free account — which
+			// is what silently orphaned the paid license on migrated sites.
+			// require_auth=true only adds the Authorization header from a local
+			// sbr_settings read: ZERO extra requests, and the one-shot
+			// $reverify_attempted guard above still caps this to a single
+			// register round-trip per instance, so no 401→register loop. On an
+			// older relay the header is simply ignored (register is
+			// unauthenticated), so this is safe to ship ahead of the relay.
+			$response = $this->call('auth/register', ['url' => $url], 'POST', true);
 		} catch (\Throwable $e) {
 			return false;
 		}

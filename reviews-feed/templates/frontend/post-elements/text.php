@@ -57,10 +57,10 @@ $has_post_title               = in_array( $provider, $providers_with_review_titl
 	 */
 	$display_title = html_entity_decode( $post['title'], ENT_QUOTES, 'UTF-8' );
 	?>
-<div class="sb-item-title"><?php echo esc_html( $display_title ); ?></div>
+<div class="sb-item-title"><?php echo sbr_neutralize_shortcodes(esc_html( $display_title )); ?></div>
 <?php endif; ?>
 <div class="sb-item-text sb-fs">
-	<?php echo wp_kses_post(nl2br($this->get_review_text($post))); ?>
+	<?php echo sbr_neutralize_shortcodes(wp_kses_post(nl2br($this->get_review_text($post)))); ?>
 </div>
 <div class="sb-expand">
 	<a href="#" data-link="<?php echo esc_url($this->more_link($post)); ?>">

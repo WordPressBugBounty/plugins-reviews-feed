@@ -455,6 +455,58 @@ function sbr_esc_html_with_br($text)
 	return str_replace(array( '&lt;br /&gt;', '&lt;br&gt;' ), '<br>', esc_html(nl2br($text)));
 }
 
+/**
+ * Neutralize WordPress shortcodes in third-party review content before output.
+ *
+ * Review data imported from connected sources (Google, Yelp, Booking.com, EDD,
+ * etc.) is rendered inside the dynamic `sbr/sbr-feed-block`. WordPress runs
+ * `do_blocks()` on `the_content` at priority 9 and `do_shortcode()` at priority
+ * 11, so any shortcode left in the rendered block markup is expanded
+ * server-side — including a shortcode an unauthenticated visitor planted in a
+ * public review (e.g. a reviewer name or review body of `[gallery ids=1]`).
+ * The escaping helpers (`esc_html()`, `wp_kses_post()`) deliberately leave the
+ * `[` and `]` characters untouched, so they do not stop this on their own.
+ *
+ * Encoding the square brackets to HEX HTML entities (`&#x5B;` / `&#x5D;`) keeps
+ * the literal text visible to the visitor (the browser renders them as `[` / `]`)
+ * while ensuring `do_shortcode()` can never match them. Apply this as the
+ * OUTERMOST wrapper around already-escaped output: `esc_html()` / `wp_kses_post()`
+ * run first on the raw text (they leave `[` and `]` alone), then this encodes the
+ * brackets last.
+ *
+ * HEX, not decimal, is mandatory here: WordPress core's `do_shortcode()` ends by
+ * calling `unescape_invalid_shortcodes()`, which runs
+ * `str_replace( array( '&#91;', '&#93;' ), array( '[', ']' ), $content )` over the
+ * processed content. That reverses the DECIMAL entities `&#91;` / `&#93;` straight
+ * back to raw `[` / `]` — re-arming the very shortcode we just neutralized (the
+ * feed renders through `do_shortcode` via the `[reviews-feed]` shortcode and again
+ * through the block + `the_content` chain, so this fires in practice). It does NOT
+ * touch the hex forms `&#x5B;` / `&#x5D;`, so those survive intact. Using decimal
+ * here is self-defeating; see SMASH-1607 follow-up (CVE-2026-10724 regression).
+ *
+ * @since 2.6.5
+ *
+ * @see https://awesomemotive.atlassian.net/browse/SMASH-1607 (CVE-2026-10724)
+ *
+ * Non-string (e.g. null) or empty input is returned unchanged, so the type is
+ * intentionally permissive — callers pass already-escaped output, but the guard
+ * keeps a stray null/empty safe rather than coercing it.
+ *
+ * @param string|null $text Already-escaped output that may contain shortcode brackets.
+ * @return string|null The text with `[` and `]` encoded to hex HTML entities (`&#x5B;` / `&#x5D;`); the input unchanged if it isn't a non-empty string.
+ */
+function sbr_neutralize_shortcodes($text)
+{
+	if (! is_string($text) || $text === '') {
+		return $text;
+	}
+
+	// Hex entities (not decimal): WordPress core's unescape_invalid_shortcodes()
+	// str_replaces decimal &#91;/&#93; back to [/] inside do_shortcode(), which would
+	// re-arm the shortcode. Hex forms are not reversed. See docblock + SMASH-1607.
+	return str_replace(array( '[', ']' ), array( '&#x5B;', '&#x5D;' ), $text);
+}
+
 
 
 

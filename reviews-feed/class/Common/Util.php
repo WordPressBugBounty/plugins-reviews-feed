@@ -1398,6 +1398,84 @@ class Util
 	}
 
 
+	/**
+	 * Coerce a review's `provider`, `reviewer` and `source` into the array shapes
+	 * every reader expects ($review['provider']['name'], $review['reviewer']['name'],
+	 * $review['source']['id'], …). The relay can emit these as scalars (e.g.
+	 * `provider` => 'google', or an error-shaped payload yielding a scalar
+	 * `reviewer`/`source`), and PHP 7-era caches stored them that way in
+	 * `json_data`. On PHP 8.0+ a direct nested read on a scalar fatals with
+	 * "Cannot access offset of type string on string".
+	 *
+	 * This is the single source of truth used by SinglePostCache (both
+	 * constructors) and every raw/DB-decoded read site: the dedup key build in
+	 * PostAggregator::remove_duplicated_posts_list (front-end render, Feed.php:172)
+	 * reads source['id'] + reviewer['name'] + provider['name'] off the raw post,
+	 * parse_single_review reads reviewer/provider, and
+	 * SBR_Feed_Saver_Manager::duplicate_collection reads reviewer/source.
+	 *
+	 * SMASH-1578 guarded whole-review + source shapes at the cache loops, SMASH-1587
+	 * added provider; this also covers a scalar reviewer/source that the
+	 * is_array($single_review)-only cache guard lets through to store()/dedup
+	 * (reachable on WPSA-63160's associative-keyed payload). Healthy array data is
+	 * left intact — missing keys are filled with empty strings (via array union),
+	 * so the dedup key degrades to an empty segment instead of crashing.
+	 *
+	 * @param  mixed  $review
+	 * @return mixed  Untouched when not an array (callers' is_array guards handle that).
+	 */
+	public static function normalize_review_shape($review)
+	{
+		if (!is_array($review)) {
+			return $review;
+		}
+
+		if (isset($review['provider']) && is_string($review['provider'])) {
+			$review['provider'] = ['name' => $review['provider']];
+		} elseif (!isset($review['provider']) || !is_array($review['provider'])) {
+			$review['provider'] = ['name' => ''];
+		}
+		if (!isset($review['reviewer']) || !is_array($review['reviewer'])) {
+			$review['reviewer'] = [];
+		}
+		if (!isset($review['source']) || !is_array($review['source'])) {
+			$review['source'] = [];
+		}
+		// Image containers iterated by resize_images() + add_local_image_urls().
+		// A scalar here would fatal the foreach on PHP 8. Coerce a present
+		// non-array to [] (leave absent untouched — they're optional). Element
+		// shape is guarded at the loop sites (a flat URL-string element).
+		foreach (['media', 'reviews_photos'] as $image_key) {
+			if (isset($review[$image_key]) && !is_array($review[$image_key])) {
+				$review[$image_key] = [];
+			}
+		}
+
+		// Guarantee the exact keys every reader assumes are present and string,
+		// so a scalar/partial provider, reviewer or source degrades to empty
+		// segments instead of "Cannot access offset…" fatals or "Undefined array
+		// key" notices in the dedup key build / parse_single_review / preview
+		// backfill (SMASH-1587 + PR #484 Copilot review + WPSA-63160 follow-up).
+		$review['provider'] += ['name' => ''];
+		$review['reviewer'] += ['name' => '', 'avatar' => ''];
+		$review['source']   += ['id' => '', 'url' => ''];
+		if (!is_string($review['provider']['name'])) {
+			$review['provider']['name'] = '';
+		}
+		if (!is_string($review['reviewer']['name'])) {
+			$review['reviewer']['name'] = '';
+		}
+		if (!is_string($review['source']['id'])) {
+			// Preserve a numeric id (cast), but never (string)-cast an array/object —
+			// that would emit an "Array to string conversion" notice (PR #482 Copilot).
+			$review['source']['id'] = is_scalar($review['source']['id'])
+				? (string) $review['source']['id']
+				: '';
+		}
+
+		return $review;
+	}
+
 	 /**
 	 * Transform Single Review for storing purposes
 	 *
@@ -1407,6 +1485,9 @@ class Util
 	 */
 	public static function parse_single_review($review, $provider_id, $review_id)
 	{
+		// Provider can arrive as a scalar slug (SMASH-1587); normalize before the
+		// $review['provider']['name'] read below so it can't fatal on PHP 8.
+		$review = self::normalize_review_shape($review);
 		$name = $review['reviewer']['name'];
 		$name_array = explode(' ', $name);
 		$first_name = isset($review['reviewer']['first_name']) ? $review['reviewer']['first_name'] : $name_array[0];

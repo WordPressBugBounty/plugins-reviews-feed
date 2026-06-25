@@ -29,6 +29,16 @@ class FeedDisplay {
 		$header_data = is_array($header_data) ? $header_data : [];
 		$posts = $this->feed->get_post_set_page();
 		$feed_id = $this->feed->get_feed_id();
+		// SMASH-1583: enrich the header with real per-source counts pulled from
+		// the FULL cached review set (get_posts(), not the paginated $posts
+		// above) so providers that report no count — Facebook recommendations
+		// being the canonical case — still contribute to the combined total and
+		// the weighted average. No-op for sources that already report a count.
+		// Gate on non-empty header_data so get_posts() isn't evaluated for
+		// single-manual-review feeds where backfill can never have any effect.
+		if (! empty($header_data)) {
+			$header_data = $this->parser->backfill_review_counts($header_data, $this->feed->get_posts());
+		}
 
 		$shortcode_atts = '{}';
 		$settings = $this->feed->get_settings();
@@ -198,16 +208,16 @@ class FeedDisplay {
 	public function star_rating_display($post, $settings)
 	{
 		$star_rating = intval($this->parser->get_rating($post));
-		if ( $star_rating <= 0 ) {
-			$aria_label = __( 'Not rated', 'reviews-feed' );
+		if ($star_rating <= 0) {
+			$aria_label = __('Not rated', 'reviews-feed');
 		} else {
 			$aria_label = sprintf(
 				/* translators: %d: numeric rating out of 5 */
-				__( '%d out of 5 stars', 'reviews-feed' ),
+				__('%d out of 5 stars', 'reviews-feed'),
 				$star_rating
 			);
 		}
-		$return = '<span role="img" aria-label="' . esc_attr( $aria_label ) . '">';
+		$return = '<span role="img" aria-label="' . esc_attr($aria_label) . '">';
 		for ($i = 0; $i < 5; $i++) {
 			$iconClass = $star_rating - $i < 1 ? ' sb-item-rating-icon-dimmed' : '';
 			if ($star_rating - $i === 0.5) {
@@ -227,17 +237,17 @@ class FeedDisplay {
 	public function overall_star_rating_display($business, $settings)
 	{
 		$star_rating = floatval($this->parser->get_average_rating($business));
-		$display_rating = ( floor( $star_rating * 2 ) / 2 );
-		if ( $display_rating <= 0 ) {
-			$aria_label = __( 'Not rated', 'reviews-feed' );
+		$display_rating = ( floor($star_rating * 2) / 2 );
+		if ($display_rating <= 0) {
+			$aria_label = __('Not rated', 'reviews-feed');
 		} else {
 			$aria_label = sprintf(
 				/* translators: %s: numeric rating out of 5 (may include half-stars) */
-				__( '%s out of 5 stars', 'reviews-feed' ),
+				__('%s out of 5 stars', 'reviews-feed'),
 				$display_rating
 			);
 		}
-		$return = '<span role="img" aria-label="' . esc_attr( $aria_label ) . '">';
+		$return = '<span role="img" aria-label="' . esc_attr($aria_label) . '">';
 		for ($i = 0; $i < 5; $i++) {
 			$iconClass = $star_rating - $i < 1 ? ' sb-item-rating-icon-dimmed' : '';
 			if ($star_rating - $i < 1 && $star_rating - $i >= 0.5) {

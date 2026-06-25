@@ -95,28 +95,143 @@ class Parser {
 			// SMASH-1412: prefer the plugin-computed dedup'd aggregate when
 			// present. EDD / WooCommerce multi-source feeds stamp this on every
 			// source.info so the first one wins. Older feeds without the field
-			// fall through to the per-source mean below — correct for
-			// independent businesses (Yelp / Google / Trustpilot / WP.org).
+			// fall through to the per-source weighted mean below.
 			foreach ($businesses as $business) {
 				if (! empty($business['info']['feed_aggregated'])) {
 					return round(floatval($business['info']['feed_average_rating'] ?? 0), 1);
 				}
 			}
 
-			$average_rating = 0;
-			$number = 0;
+			// SMASH-1583: weight each source's rating by its review count so a
+			// 3-review source can't swing the headline average as hard as a
+			// 219-review one. A multi-source feed (e.g. Google 219@4.7 +
+			// Facebook 3@5.0) must report sum(rating*count)/sum(count) = 4.7,
+			// not the unweighted mean round((4.7+5.0)/2, 1) = 4.9.
+			//
+			// Falls back to the legacy unweighted mean when no source reports a
+			// usable count (manual feeds, providers without a count) — this
+			// preserves the pre-1583 number and avoids a divide-by-zero / 0.0
+			// regression on feeds whose counts are all empty.
+			$weighted_sum = 0.0;
+			$weighted_n   = 0;
+			$simple_sum   = 0.0;
+			$simple_n     = 0;
 			foreach ($businesses as $business) {
 				// Check for rating first, then fall back to average_rating for WooCommerce multi-product sources
 				$rating = $business['info']['rating'] ?? $business['info']['average_rating'] ?? 0;
-				if (! empty($rating)) {
-					$average_rating += floatval($rating);
-					$number += 1;
+				if (empty($rating)) {
+					continue;
 				}
+				$count         = intval($business['info']['total_rating'] ?? $business['info']['review_count'] ?? 0);
+				$weighted_sum += floatval($rating) * $count;
+				$weighted_n   += $count;
+				$simple_sum   += floatval($rating);
+				$simple_n     += 1;
 			}
-			$number = $number === 0 ? 1 : $number;
-			return round($average_rating / $number, 1);
+
+			if ($weighted_n > 0) {
+				return round($weighted_sum / $weighted_n, 1);
+			}
+
+			$simple_n = $simple_n === 0 ? 1 : $simple_n;
+			return round($simple_sum / $simple_n, 1);
 		}
 		return '';
+	}
+
+	/**
+	 * Backfill missing per-source review counts from the actual cached reviews.
+	 *
+	 * Some providers don't expose a reliable count in the source header. Facebook
+	 * is the canonical case (SMASH-1583): modern Pages use recommendations, so
+	 * FB Graph's legacy `rating_count` comes back 0, omitted, OR a stale low
+	 * value (e.g. 1 while 2 recommendations are actually cached and displayed).
+	 * The header then under-reports the combined count and the count-weighted
+	 * average mistreats the Facebook source.
+	 *
+	 * For each header source we set the count to max(reported, cached-reviews),
+	 * keyed by each post's `source.id`. Sources that report a true total (Google,
+	 * Yelp, Trustpilot, …) always report >= what's cached, so they're left
+	 * untouched — counting cached posts would UNDER-report them. Only a stale or
+	 * empty reported count (Facebook) gets corrected up to the real cached number.
+	 *
+	 * @param array $businesses Header data (one entry per source, each with info.id).
+	 * @param array $posts      Full normalized cached reviews (each with source.id).
+	 * @return array Header data with info.total_rating corrected where the cached count is higher.
+	 */
+	public function backfill_review_counts($businesses, $posts)
+	{
+		if (! is_array($businesses)) {
+			return [];
+		}
+		if (empty($businesses)) {
+			return $businesses; // Nothing to backfill (e.g. single-manual-review header).
+		}
+		if (empty($posts) || ! is_array($posts)) {
+			return $businesses;
+		}
+
+		$counts_by_source = $this->tally_reviews_by_source($posts);
+		if (empty($counts_by_source)) {
+			return $businesses;
+		}
+
+		foreach ($businesses as $key => $business) {
+			$info = $business['info'] ?? null;
+			if (! is_array($info)) {
+				continue;
+			}
+			$id = isset($info['id']) ? (string) $info['id'] : '';
+			if ($id === '' || empty($counts_by_source[$id])) {
+				continue;
+			}
+			// Use the LARGER of the provider-reported count and the actual cached
+			// reviews. Providers that report a true total (Google / Yelp /
+			// Trustpilot / TripAdvisor / WP.org) always report >= what's cached,
+			// so they're left untouched — their real totals routinely exceed the
+			// cached page and must never be down-counted. Facebook is the problem
+			// case: its deprecated rating_count persists 0 OR a stale low value
+			// (e.g. 1 while 2 recommendations are cached and displayed), so the
+			// cached count is the honest floor and wins.
+			$reported = (int) ($info['total_rating'] ?? $info['review_count'] ?? 0);
+			$cached   = (int) $counts_by_source[$id];
+			if ($cached > $reported) {
+				$businesses[$key]['info']['total_rating'] = $cached;
+			}
+		}
+		return $businesses;
+	}
+
+	/**
+	 * Tally cached reviews per source id (keyed by each post's source.id).
+	 *
+	 * Shared by backfill_review_counts() and the customizer-preview enrichment
+	 * so the count rule lives in exactly one place.
+	 *
+	 * @param array $posts Normalized cached reviews.
+	 * @return array<string,int> source id => review count
+	 */
+	public function tally_reviews_by_source($posts)
+	{
+		$counts_by_source = [];
+		if (! is_array($posts)) {
+			return $counts_by_source;
+		}
+		foreach ($posts as $post) {
+			if (! is_array($post)) {
+				continue;
+			}
+			$source = $post['source'] ?? null;
+			if (! is_array($source)) {
+				continue;
+			}
+			$source_id = (string) ($source['id'] ?? '');
+			if ($source_id === '') {
+				continue;
+			}
+			$counts_by_source[$source_id] = ($counts_by_source[$source_id] ?? 0) + 1;
+		}
+		return $counts_by_source;
 	}
 
 	public function get_num_ratings($businesses)
