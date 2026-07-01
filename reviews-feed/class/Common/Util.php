@@ -973,7 +973,75 @@ class Util
 	 */
 	public static function get_api_call_language($settings)
 	{
-		return Util::sbr_is_pro() ? \SmashBalloon\Reviews\Pro\Helpers\SBR_WPML::get_current_language(Util::get_settings_language($settings)) : Util::get_settings_language($settings);
+		$language = Util::sbr_is_pro()
+			? \SmashBalloon\Reviews\Pro\Helpers\SBR_WPML::get_current_language(Util::get_settings_language($settings))
+			: Util::get_settings_language($settings);
+
+		/**
+		 * Filter the language code sent to the provider API (e.g. Google Places).
+		 * Lets a site map an unsupported locale to a supported one, e.g. a WPML
+		 * `es-mx` site forcing `es-419` for Latin American Spanish. SMASH-1617.
+		 * Read the current WPML language inside the callback (apply_filters
+		 * 'wpml_current_language') if you need per-page context.
+		 *
+		 * @since 2.6.6
+		 * @param string $language Resolved language code (or 'default').
+		 */
+		return apply_filters('sbr_google_api_language', $language);
+	}
+
+	/**
+	 * Map a locale / WPML language code to a code the Google Places API accepts.
+	 *
+	 * Google only honours codes from its supported list (get_translation_languages);
+	 * an unsupported value (e.g. WPML's `es-mx`) makes Google return reviews
+	 * untranslated. This normalises common regional codes to a supported one.
+	 * Spanish is special-cased: Spain dialects -> `es`, any other Spanish variant
+	 * (es-mx, es-ar, …) -> `es-419` (Latin America) — region-stripping alone would
+	 * wrongly land on Spain Spanish. Returns null when nothing supported matches,
+	 * so callers can fall back (never send a bogus code). SMASH-1617.
+	 *
+	 * @since 2.6.6
+	 * @param string|null $code Raw locale / WPML code (e.g. 'es-mx', 'pt-br', 'es_MX').
+	 * @return string|null A Google-supported code, or null if unmappable.
+	 */
+	public static function map_wpml_to_google_language($code)
+	{
+		if (! is_string($code) || $code === '') {
+			return null;
+		}
+
+		$allowed = self::get_translation_languages();
+
+		// Already a supported code (exact match) — keep existing behaviour.
+		if (isset($allowed[$code]) && $code !== 'default' && $code !== '') {
+			return $code;
+		}
+
+		$norm = strtolower(str_replace('_', '-', $code));
+
+		// Spanish: Spain -> es; every other variant (es-mx, es-ar, …) -> es-419.
+		if ($norm === 'es' || $norm === 'es-es') {
+			return 'es';
+		}
+		if (strpos($norm, 'es-') === 0) {
+			return 'es-419';
+		}
+
+		// Case-insensitive match for region variants Google does list (pt-br -> pt-BR).
+		foreach (array_keys($allowed) as $supported) {
+			if (strtolower($supported) === $norm) {
+				return $supported;
+			}
+		}
+
+		// Strip the region and fall back to the base language if supported (fr-fr -> fr).
+		$base = strtok($norm, '-');
+		if ($base !== false && isset($allowed[$base])) {
+			return $base;
+		}
+
+		return null;
 	}
 
 	/**

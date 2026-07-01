@@ -710,6 +710,23 @@
     color: var(--sbr-popup-star-empty);
 }
 
+/* Half star (e.g. 4.5): base star empty-coloured, left 50% overlaid with fill. */
+.sbr-review-alert__star--half {
+    position: relative;
+    color: var(--sbr-popup-star-empty);
+}
+
+.sbr-review-alert__star--half .sbr-review-alert__star-half {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    color: var(--sbr-popup-star-fill);
+    /* Reveal the left half of a FULL-SIZE star (mirrors the feed header's
+       half-star — a full star clipped to 50%, not a shrunk one). Full-size
+       overlay so the inner icon never gets flex-shrunk; clip shows the half. */
+    clip-path: inset(0 50% 0 0);
+}
+
 /* ==========================================================================
    Heading - "[Name] left us a review"
    ========================================================================== */
@@ -1068,6 +1085,21 @@
     color: var(--sbr-popup-star-empty);
 }
 
+/* Minimal Dark - half star: dim the empty BASE the same way --empty above does
+   (the global `--minimal-dark svg path` white rule otherwise paints the whole star),
+   then re-assert the left-half fill overlay so 4.5/4.7 shows a real half, not 5 full. */
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--half,
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--half svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--half svg path {
+    color: var(--sbr-popup-star-empty);
+}
+
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--half .sbr-review-alert__star-half,
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--half .sbr-review-alert__star-half svg,
+.sbr-review-alert--minimal-dark .sbr-review-alert__star--half .sbr-review-alert__star-half svg path {
+    color: var(--sbr-popup-star-fill);
+}
+
 /* Minimal Dark - Chevron uses stroke, not fill */
 /* Override global SVG white rule - chevron should inherit text color */
 .sbr-review-alert--minimal-dark .sbr-review-alert__chevron svg,
@@ -1149,6 +1181,21 @@
 .sbr-review-alert--dark .sbr-review-alert__expanded-star--empty svg,
 .sbr-review-alert--dark .sbr-review-alert__expanded-star--empty svg path {
     color: var(--sbr-popup-star-empty);
+}
+
+/* Dark - half star: dim the empty BASE the same way --empty above does
+   (the global `--dark svg path` white rule otherwise paints the whole star),
+   then re-assert the left-half fill overlay so 4.5/4.7 shows a real half, not 5 full. */
+.sbr-review-alert--dark .sbr-review-alert__star--half,
+.sbr-review-alert--dark .sbr-review-alert__star--half svg,
+.sbr-review-alert--dark .sbr-review-alert__star--half svg path {
+    color: var(--sbr-popup-star-empty);
+}
+
+.sbr-review-alert--dark .sbr-review-alert__star--half .sbr-review-alert__star-half,
+.sbr-review-alert--dark .sbr-review-alert__star--half .sbr-review-alert__star-half svg,
+.sbr-review-alert--dark .sbr-review-alert__star--half .sbr-review-alert__star-half svg path {
+    color: var(--sbr-popup-star-fill);
 }
 
 /* Chevron uses stroke, not fill - reset fill and set stroke for dark mode */

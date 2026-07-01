@@ -18,6 +18,7 @@
  */
 
 use SmashBalloon\Reviews\Common\DisplayElements;
+use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Frontend;
 
 if (! defined('ABSPATH')) {
 	exit;
@@ -56,7 +57,6 @@ if (! $first_review) {
 // Get total reviews and average rating from config (calculated from ALL matching reviews)
 $total_reviews = $config['totalReviews'] ?? count($reviews);
 $average_rating = $config['averageRating'] ?? 5.0;
-$average_rating_rounded = (int) round($average_rating);
 
 // Get reviewer info
 $reviewer_name = $first_review['reviewer']['name'] ?? __('Someone', 'reviews-feed');
@@ -153,13 +153,21 @@ $link_url = $content_settings['link_url'] ?? '';
 					<!-- Content Section - Reusing __content class from recent reviews -->
 					<div class="sbr-review-alert__content<?php echo !$show_rating ? ' sbr-review-alert__content--no-rating' : ''; ?>">
 						<?php if ($show_rating) : ?>
-						<!-- Stars -->
-						<div class="sbr-review-alert__stars">
-							<?php for ($i = 1; $i <= 5; $i++) : ?>
-								<span class="sbr-review-alert__star <?php echo esc_attr($i <= $average_rating_rounded ? '' : 'sbr-review-alert__star--empty'); ?>">
+						<!-- Stars (decorative — the numeric rating is announced separately) -->
+						<div class="sbr-review-alert__stars" aria-hidden="true">
+							<?php
+							// Half-star fill states come from the one shared formula (full,half,empty),
+							// mirrored by the customizer's React starFillStates() so preview == frontend.
+							foreach (SBR_Review_Alert_Frontend::star_fill_states((float) $average_rating) as $star_fill) :
+								$star_modifier = 'full' === $star_fill ? '' : 'sbr-review-alert__star--' . $star_fill;
+								?>
+								<span class="sbr-review-alert__star <?php echo esc_attr($star_modifier); ?>">
 									<?php echo DisplayElements::get_star_icon(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+									<?php if ('half' === $star_fill) : ?>
+										<span class="sbr-review-alert__star-half"><?php echo DisplayElements::get_star_icon(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<?php endif; ?>
 								</span>
-							<?php endfor; ?>
+							<?php endforeach; ?>
 						</div>
 						<?php endif; ?>
 

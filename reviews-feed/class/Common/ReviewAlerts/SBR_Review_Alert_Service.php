@@ -1339,8 +1339,8 @@ class SBR_Review_Alert_Service extends ServiceProvider
 			$total_matching++;
 			$total_rating += $rating;
 
-			// Add to preview array up to 150 reviews (matches frontend limit)
-			if (count($complete_reviews) < 150) {
+			// Add to preview array up to the shared frontend cap.
+			if (count($complete_reviews) < SBR_Review_Alert_Frontend::MAX_POPUP_REVIEWS) {
 				// Decode HTML entities for special characters (e.g., &amp; -> &, &#039; -> ')
 				$decoded_text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 				$decoded_name = html_entity_decode($reviewer_name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -1360,12 +1360,21 @@ class SBR_Review_Alert_Service extends ServiceProvider
 			}
 		}
 
-		// Calculate average rating from ALL matching reviews (same as frontend)
-		$average_rating = $total_matching > 0 ? round($total_rating / $total_matching, 1) : 5.0;
+		// Headline total + average from the feed-header metadata, via the shared
+		// helper the frontend render path uses too, so the two can't drift. SMASH-1616.
+		// Backfill from the FULL cached set (get_posts()), matching FeedDisplay and
+		// the frontend path — not the page slice — so the preview headline can't
+		// under-count providers with a zero API total.
+		[$total_reviews, $average_rating] = SBR_Review_Alert_Frontend::resolve_header_totals(
+			$feed,
+			$feed->get_posts(),
+			$total_matching,
+			$total_rating
+		);
 
 		return [
 			'reviews'         => $complete_reviews,
-			'totalReviews'    => $total_matching,
+			'totalReviews'    => $total_reviews,
 			'unfilteredTotal' => $unfiltered_total,
 			'averageRating'   => $average_rating,
 		];

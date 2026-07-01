@@ -32,6 +32,15 @@ use SmashBalloon\Reviews\Common\Util;
 class SBR_ReviewAlert_Builder extends ServiceProvider
 {
 	/**
+	 * Built-in / system post types that are never targetable in the visibility UI
+	 * (neither as individual pages nor as a Custom Post Types toggle). One source
+	 * of truth shared by get_wordpress_pages() and get_wordpress_post_types().
+	 *
+	 * @var string[]
+	 */
+	private const EXCLUDED_POST_TYPES = ['attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache'];
+
+	/**
 	 * Menu configuration
 	 *
 	 * @var array
@@ -285,7 +294,37 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 	 */
 	private function get_wordpress_pages(): array
 	{
-		$pages_list = get_pages(['post_status' => 'publish']);
+		// List published entries of `page` PLUS every public custom post type
+		// (page-builder landing pages register their own CPT — SeedProd,
+		// Elementor, Beaver, Brizy, etc.; WooCommerce `product` included too), so
+		// they can be targeted individually. `get_pages()` only ever returned the
+		// `page` type, which is why those landing pages were missing from the
+		// dropdown (SMASH-1616). Blog `post` stays out (built-in; targeted via
+		// categories). Single products already resolve to a `page`-type location
+		// by ID in the frontend matcher, so listing them here works with the
+		// existing matcher and coexists with the Custom Post Types toggle.
+		$custom_types = get_post_types(['public' => true, '_builtin' => false], 'names');
+		$page_types   = array_values(array_diff(array_merge(['page'], array_values($custom_types)), self::EXCLUDED_POST_TYPES));
+		$page_types   = (array) apply_filters('sbr_review_alert_page_post_types', $page_types);
+
+		// Bound the query: floor an invalid/unbounded filter value (<= 0, e.g. -1 =
+		// "all") to the 300 default and cap at a hard ceiling, so a stray filter
+		// can't trigger a huge query. Only id/title/url are used downstream, so skip
+		// the meta/term caches and the found-rows count for a cheaper query.
+		$pages_limit = (int) apply_filters('sbr_review_alert_pages_limit', 300);
+		$pages_limit = $pages_limit > 0 ? min($pages_limit, 500) : 300;
+
+		$pages_list = empty($page_types) ? [] : get_posts([
+			'post_type'              => $page_types,
+			'post_status'            => 'publish',
+			'posts_per_page'         => $pages_limit,
+			'orderby'                => 'title',
+			'order'                  => 'ASC',
+			'suppress_filters'       => false,
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		]);
 		$pages_result = [];
 
 		// Add homepage option
@@ -383,11 +422,8 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 		$post_types = get_post_types(['public' => true], 'objects');
 		$post_types_result = [];
 
-		// Exclude built-in types that are handled separately
-		$excluded = ['attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache'];
-
 		foreach ($post_types as $post_type) {
-			if (in_array($post_type->name, $excluded, true)) {
+			if (in_array($post_type->name, self::EXCLUDED_POST_TYPES, true)) {
 				continue;
 			}
 			$post_types_result[] = [

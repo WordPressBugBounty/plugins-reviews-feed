@@ -2,8 +2,8 @@
 Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
-Tested up to: 6.9
-Stable tag: 2.6.5
+Tested up to: 7.0
+Stable tag: 2.6.7
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.6.7 =
+* Fix: Minor fixes and plugin hardening.
+* Compatibility: Tested and confirmed compatible with WordPress 7.0.
+
 = 2.6.5 =
 * Fix: Feeds that combine more than one source now show the correct total review count and a properly weighted average rating — on your published pages, not just in the Feed Builder preview.
 * Fix: Resolved a rare PHP error that could stop a feed from displaying.

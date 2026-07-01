@@ -21,6 +21,7 @@ if (! defined('ABSPATH')) {
 
 use Smashballoon\Stubs\Services\ServiceProvider;
 use SmashBalloon\Reviews\Common\FeedCache;
+use SmashBalloon\Reviews\Common\Parser;
 use SmashBalloon\Reviews\Common\TemplateRenderer;
 use SmashBalloon\Reviews\Common\Util;
 
@@ -31,6 +32,15 @@ use SmashBalloon\Reviews\Common\Util;
  */
 class SBR_Review_Alert_Frontend extends ServiceProvider
 {
+	/**
+	 * Max reviews handed to the popup JS (it shows a first batch, then "See all"
+	 * loads the rest). Shared with SBR_Review_Alert_Service::get_preview_reviews so
+	 * the frontend and the customizer preview cap identically.
+	 *
+	 * @var int
+	 */
+	public const MAX_POPUP_REVIEWS = 150;
+
 	/**
 	 * Active popup for current page (cached after first check)
 	 *
@@ -319,8 +329,9 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		// 7. Check if it's a custom post type (not page or post)
 		if (!in_array($post->post_type, ['page', 'post'], true)) {
 			return [
-				'type' => 'custom_post_type',
-				'id'   => $post->post_type, // slug
+				'type'    => 'custom_post_type',
+				'id'      => $post->post_type, // slug (whole-type targeting)
+				'post_id' => $page_id,         // concrete id (individual targeting, e.g. a landing page)
 			];
 		}
 
@@ -371,9 +382,21 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 
 		switch ($type) {
 			case 'custom_post_type':
-				// Check slug against custom_post_types array (handles both formats)
+				// Whole-type match: slug against custom_post_types (handles both formats)
 				$cpts = $this->extract_visibility_ids($list['custom_post_types'] ?? [], 'name');
-				return in_array($id, $cpts, true);
+				if (in_array($id, $cpts, true)) {
+					return true;
+				}
+				// Individual match: a specific CPT entry (e.g. a landing page) picked
+				// in the Pages list is stored under `pages` by its post ID. (SMASH-1616)
+				$post_id = $location['post_id'] ?? 0;
+				if ($post_id) {
+					$pages = $this->extract_visibility_ids($list['pages'] ?? [], 'id');
+					if (in_array((int) $post_id, $pages, true)) {
+						return true;
+					}
+				}
+				return false;
 
 			case 'category':
 				// Check term ID against categories array (handles both formats)
@@ -529,7 +552,7 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 	 *
 	 * @since 2.5.0
 	 * @param array $popup_settings Full popup settings including sources, filters, and sort
-	 * @return array{reviews: array, totalReviews: int, averageRating: float} Array containing reviews (max 10), total count, and average rating
+	 * @return array{reviews: array, totalReviews: int, averageRating: float} Array containing reviews (up to MAX_POPUP_REVIEWS), the header total count, and the header average rating
 	 */
 	private function get_reviews_for_popup(array $popup_settings): array
 	{
@@ -613,21 +636,87 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		// Pass provider filter if explicitly set (null = no filter, empty array = show none)
 		$allowed_providers = isset($filters['providers']) ? $filters['providers'] : null;
 		$complete_reviews = $this->filter_complete_reviews($all_reviews, $allowed_providers);
-		$total_reviews = count($complete_reviews);
-
-		// Calculate average rating from ALL complete reviews (not just the 10 displayed)
-		$total_rating = 0;
+		$cached_count = count($complete_reviews);
+		$cached_sum = 0;
 		foreach ($complete_reviews as $review) {
-			$total_rating += isset($review['rating']) ? (int) $review['rating'] : 5;
+			$cached_sum += isset($review['rating']) ? (int) $review['rating'] : 5;
 		}
-		$average_rating = $total_reviews > 0 ? round($total_rating / $total_reviews, 1) : 5.0;
 
-		// Pass up to 150 reviews - JS will show first 10 initially, then load rest on "See all" click
+		// Headline total + average from the feed-header metadata (shared with the
+		// customizer preview path so the two can't drift). SMASH-1616.
+		// Backfill from the FULL cached set (get_posts()), exactly like
+		// FeedDisplay::backfill_review_counts — not the page slice — so providers
+		// whose API returned a zero count aren't under-counted vs the feed header.
+		[$total_reviews, $average_rating] = self::resolve_header_totals($feed, $feed->get_posts(), $cached_count, $cached_sum);
+
+		// Pass up to MAX_POPUP_REVIEWS - JS shows a first batch, then loads the rest on "See all".
 		return [
-			'reviews'       => array_slice($complete_reviews, 0, 150),
+			'reviews'       => array_slice($complete_reviews, 0, self::MAX_POPUP_REVIEWS),
 			'totalReviews'  => $total_reviews,
 			'averageRating' => $average_rating,
 		];
+	}
+
+	/**
+	 * Resolve a Review Alert's headline total + average from the feed-header
+	 * metadata (the same numbers the published feed header shows), so the popup
+	 * agrees with the feed. Falls back to the cached complete-review set when no
+	 * source metadata is available. Shared by this frontend render path AND the
+	 * customizer preview (SBR_Review_Alert_Service::get_preview_reviews) so the
+	 * two can never drift. SMASH-1616.
+	 *
+	 * @param object $feed           The built Feed (after get_set_cache()).
+	 * @param array  $cached_reviews Cached review rows (for count backfill).
+	 * @param int    $cached_count   Count of cached complete reviews (fallback total).
+	 * @param int    $cached_sum     Sum of cached complete-review ratings (fallback avg).
+	 * @return array{0: int, 1: float} [total_reviews, average_rating]
+	 */
+	public static function resolve_header_totals($feed, array $cached_reviews, int $cached_count, int $cached_sum): array
+	{
+		$businesses = method_exists($feed, 'get_header_data') ? $feed->get_header_data() : [];
+		$parser = new Parser();
+		if (is_array($businesses) && ! empty($businesses)) {
+			$businesses = $parser->backfill_review_counts($businesses, $cached_reviews);
+		}
+		$meta_total   = (int) $parser->get_num_ratings($businesses);
+		$meta_average = (float) $parser->get_average_rating($businesses);
+
+		$total = $meta_total > 0 ? $meta_total : $cached_count;
+		if ($meta_average > 0) {
+			$average = round($meta_average, 1);
+		} else {
+			$average = $cached_count > 0 ? round($cached_sum / $cached_count, 1) : 5.0;
+		}
+
+		return [$total, $average];
+	}
+
+	/**
+	 * Decompose an average rating into per-star fill states, matching the feed
+	 * header (4.7 -> full,full,full,full,half). The single source of truth for
+	 * star rendering: the popup template consumes this, and the customizer's
+	 * React `starFillStates()` in ReviewAlertPreview.js mirrors this exact
+	 * formula so the admin preview and the live frontend never diverge (the bug
+	 * was the preview pre-rounding with Math.round()). SMASH-1616.
+	 *
+	 * @param float $average Average rating (raw, NOT pre-rounded).
+	 * @param int   $count   Number of stars (default 5).
+	 * @return string[] One of 'full' | 'half' | 'empty' per star, length $count.
+	 */
+	public static function star_fill_states(float $average, int $count = 5): array
+	{
+		$states = [];
+		for ($i = 1; $i <= $count; $i++) {
+			if ($average >= $i) {
+				$states[] = 'full';
+			} elseif ($average >= $i - 0.5) {
+				$states[] = 'half';
+			} else {
+				$states[] = 'empty';
+			}
+		}
+
+		return $states;
 	}
 
 	/**
@@ -733,7 +822,7 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 	 *
 	 * @since 2.5.0
 	 * @param array $popup          Popup data
-	 * @param array $reviews        Reviews array (max 10 for display)
+	 * @param array $reviews        Reviews array (up to MAX_POPUP_REVIEWS for display)
 	 * @param int   $total_reviews  Total matching reviews count (before slicing)
 	 * @param float $average_rating Average rating from all matching reviews
 	 * @return array Configuration for frontend JS
