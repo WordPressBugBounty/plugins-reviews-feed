@@ -35,6 +35,18 @@ if (!defined('SBR_PLUGIN_NAME')) {
 if (!defined('SBR_PRODUCT_ID')) {
 	define('SBR_PRODUCT_ID', 9999999);
 }
+// Feeds table name — mirrors the runtime define (plugin bootstrap.php) so tests
+// exercising queries that use SBR_FEEDS_TABLE (e.g. feed_localizations_for_source)
+// resolve the constant instead of erroring on an undefined constant.
+if (!defined('SBR_FEEDS_TABLE')) {
+	define('SBR_FEEDS_TABLE', 'sbr_feeds');
+}
+// Reviews-posts table name — mirrors the runtime define (plugin bootstrap.php) so
+// tests that load SinglePostCache (POSTS_TABLE_NAME = SBR_POSTS_TABLE class const)
+// resolve the constant instead of erroring on class load.
+if (!defined('SBR_POSTS_TABLE')) {
+	define('SBR_POSTS_TABLE', 'sbr_reviews_posts');
+}
 
 // Mock WordPress functions used in tested code
 if (!function_exists('sanitize_text_field')) {
@@ -56,6 +68,25 @@ if (!function_exists('get_option')) {
 	{
 		global $wp_options_mock;
 		return $wp_options_mock[$option] ?? $default;
+	}
+}
+
+if (!function_exists('wp_parse_url')) {
+	function wp_parse_url($url, $component = -1)
+	{
+		return parse_url($url, $component);
+	}
+}
+
+if (!function_exists('wp_parse_args')) {
+	function wp_parse_args($args, $defaults = [])
+	{
+		if (is_object($args)) {
+			$args = get_object_vars($args);
+		} elseif (!is_array($args)) {
+			parse_str((string) $args, $args);
+		}
+		return array_merge($defaults, $args);
 	}
 }
 
@@ -104,6 +135,13 @@ if (!function_exists('wp_json_encode')) {
 	}
 }
 
+if (!function_exists('esc_sql')) {
+	function esc_sql($data)
+	{
+		return is_array($data) ? array_map('esc_sql', $data) : addslashes((string) $data);
+	}
+}
+
 if (!function_exists('trailingslashit')) {
 	function trailingslashit($string)
 	{
@@ -148,6 +186,13 @@ if (!function_exists('add_filter')) {
 if (!function_exists('apply_filters')) {
 	function apply_filters($hook, $value, ...$args)
 	{
+		// Tests can inject a return value per hook via $wp_filter_mock (e.g. to
+		// simulate WPML's wpml_active_languages / wpml_current_language). With no
+		// mock set the stub keeps its original passthrough behavior.
+		global $wp_filter_mock;
+		if (isset($wp_filter_mock[$hook])) {
+			return $wp_filter_mock[$hook];
+		}
 		return $value;
 	}
 }
@@ -214,6 +259,39 @@ if (!function_exists('delete_transient')) {
 		unset($wp_transients_mock[$key]);
 		return true;
 	}
+}
+
+// Minimal $wpdb double so DB-touching helpers (e.g. clear_plugin_cache) no-op
+// instead of fatalling in unit tests. Guarded so any test that installs its own
+// $wpdb wins.
+if (!isset($GLOBALS['wpdb'])) {
+	$GLOBALS['wpdb'] = new class {
+		public $prefix = 'wp_';
+		public function query($sql)
+		{
+			return 0;
+		}
+		public function get_results($sql, $output = null)
+		{
+			return [];
+		}
+		public function get_var($sql)
+		{
+			return null;
+		}
+		public function get_row($sql, $output = null)
+		{
+			return null;
+		}
+		public function prepare($query, ...$args)
+		{
+			return $query;
+		}
+		public function esc_like($text)
+		{
+			return addcslashes((string) $text, '_%\\');
+		}
+	};
 }
 
 // Stub is_plugin_active for provider-detection tests (EDD provider gate).

@@ -330,6 +330,14 @@ class SinglePostCache {
 		$where['post_id'] = $this->post_data['review_id'];
 		$where_format[] = '%s';
 
+		// Scope by language: db_record() (the existence gate that precedes this update)
+		// keys on (post_id, lang, provider_id), but this UPDATE matched post_id alone —
+		// so a single-language update overwrote every sibling-language row for the same
+		// review, collapsing them onto the last-written text. Only 'google' carries a
+		// non-'' lang, so other providers keep lang='' here and are unaffected (SMASH-1631).
+		$where['lang'] = $this->lang;
+		$where_format[] = '%s';
+
 		if ($strict_update) {
 			$where['provider_id'] = $this->get_provider_id();
 			$where_format[] = '%s';
@@ -358,6 +366,12 @@ class SinglePostCache {
 		$where_format = array();
 
 		$where['post_id'] = $this->post_data['review_id'];
+		$where_format[] = '%s';
+		// Scope by language, same reason as update_single(): without it a post_id-only
+		// UPDATE overwrites every sibling-language row for the review. Callers set
+		// $this->lang to the row's own language (or leave the '' default for non-lang
+		// providers), so this targets exactly the intended row (SMASH-1631).
+		$where['lang'] = $this->lang;
 		$where_format[] = '%s';
 		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
 		$error      = $wpdb->update($table_name, $data, $where, $format, $where_format);

@@ -379,6 +379,19 @@ class Feed
 						'info'         => json_encode($source_data['info'])
 					];
 					SBR_Sources::update($source_to_update);
+					// SMASH-1634: re-open this source's paginated backfill when its upstream
+					// review count grows, so new review batches load without a manual reset.
+					// Pro-only: the bulk backfill lives in the Pro plugin. Guard on
+					// sbr_is_pro() too — the Pro classes share this directory and stay
+					// autoloadable when only the Free plugin is active, so class_exists()
+					// alone would run this in Free (matches the convention below).
+					if (Util::sbr_is_pro() && class_exists('\\SmashBalloon\\Reviews\\Pro\\Services\\BulkUpdate\\Bulk_Reviews_Update')) {
+						\SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_Reviews_Update::maybe_rearm_source(
+							$provider,
+							$source_data['info']['id'],
+							isset($source_data['info']['total_rating']) ? $source_data['info']['total_rating'] : 0
+						);
+					}
 				}
 			}
 			return $remote_header_data;

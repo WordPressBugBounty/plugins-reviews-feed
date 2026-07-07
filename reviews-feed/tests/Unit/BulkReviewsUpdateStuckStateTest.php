@@ -77,7 +77,11 @@ class BulkReviewsUpdateStuckStateTest extends TestCase
 		$bulk = $this->makeBulkInstance($account_id, 'google');
 		$bulk->relay = $this->stubRelayWithEmptyReviews();
 		$bulk->endpoint = 'reviews/google';
-		$bulk->settings = [];
+		// A real feed always has a 'localization'; supply one so the bulk job's
+		// language resolver (Util::get_api_call_language, added in SMASH-1631)
+		// takes the direct path instead of the global-defaults fallback. Value
+		// is irrelevant to this test's retry/is_done assertions.
+		$bulk->settings = ['localization' => 'en'];
 		$bulk->provider = ['info' => '{"id":"' . $account_id . '"}'];
 
 		// Run the same code path the cron tick fires.
@@ -116,7 +120,11 @@ class BulkReviewsUpdateStuckStateTest extends TestCase
 		$bulk = $this->makeBulkInstance($account_id, 'google');
 		$bulk->relay = $this->stubRelayWithEmptyReviews();
 		$bulk->endpoint = 'reviews/google';
-		$bulk->settings = [];
+		// A real feed always has a 'localization'; supply one so the bulk job's
+		// language resolver (Util::get_api_call_language, added in SMASH-1631)
+		// takes the direct path instead of the global-defaults fallback. Value
+		// is irrelevant to this test's retry/is_done assertions.
+		$bulk->settings = ['localization' => 'en'];
 		$bulk->provider = ['info' => '{"id":"' . $account_id . '"}'];
 
 		$bulk->get_bulk_reviews();

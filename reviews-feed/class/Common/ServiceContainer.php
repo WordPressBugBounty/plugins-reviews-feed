@@ -12,6 +12,7 @@ use SmashBalloon\Reviews\Common\Admin\SBR_Plugin_Insltaller;
 use SmashBalloon\Reviews\Common\Admin\SBR_Support_Tool;
 use SmashBalloon\Reviews\Common\Builder\SBR_Feed_Builder;
 use SmashBalloon\Reviews\Common\Builder\SBR_New_Providers_Manager;
+use SmashBalloon\Reviews\Common\Integrations\Analytics\SB_Analytics;
 use SmashBalloon\Reviews\Common\Integrations\Providers\Google;
 use SmashBalloon\Reviews\Common\Integrations\Providers\Yelp;
 use SmashBalloon\Reviews\Common\Services\CLIService;
@@ -57,6 +58,7 @@ class ServiceContainer extends ServiceProvider
 		MigrationReactivationNotice::class,
 		Google::class,
 		Yelp::class,
+		SB_Analytics::class,
 		CLIService::class,
 		SBR_Feed_Saver_Manager::class,
 		SBR_New_Providers_Manager::class,

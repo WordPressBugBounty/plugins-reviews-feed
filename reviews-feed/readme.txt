@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.0
-Stable tag: 2.6.7
+Stable tag: 2.6.8
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,9 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.6.8 =
+* Improved: On multilingual sites using WPML, your Google reviews now show up fully translated in every language you offer — not just the first few. Whichever language a visitor is browsing in, they'll see all of your reviews in that language, including when they click "Load More".
+
 = 2.6.7 =
 * Fix: Minor fixes and plugin hardening.
 * Compatibility: Tested and confirmed compatible with WordPress 7.0.

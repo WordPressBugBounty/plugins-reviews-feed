@@ -32,6 +32,11 @@ class FeedCacheWpdbDouble
 	 * @param mixed  ...$args
 	 * @return string
 	 */
+	public function esc_like($text)
+	{
+		return addcslashes((string) $text, '_%\\');
+	}
+
 	public function prepare($sql, ...$args)
 	{
 		$this->last_prepared_sql  = $sql;

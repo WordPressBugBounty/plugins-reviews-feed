@@ -856,7 +856,10 @@ class SBR_Feed_Saver_Manager
 				case 'google':
 					$google = new Google($relay);
 					$settings = wp_parse_args(get_option('sbr_settings', []), sbr_plugin_settings_defaults());
-					$relay_args['language'] = $settings['localization'];
+					// Map the language (e.g. WPML es-mx -> es-419) instead of sending the
+					// raw 'localization' sentinel to Google; SBRelay drops it if 'default'
+					// (SMASH-1631, follow-up to SMASH-1617).
+					$relay_args['language'] = Util::get_api_call_language($settings);
 					$info = $google->getSourcesInfo($relay_args);
 					break;
 				case 'yelp':
@@ -1649,10 +1652,20 @@ class SBR_Feed_Saver_Manager
 	 *
 	 * @since 1..1
 	 */
-	public static function cache_single_posts_from_set($posts, $provider)
+	public static function cache_single_posts_from_set($posts, $provider, $lang = null)
 	{
 		$settings = wp_parse_args(get_option('sbr_settings', []), sbr_plugin_settings_defaults());
-		$lang = $settings['localization'];
+		// Tag cached reviews with the SAME mapped language the on-demand path uses
+		// (Feed::get_db_lang -> apiCallLanguage), not the raw 'localization'. On a
+		// WPML auto site the raw value is the sentinel 'wpml'; tagging bulk-fetched
+		// reviews 'wpml' while the on-demand page tags 'es-419' split them across
+		// two lang-keyed rows (SinglePostCache dedup keys on lang) (SMASH-1631).
+		//
+		// When the caller already knows the exact language it fetched in (the
+		// per-language bulk-history loop, SMASH-1631), it passes $lang so every
+		// batch is tagged with its own language — re-resolving here would mis-tag
+		// every batch as the cron's default language.
+		$lang = ($lang !== null) ? $lang : Util::get_api_call_language($settings);
 		$providers_no_media = sbr_get_no_media_providers();
 		$providers_lang = sbr_get_lang_providers();
 
