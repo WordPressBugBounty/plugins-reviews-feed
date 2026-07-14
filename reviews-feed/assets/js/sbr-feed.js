@@ -2530,7 +2530,12 @@ if(!sbr_js_exists) {
 		Sbr.prototype = {
 			createPage: function (createFeeds, createFeedsArgs) {
 				if (typeof window.sbrOptions.adminAjaxUrl === 'undefined' || window.sbrOptions.adminAjaxUrl.indexOf(window.location.hostname) === -1) {
-					window.sbrOptions.adminAjaxUrl = window.location.hostname + '/wp-admin/admin-ajax.php';
+					// Use location.origin (scheme + host [+ port]) so the rewritten URL
+					// is absolute. location.hostname alone drops the scheme AND the
+					// leading slash, so $.ajax treats it as a RELATIVE path and resolves
+					// it against the current page — e.g. on a cloned/staging domain the
+					// Load More POST hit /sample-page/host/wp-admin/admin-ajax.php → 404.
+					window.sbrOptions.adminAjaxUrl = window.location.origin + '/wp-admin/admin-ajax.php';
 				}
 				this.createFeeds(createFeedsArgs);
 			},
@@ -3198,9 +3203,29 @@ if(!sbr_js_exists) {
 					$self.find('.sb-load-button-ctn .sb-load-button').remove();
 				}
 				$self.find('.sb-load-button-ctn .sb-load-button').off().on('click', function () {
-					feed.afterLoadMoreClicked(jQuery(this));
-					feed.getNewPostSet();
+					var $button = jQuery(this);
+					// Overflow items are pre-rendered but hidden for the current
+					// breakpoint. The first click reveals them instead of also
+					// fetching a page, so reveal + fetch never stack (over-load bug).
+					if ($button.closest('.sb-feed-container').find('.sb-num-diff-hide').length) {
+						feed.revealHiddenPosts($button);
+					} else {
+						feed.afterLoadMoreClicked($button);
+						feed.getNewPostSet();
+					}
 				}); //End click event
+			},
+			revealHiddenPosts: function ($button) {
+				var $self = $(this.el),
+					$container = $button.closest('.sb-feed-container');
+				$container.find('.sb-num-diff-hide').addClass('sbr_transition').removeClass('sb-num-diff-hide');
+				if ($self.find('.sb-feed-posts').data('smashotope')) {
+					$self.find('.sb-feed-posts').smashotope('layout');
+				}
+				// Page 1 was already the last page: revealing is the final action.
+				if (this.settings.misc.flagLastPage) {
+					$container.find('.sb-load-button-ctn').remove();
+				}
 			},
 			getNewPostSet: function () {
 				var $self = $(this.el),

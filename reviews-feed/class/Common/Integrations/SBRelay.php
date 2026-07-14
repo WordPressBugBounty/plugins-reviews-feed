@@ -336,9 +336,30 @@ class SBRelay
 
 		$response = $callback($url, $args);
 
-		$body = !is_wp_error($response)
-			? json_decode(wp_remote_retrieve_body($response), true)
-			: [];
+		// SMASH-782: guarantee a clear, user-facing message when the relay is
+		// unreachable or errors at the HTTP layer. A WP_Error (DNS / timeout /
+		// connection refused) or a non-JSON 5xx body would otherwise decode to
+		// an empty array, which downstream reads as "Unexpected API response
+		// format" — a dev-facing dead end. Return a proper success=false
+		// envelope so add-source + the feed surface something the user gets.
+		if (is_wp_error($response)) {
+			$msg = __("Couldn't reach the reviews server. Please check your connection and try again in a moment.", 'reviews-feed');
+			SBR_Error_Handler::log_error(['id' => 'relayUnreachable', 'endpoint' => $url, 'apiMessage' => $response->get_error_message()]);
+			return ['id' => 'relayUnreachable', 'success' => false, 'message' => $msg, 'apiMessage' => $msg];
+		}
+
+		$status = (int) wp_remote_retrieve_response_code($response);
+		$body   = json_decode(wp_remote_retrieve_body($response), true);
+
+		// Reachable but no parseable JSON envelope (e.g. a 5xx HTML error page
+		// when an upstream RapidAPI call fails hard) — surface the HTTP status
+		// rather than an empty body. A 4xx WITH a valid envelope still has an
+		// array $body and flows to the normal error branch below.
+		if (!is_array($body) && ($status >= 400 || 0 === $status)) {
+			$msg = sprintf(__('The reviews server returned an error (HTTP %d). Please try again shortly.', 'reviews-feed'), $status);
+			SBR_Error_Handler::log_error(['id' => 'relayServerError', 'endpoint' => $url, 'apiMessage' => $msg]);
+			return ['id' => 'relayServerError', 'success' => false, 'message' => $msg, 'apiMessage' => $msg];
+		}
 
 		//Log API Error
 		if (

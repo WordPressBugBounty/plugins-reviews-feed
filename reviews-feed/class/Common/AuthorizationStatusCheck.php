@@ -101,9 +101,11 @@ class AuthorizationStatusCheck {
 			'trustpilot' => 2,
 			'woocommerce' => 2,
 			'edd' => 2,
-			'airbnb' => 2,
-			'booking' => 2,
+			// SMASH-782 tier split: AliExpress = Plus (e-commerce), Airbnb +
+			// Booking = Elite (travel). Mirrors relay LicenseTiers::getAllowedProviders().
 			'aliexpress' => 2,
+			'airbnb' => 3,
+			'booking' => 3,
 			'tripadvisor' => 3,
 			'wordpress.org' => 3
 		];
@@ -128,13 +130,17 @@ class AuthorizationStatusCheck {
 				$allowed[] = 'trustpilot';
 				$allowed[] = 'woocommerce';
 				$allowed[] = 'edd';
-				$allowed[] = 'airbnb';
-				$allowed[] = 'booking';
+				// SMASH-782 tier split: AliExpress ships on Plus (tier >= 2,
+				// e-commerce segment). Mirrors relay LicenseTiers::getAllowedProviders().
+				// Widening-only — Elite users keep it via this same block.
 				$allowed[] = 'aliexpress';
 			}
 			if ($this->get_license_tier() === 3) {
 				$allowed[] = 'tripadvisor';
 				$allowed[] = 'wordpress.org';
+				// Airbnb + Booking stay Elite-only (tier === 3, travel segment).
+				$allowed[] = 'airbnb';
+				$allowed[] = 'booking';
 			}
 		}
 		return $allowed;

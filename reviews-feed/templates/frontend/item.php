@@ -34,5 +34,27 @@ $show_icon = $provider_name !== '' && $provider_name !== 'none'
 			</span>
 		<?php } ?>
 		<?php $this->render_post_elements($post); ?>
+		<?php
+		// SMASH-782 Phase 2 — per-provider extras hook. After the standard
+		// element pipeline runs, include any provider-specific NEW elements
+		// (e.g. Airbnb host reply, Booking score badge + helpful count,
+		// AliExpress country flag + variants + translated + follow-up).
+		// The extras files live at templates/frontend/post-elements/extras/<provider>.php
+		// and contain ONLY the additive markup — they do NOT replace any
+		// of the legacy elements above. BC: providers without an extras
+		// file (Google, Yelp, EDD form-collected, etc.) render unchanged.
+		// Whitelist the provider slug before using it in a filesystem path.
+		// `$post['provider']['name']` is curated upstream (relay-controlled),
+		// but defense-in-depth: only allow lowercase ASCII letters/digits +
+		// `_` / `-` so a corrupted value can't reach `..` / absolute paths.
+		if ($provider_name !== '' && preg_match('/^[a-z][a-z0-9_-]*$/', $provider_name)) {
+			$provider_extras_path = trailingslashit(SBR_PLUGIN_DIR)
+				. 'templates/frontend/post-elements/extras/'
+				. $provider_name . '.php';
+			if (file_exists($provider_extras_path)) {
+				include $provider_extras_path;
+			}
+		}
+		?>
 	</div>
 </div>

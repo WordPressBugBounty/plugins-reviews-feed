@@ -171,7 +171,15 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			return;
 		}
 
-		// Get product
+		// Get product. function_exists guard makes the CI phpstan run (which
+		// loads WP stubs but not WooCommerce stubs) recognize the call as
+		// possibly-undefined, and gives correctness coverage if the WooCommerce
+		// plugin is deactivated between the UI's plugin-required check and the
+		// AJAX call landing here.
+		if (!function_exists('wc_get_product')) {
+			wp_send_json(['error' => 'api_error', 'message' => 'WooCommerce plugin is not active.']);
+			return;
+		}
 		$product = wc_get_product($product_id);
 		if (!$product) {
 			wp_send_json(['error' => 'api_error', 'message' => 'Invalid product. The product may have been deleted or does not exist.']);
@@ -333,6 +341,11 @@ class SBR_New_Providers_Manager extends ServiceProvider
 		$products_info = [];
 		$total_review_count = 0;
 		$weighted_rating_sum = 0;
+
+		if (!function_exists('wc_get_product')) {
+			wp_send_json(['error' => 'api_error', 'message' => 'WooCommerce plugin is not active.']);
+			return;
+		}
 
 		foreach ($product_ids as $product_id) {
 			$product = wc_get_product($product_id);
@@ -589,6 +602,11 @@ class SBR_New_Providers_Manager extends ServiceProvider
 		$products_info = [];
 		$total_review_count = 0;
 		$weighted_rating_sum = 0;
+
+		if (!function_exists('wc_get_product')) {
+			wp_send_json(['error' => 'api_error', 'message' => 'WooCommerce plugin is not active.']);
+			return;
+		}
 
 		foreach ($product_ids as $product_id) {
 			$product = wc_get_product($product_id);
@@ -1217,10 +1235,42 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			// Use SBRelay to fetch normalized data from Relay API
 			$relay = new SBRelay();
 
-			// Fetch reviews from the listing via Relay API
-			// Returns normalized data with 'reviews' and 'info' keys
-			$response = $relay->callProvider('airbnb', [
+			// SMASH-782 Phase 1: call /sources/<provider> BEFORE /reviews/<provider>.
+			// The relay's reviews route is gated by the source-must-exist check
+			// (post-SMASH-1360 quota hardening). Calling reviews first returns
+			// `reviewsSourceNotCreated`.
+			$source_response = $relay->callProvider('airbnb', [
 				'propertyId' => $listing_id
+			], 'source', 'GET');
+
+			// Surface upstream source-call errors so the customer sees the real cause
+			// instead of the downstream `reviewsSourceNotCreated`. See the AliExpress
+			// handler for the response-shape rationale.
+			if (isset($source_response['success']) && $source_response['success'] === false) {
+				// `SBRelay::call()` unwraps the `{success:false, data:{...}}` envelope on
+				// error responses (Integrations/SBRelay.php:357 — returns `$body['data']`
+				// when `$body['data']['id']` is set), so `apiMessage` lands at the TOP
+				// level of `$source_response`. Read the flat key first; the nested form
+				// stays as a defensive fallback for any path that doesn't unwrap.
+				$upstream_msg = $source_response['apiMessage']
+					?? $source_response['data']['apiMessage']
+					?? $source_response['message']
+					?? 'Unable to fetch Airbnb listing info from upstream.';
+				wp_send_json(['error' => 'api_error', 'message' => $upstream_msg]);
+				return;
+			}
+
+			$source_info_from_source = isset($source_response['info']) && is_array($source_response['info'])
+				? $source_response['info']
+				: [];
+
+			// Fetch reviews from the listing via Relay API.
+			// SMASH-782 Phase 1: include `place_id` so the relay's reviews
+			// middleware can find the source row (see AliExpress handler for
+			// the middleware-ordering rationale).
+			$response = $relay->callProvider('airbnb', [
+				'propertyId' => $listing_id,
+				'place_id' => $listing_id
 			], 'reviews', 'GET');
 
 			// Validate response structure - proxy returns { reviews: [], info: {} }
@@ -1233,9 +1283,16 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				return;
 			}
 
-			// Use normalized data from proxy
+			// Prefer source-endpoint info (has richer fields like name/image)
+			// over reviews-endpoint info; fall back to either for any missing key.
 			$normalized_reviews = $response['reviews'];
-			$source_info = $response['info'];
+			$reviews_info = is_array($response['info']) ? $response['info'] : [];
+			// Drop only null / empty-string keys (so missing source fields fall
+			// back to reviews-info), but KEEP legitimate falsy values like 0 or
+			// false (e.g. a genuine 0 rating) instead of stripping them.
+			$source_info = array_filter($source_info_from_source, function ($v) {
+				return $v !== null && $v !== '';
+			}) + $reviews_info;
 			$review_count = count($normalized_reviews);
 
 			$source_data = [
@@ -1333,22 +1390,34 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			}
 
 			try {
-				// Call resolve endpoint to get hotel_id from name/country
+				// Call resolve endpoint to get hotel_id from name/country. Send the
+				// slug too: the relay matches <cc>/<slug> exactly against search
+				// results BEFORE the fuzzy name match, which resolves the precise
+				// hotel even when its display name differs from the slug (names are
+				// not unique). Older relays ignore the extra field.
 				$resolve_response = $relay->callProvider('booking', [
 					'hotel_name' => $url_components['hotel_name'],
 					'country' => $url_components['country'],
+					'slug' => $url_components['slug'] ?? '',
+					'dest_id' => $url_components['dest_id'] ?? '',
+					'dest_type' => $url_components['dest_type'] ?? '',
 				], 'resolve', 'POST');
 
 				// Check if resolution was successful
 				if (isset($resolve_response['hotel_id'])) {
 					$hotel_id = $resolve_response['hotel_id'];
 				} else {
-					$error_msg = 'Could not find hotel. ';
-					if (isset($resolve_response['message'])) {
-						$error_msg .= $resolve_response['message'];
-					} else {
-						$error_msg .= 'Please provide the numeric hotel_id directly.';
-					}
+					// A generic upstream message ("Something went wrong!" / empty) reads as a
+					// dev dead end; give the customer an actionable next step instead of
+					// surfacing it verbatim. Only append the relay message when it's specific.
+					$relay_msg = isset($resolve_response['message']) ? trim((string) $resolve_response['message']) : '';
+					$generic   = ['', 'something went wrong', 'something went wrong!', 'error', 'unknown error', 'failed'];
+					$actionable = "We couldn't match this link to a specific Booking.com hotel. "
+						. "Two options that always work: open the hotel on Booking.com and copy the URL after clicking it from the search results (that link carries the hotel ID), "
+						. "or paste the numeric hotel ID directly into this field.";
+					$error_msg = in_array(strtolower($relay_msg), $generic, true)
+						? $actionable
+						: 'Could not find hotel. ' . $relay_msg . ' ' . $actionable;
 					wp_send_json(['error' => 'api_error', 'message' => $error_msg]);
 					return;
 				}
@@ -1372,10 +1441,55 @@ class SBR_New_Providers_Manager extends ServiceProvider
 		}
 
 		try {
-			// Fetch hotel info and reviews via Relay API (GET request)
-			// Returns normalized data with 'reviews' and 'info' keys
+			// SMASH-782 Phase 1: call /sources/<provider> BEFORE /reviews/<provider>.
+			// The relay's reviews route is gated by the source-must-exist check
+			// (post-SMASH-1360 quota hardening). Calling reviews first returns
+			// `reviewsSourceNotCreated`.
+			$source_response = $relay->callProvider('booking', [
+				'hotel_id' => $hotel_id,
+				'locale' => 'en-gb',
+			], 'source', 'GET');
+
+			// Surface upstream source-call errors so the customer sees the real cause
+			// instead of the downstream `reviewsSourceNotCreated`. See the AliExpress
+			// handler for the response-shape rationale.
+			if (isset($source_response['success']) && $source_response['success'] === false) {
+				// See airbnb handler comment — `SBRelay::call()` unwraps the data
+				// envelope on error, so `apiMessage` is at the top level.
+				$upstream_msg = $source_response['apiMessage']
+					?? $source_response['data']['apiMessage']
+					?? $source_response['message']
+					?? 'Unable to fetch Booking.com hotel info from upstream.';
+				wp_send_json(['error' => 'api_error', 'message' => $upstream_msg]);
+				return;
+			}
+
+			$source_info_from_source = isset($source_response['info']) && is_array($source_response['info'])
+				? $source_response['info']
+				: [];
+
+			// SMASH-782 — exact-match guard (fail closed). When the user supplied a
+			// hotel-page URL, the hotel we just fetched MUST be that exact hotel:
+			// its canonical Booking.com slug has to equal the URL's slug. This is
+			// the single guarantee that a wrong/fuzzy id can never import a
+			// different hotel's reviews. The decision (numeric-ID input skips it,
+			// empty/mismatched canonical rejects) lives in the unit-tested
+			// BookingCom::sourceUrlHotelMismatch().
+			$canonical_url = isset($source_info_from_source['canonical_url']) && is_string($source_info_from_source['canonical_url'])
+				? $source_info_from_source['canonical_url']
+				: '';
+			if (BookingCom::sourceUrlHotelMismatch($hotel_url, $canonical_url)) {
+				wp_send_json(['error' => 'api_error', 'message' => "We couldn't confirm this is the exact hotel from your link. Please paste the Booking.com hotel page URL again, or enter the numeric hotel ID."]);
+				return; // defense-in-depth: matches every other guard here even though wp_send_json exits
+			}
+
+			// Fetch hotel info and reviews via Relay API (GET request).
+			// SMASH-782 Phase 1: include `place_id` so the relay's reviews
+			// middleware can find the source row (see AliExpress handler for
+			// the middleware-ordering rationale).
 			$response = $relay->callProvider('booking', [
 				'hotel_id' => $hotel_id,
+				'place_id' => $hotel_id,
 				'sort_type' => 'SORT_MOST_RELEVANT',
 				'page_number' => 0,
 				'locale' => 'en-gb'
@@ -1391,9 +1505,16 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				return;
 			}
 
-			// Use normalized data from proxy
+			// Prefer source-endpoint info (has richer fields like name/image)
+			// over reviews-endpoint info; fall back to either for any missing key.
 			$normalized_reviews = $response['reviews'];
-			$source_info = $response['info'];
+			$reviews_info = is_array($response['info']) ? $response['info'] : [];
+			// Drop only null / empty-string keys (so missing source fields fall
+			// back to reviews-info), but KEEP legitimate falsy values like 0 or
+			// false (e.g. a genuine 0 rating) instead of stripping them.
+			$source_info = array_filter($source_info_from_source, function ($v) {
+				return $v !== null && $v !== '';
+			}) + $reviews_info;
 			$review_count = count($normalized_reviews);
 
 			// Use hotel name from URL if available, otherwise use proxy info
@@ -1498,10 +1619,46 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			// Use SBRelay to fetch normalized data from Relay API
 			$relay = new SBRelay();
 
-			// Fetch reviews from the product via Relay API
-			// Returns normalized data with 'reviews' and 'info' keys
+			// SMASH-782 Phase 1: call /sources/<provider> BEFORE /reviews/<provider>.
+			// The relay's reviews route is gated by the source-must-exist check
+			// (post-SMASH-1360 quota hardening). Calling reviews first returns
+			// `reviewsSourceNotCreated`. The source endpoint also creates the
+			// underlying source row server-side via sourceService->insert().
+			$source_response = $relay->callProvider('aliexpress', [
+				'itemId' => $item_id
+			], 'source', 'GET');
+
+			// Surface source-call errors immediately so the customer sees the
+			// real upstream cause instead of the downstream `reviewsSourceNotCreated`.
+			// Relay returns `{success: false, message, data: {id, apiMessage, ...}}`
+			// on upstream RapidAPI failure (e.g. invalid product ID, expired
+			// subscription, rate limit). When `callProvider()` unwraps a
+			// `success:true + data:{...}` envelope it returns the data subtree,
+			// so the error envelope reaches us unwrapped here.
+			if (isset($source_response['success']) && $source_response['success'] === false) {
+				// `SBRelay::call()` unwraps the data envelope on error so `apiMessage`
+				// is at the top level; keep the nested form as a backstop.
+				$upstream_msg = $source_response['apiMessage']
+					?? $source_response['data']['apiMessage']
+					?? $source_response['message']
+					?? 'Unable to fetch AliExpress product info from upstream.';
+				wp_send_json(['error' => 'api_error', 'message' => $upstream_msg]);
+				return;
+			}
+
+			$source_info = isset($source_response['info']) && is_array($source_response['info'])
+				? $source_response['info']
+				: [];
+
+			// Fetch reviews from the product via Relay API.
+			// SMASH-782 Phase 1: include `place_id` so the relay's reviews
+			// middleware (`LimitReviewsRequest::resolvePlaceId`) can find the
+			// source row that the source call just inserted. The
+			// `NormalizesRapidAPIParameters` trait only runs in the controller
+			// (after middleware), so middleware needs `place_id` explicitly.
 			$response = $relay->callProvider('aliexpress', [
 				'itemId' => $item_id,
+				'place_id' => $item_id,
 				'page' => 1,
 				'filter' => 'allReviews'
 			], 'reviews', 'GET');
@@ -1516,32 +1673,20 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				return;
 			}
 
-			// Use normalized data from proxy
+			// Use normalized data from proxy. Reviews response also carries an
+			// `info` block; prefer the source-endpoint info when it has the
+			// richer fields (name, image) populated, fall back to reviews-info
+			// or defaults for any missing key.
 			$normalized_reviews = $response['reviews'];
-			$source_info = $response['info'];
+			$reviews_info = is_array($response['info']) ? $response['info'] : [];
+			// Keep legitimate falsy values (0, false); drop only null / empty string.
+			$source_info = array_filter($source_info, function ($v) {
+				return $v !== null && $v !== '';
+			}) + $reviews_info;
 			$review_count = count($normalized_reviews);
 
-			// Fetch product details to get name and image via SBRelay (source endpoint)
 			$product_name = $source_info['name'] ?? 'AliExpress Product ' . $item_id;
 			$product_image = $source_info['image'] ?? '';
-
-			try {
-				$details_response = $relay->callProvider('aliexpress', [
-					'itemId' => $item_id
-				], 'source', 'GET');
-
-				// Use source info if available (has better product details)
-				if (isset($details_response['info'])) {
-					if (!empty($details_response['info']['name'])) {
-						$product_name = $details_response['info']['name'];
-					}
-					if (!empty($details_response['info']['image'])) {
-						$product_image = $details_response['info']['image'];
-					}
-				}
-			} catch (\Exception $e) {
-				// Continue with default values if product details fetch fails
-			}
 
 			$source_data = [
 				'id' => $item_id,
@@ -1675,8 +1820,45 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			// Build API parameters based on provider
 			$api_params = [$config['param_name'] => $source_id];
 
-			// Fetch reviews from API via SBRelay
-			// Returns normalized data with 'reviews' and 'info' keys
+			// SMASH-782: Booking's reviews endpoint needs sort/paging/locale to
+			// return results. The dedicated add_booking_source() handler (the path
+			// the Add-Source modal actually calls) sends these; mirror them here so
+			// the generic handler produces an identical call if it is ever used for
+			// Booking. airbnb/aliexpress are unaffected; the source endpoint ignores
+			// the extra keys.
+			if ($provider_name === 'booking') {
+				$api_params['sort_type']   = 'SORT_MOST_RELEVANT';
+				$api_params['page_number'] = 0;
+				$api_params['locale']      = 'en-gb';
+			}
+
+			// SMASH-782: call /source/<provider> BEFORE /reviews/<provider>, same as
+			// the provider-specific handlers (add_airbnb/booking/aliexpress_source).
+			// The relay's reviews route is gated by the source-must-exist check
+			// (post-SMASH-1360 quota hardening); calling reviews first returns
+			// `reviewsSourceNotCreated` / silent 0 reviews.
+			$source_response = $relay->callProvider($provider_name, $api_params, 'source', 'GET');
+			if (isset($source_response['success']) && $source_response['success'] === false) {
+				// SBRelay::call() unwraps the error envelope, so apiMessage is top-level.
+				$upstream_msg = $source_response['apiMessage']
+					?? $source_response['data']['apiMessage']
+					?? $source_response['message']
+					?? ('Unable to fetch ' . $config['friendly_name'] . ' source info from upstream.');
+				// wp_send_json() exits via wp_die() in production, but wp_die is
+				// mocked (non-exiting) under tests — return so execution stops in
+				// both, matching the reviews-error handler below.
+				wp_send_json(['error' => 'api_error', 'message' => $upstream_msg]);
+				return;
+			}
+			$source_info_from_source = isset($source_response['info']) && is_array($source_response['info'])
+				? $source_response['info']
+				: [];
+
+			// Fetch reviews from API via SBRelay. Include `place_id` so the relay's
+			// reviews middleware can find the source row (see the provider-specific
+			// handlers for the middleware-ordering rationale).
+			// Returns normalized data with 'reviews' and 'info' keys.
+			$api_params['place_id'] = $source_id;
 			$response = $relay->callProvider($provider_name, $api_params, 'reviews', 'GET');
 
 			// Validate response structure - proxy returns { reviews: [], info: {} }
@@ -1689,9 +1871,14 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				return;
 			}
 
-			// Use normalized data from proxy
+			// Use normalized data from proxy. Prefer the richer source-endpoint
+			// info, falling back to reviews-endpoint info for any missing key;
+			// keep legitimate falsy values (0, false), drop only null / ''.
 			$normalized_reviews = $response['reviews'];
-			$source_info = $response['info'];
+			$reviews_info = is_array($response['info']) ? $response['info'] : [];
+			$source_info = array_filter($source_info_from_source, function ($v) {
+				return $v !== null && $v !== '';
+			}) + $reviews_info;
 			$review_count = count($normalized_reviews);
 
 			// Prepare source data for database

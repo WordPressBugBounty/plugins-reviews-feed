@@ -1254,6 +1254,8 @@ class SBR_Customize_Tab extends SB_Sidebar_Tab {
 				'topLabel'      => __('Name', 'reviews-feed'),
 				'includeTop'    => true,
 				'enableSorting' => Util::sbr_is_pro() ? true : false,
+				// Canonical element order for the list (disabled/empty state falls back to this).
+				'defaultOrder'  => ['author', 'rating', 'text', 'media'],
 				'controls'   => [
 					[//Post Rating
 						'heading'   => __('Rating', 'reviews-feed'),
@@ -1312,7 +1314,15 @@ class SBR_Customize_Tab extends SB_Sidebar_Tab {
 									[
 										'type'              => 'font',
 										'id'                => 'paragraphFont',
-										'style'             => [ '.sb-item-text' => '{{value}}' ]
+										// `.sb-item-pros-cons` is Booking's review body (no `.sb-item-text`
+										// wrapper). Listed as its own selector key — not a comma-join — so the
+										// JS generator prefixes each with the container id; the Booking body then
+										// tracks the same paragraph font (size / weight / line-height) as every
+										// other provider instead of falling back to the base size. SMASH-782.
+										'style'             => [
+											'.sb-item-text'      => '{{value}}',
+											'.sb-item-pros-cons' => '{{value}}',
+										]
 									]
 								]
 							],

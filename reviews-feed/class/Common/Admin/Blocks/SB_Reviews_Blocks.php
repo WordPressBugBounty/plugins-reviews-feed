@@ -86,7 +86,7 @@ class SB_Reviews_Blocks extends ServiceProvider
 			)
 		);
 
-		add_filter( 'block_editor_settings_all', array( $this, 'inject_iframe_styles' ) );
+		add_filter('block_editor_settings_all', array( $this, 'inject_iframe_styles' ));
 	}
 
 	/**
@@ -101,7 +101,8 @@ class SB_Reviews_Blocks extends ServiceProvider
 	 * @param array $settings Block editor settings.
 	 * @return array
 	 */
-	public function inject_iframe_styles( $settings ) {
+	public function inject_iframe_styles($settings)
+	{
 		// Cache the CSS payload across the request lifecycle. block_editor_settings_all
 		// fires on every block-editor request (post editor, site editor, widget editor)
 		// and the CSS bytes on disk don't change between calls, so re-reading them is
@@ -112,29 +113,29 @@ class SB_Reviews_Blocks extends ServiceProvider
 		// is unreliable, and over-scoping would re-break the iframe styling fix.
 		static $cached = null;
 
-		if ( null === $cached ) {
+		if (null === $cached) {
 			$files = array(
-				trailingslashit( SBR_PLUGIN_DIR ) . 'assets/css/sbr-styles.min.css',
+				trailingslashit(SBR_PLUGIN_DIR) . 'assets/css/sbr-styles.min.css',
 			);
 
 			$cached = array();
-			foreach ( $files as $file ) {
-				if ( ! file_exists( $file ) ) {
+			foreach ($files as $file) {
+				if (! file_exists($file)) {
 					continue;
 				}
-				$css = file_get_contents( $file );
-				if ( false === $css ) {
+				$css = file_get_contents($file);
+				if (false === $css) {
 					continue;
 				}
 				$cached[] = array( 'css' => $css );
 			}
 		}
 
-		if ( ! isset( $settings['styles'] ) || ! is_array( $settings['styles'] ) ) {
+		if (! isset($settings['styles']) || ! is_array($settings['styles'])) {
 			$settings['styles'] = array();
 		}
 
-		foreach ( $cached as $entry ) {
+		foreach ($cached as $entry) {
 			$settings['styles'][] = $entry;
 		}
 
@@ -187,11 +188,12 @@ class SB_Reviews_Blocks extends ServiceProvider
 	 *
 	 * @since 2.5.1
 	 */
-	public function enqueue_block_content_assets() {
-		if ( ! is_admin() ) {
+	public function enqueue_block_content_assets()
+	{
+		if (! is_admin()) {
 			return;
 		}
-		sbr_scripts_enqueue( true );
+		sbr_scripts_enqueue(true);
 	}
 
 	/**
@@ -241,7 +243,7 @@ class SB_Reviews_Blocks extends ServiceProvider
 		$shortcodeSettings = '';
 		$feeds_list_option = $this->get_feed_list_options();
 
-		$is_script_debug = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) || ! empty( $_GET['sb_debug'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only debug flag, no state change.
+		$is_script_debug = ( defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ) || ! empty($_GET['sb_debug']); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only debug flag, no state change.
 
 		$sbr_js_file = $is_script_debug
 			? 'assets/js/sbr-feed.js'
@@ -250,7 +252,7 @@ class SB_Reviews_Blocks extends ServiceProvider
 		$jquery_file = 'js/jquery/jquery' . ( $is_script_debug ? '' : '.min' ) . '.js';
 
 		$sbr_options = array(
-			'adminAjaxUrl' => admin_url( 'admin-ajax.php' ),
+			'adminAjaxUrl' => admin_url('admin-ajax.php'),
 		);
 
 		$i18n = array(
@@ -275,8 +277,8 @@ class SB_Reviews_Blocks extends ServiceProvider
 				'shortcodeSettings'    	=> $shortcodeSettings,
 				'feedsListOption'    	=> $feeds_list_option,
 				'i18n'     				=> $i18n,
-				'iframeScriptUrl'   => trailingslashit( SBR_PLUGIN_URL ) . $sbr_js_file,
-				'jqueryUrl'         => includes_url( $jquery_file ),
+				'iframeScriptUrl'   => trailingslashit(SBR_PLUGIN_URL) . $sbr_js_file,
+				'jqueryUrl'         => includes_url($jquery_file),
 				'sbrOptions'        => $sbr_options,
 			]
 		);

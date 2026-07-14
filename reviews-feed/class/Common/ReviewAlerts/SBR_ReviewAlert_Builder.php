@@ -163,6 +163,9 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 			'iconsList'          => SB_Utils::get_icons(),
 			'reactScreen'        => $is_popup_editor ? 'reviewAlertEditor' : 'reviewAlerts',
 			'reviewAlerts' => $this->get_popups_data(),
+			// SMASH-782: default avatar for reviewers without a photo — same image
+			// the single feed falls back to, so the preview matches the frontend.
+			'defaultAvatar' => SB_COMMON_ASSETS . 'sb-customizer/assets/images/avatar.jpg',
 		];
 
 		// Add popup editor data when editing
@@ -185,7 +188,10 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 				'sb-customizer-style',
 				SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css',
 				[],
-				false
+				// Version by the plugin version so a rebuilt customizer bundle busts
+				// the browser cache on a plugin release (was `false` → WP core version,
+				// which never changed on a plugin update). SMASH-782.
+				defined('SBRVER') ? SBRVER : false
 			);
 		}
 
@@ -193,7 +199,7 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 			'sb-customizer-app',
 			$js_file,
 			['wp-i18n', 'jquery'],
-			false,
+			defined('SBRVER') ? SBRVER : false,
 			true
 		);
 

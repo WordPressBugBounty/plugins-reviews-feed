@@ -15,8 +15,11 @@ if (!defined('ABSPATH')) {
 // Get provider name
 $provider = !empty($post['provider']['name']) ? $post['provider']['name'] : '';
 
-// Providers with custom templates (only Booking.com has pros/cons and photos)
-$providers_with_custom_templates = ['booking'];
+// Providers with custom templates:
+// - booking: pros/cons + photos
+// - aliexpress: "Translated from original" indicator placed BEFORE the text
+//   (SMASH-782 Phase 2, matches prototype AliExpressCard.jsx)
+$providers_with_custom_templates = ['booking', 'aliexpress'];
 
 // Check if provider-specific template exists
 if (!empty($provider) && in_array($provider, $providers_with_custom_templates)) {
@@ -40,11 +43,14 @@ if (!empty($provider) && in_array($provider, $providers_with_custom_templates)) 
 // authoritative customer input. Add new entries here as providers gain
 // genuine review-title support.
 $providers_with_review_titles = array( 'edd' );
-$has_post_title               = in_array( $provider, $providers_with_review_titles, true )
-	&& ! empty( $post['title'] )
-	&& is_string( $post['title'] );
+$has_post_title               = in_array($provider, $providers_with_review_titles, true)
+	&& ! empty($post['title'])
+	&& is_string($post['title']);
+
+// Airbnb uses this default text path and joins the new-source section spacing.
+$sbr_text_section_class = ( $provider === 'airbnb' ) ? ' sbr-review-horizontal-element' : '';
 ?>
-<?php if ( $has_post_title ) : ?>
+<?php if ($has_post_title) : ?>
 	<?php
 	/*
 	 * HTML entity decode before esc_html: EDD Reviews' submission handler
@@ -55,11 +61,11 @@ $has_post_title               = in_array( $provider, $providers_with_review_titl
 	 * safe rendering and works equally well for providers that store raw
 	 * strings (decode of plain text is a no-op).
 	 */
-	$display_title = html_entity_decode( $post['title'], ENT_QUOTES, 'UTF-8' );
+	$display_title = html_entity_decode($post['title'], ENT_QUOTES, 'UTF-8');
 	?>
-<div class="sb-item-title"><?php echo sbr_neutralize_shortcodes(esc_html( $display_title )); ?></div>
+<div class="sb-item-title"><?php echo sbr_neutralize_shortcodes(esc_html($display_title)); ?></div>
 <?php endif; ?>
-<div class="sb-item-text sb-fs">
+<div class="sb-item-text sb-fs<?php echo esc_attr($sbr_text_section_class); ?>">
 	<?php echo sbr_neutralize_shortcodes(wp_kses_post(nl2br($this->get_review_text($post)))); ?>
 </div>
 <div class="sb-expand">

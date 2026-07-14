@@ -192,6 +192,26 @@ class RemoteRequest
 			$args['slug'] = $wordpressorg_args['slug'];
 		}
 
+		// SMASH-782 Phase 2 — RapidAPI providers (Airbnb, Booking, AliExpress)
+		// validate a provider-specific id param at the controller level
+		// (`property_id`/`hotel_id`/`item_id`). The relay's middleware reads
+		// place_id for source lookup, but the controller's `$request->validate()`
+		// requires the typed id and rejects the request with 422 when missing.
+		// Forward the source's business id under the correct param name so
+		// both validations pass. Mirrors the per-route alias logic in the
+		// relay's NormalizesRapidAPIParameters trait.
+		$rapidapi_id_param = [
+			'airbnb'     => 'property_id',
+			'booking'    => 'hotel_id',
+			'aliexpress' => 'item_id',
+		];
+		if (
+			isset($rapidapi_id_param[$this->provider])
+			&& !empty($this->args['business'])
+		) {
+			$args[$rapidapi_id_param[$this->provider]] = (string) $this->args['business'];
+		}
+
 		if ($this->provider !== 'facebook') {
 			$api_keys = get_option('sbr_apikeys', []);
 			if (!empty($api_keys[$this->provider])) {

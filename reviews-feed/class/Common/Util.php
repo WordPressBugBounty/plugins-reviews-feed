@@ -1513,7 +1513,7 @@ class Util
 		// A scalar here would fatal the foreach on PHP 8. Coerce a present
 		// non-array to [] (leave absent untouched — they're optional). Element
 		// shape is guarded at the loop sites (a flat URL-string element).
-		foreach (['media', 'reviews_photos'] as $image_key) {
+		foreach (['media', 'reviews_photos', 'reviewer_photos'] as $image_key) {
 			if (isset($review[$image_key]) && !is_array($review[$image_key])) {
 				$review[$image_key] = [];
 			}
@@ -1666,6 +1666,32 @@ class Util
 			$settings = sbr_plugin_settings_defaults();
 		}
 		return !empty($settings['optimize_images']) ? $settings['optimize_images'] : true;
+	}
+
+	/**
+	 * Convert an ISO-3166 alpha-2 country code to its regional-indicator flag emoji.
+	 *
+	 * Shared by the AliExpress feed author element (post-elements/author.php) and
+	 * the Review Alerts popup (review-alerts/popup.php) so both render the same
+	 * glyph from the same rules. Returns '' when the input is not a 2-letter code,
+	 * or when mbstring is unavailable (some shared hosts ship without it) — callers
+	 * simply skip the flag rather than fataling the render.
+	 *
+	 * @param string $cc Country code (e.g. "US", "de").
+	 * @return string The flag emoji, or '' if not derivable.
+	 */
+	public static function country_flag_emoji($cc)
+	{
+		$cc = trim((string) $cc);
+		// ISO-3166 alpha-2 only. ASCII regex, not ctype_alpha() — ctype_* is
+		// locale-dependent and can accept non-ASCII letters, which would flow
+		// into ord() and produce wrong codepoints (copilot #467).
+		if (! preg_match('/^[A-Za-z]{2}$/', $cc) || ! function_exists('mb_chr')) {
+			return '';
+		}
+		$up     = strtoupper($cc);
+		$offset = 0x1F1E6 - ord('A');
+		return mb_chr(ord($up[0]) + $offset, 'UTF-8') . mb_chr(ord($up[1]) + $offset, 'UTF-8');
 	}
 
 }

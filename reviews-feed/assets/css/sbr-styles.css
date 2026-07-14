@@ -111,6 +111,34 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
     fill: currentColor;
     margin: 0 2px;
 }
+/* Booking-only header: the hotel's real general-rating word (e.g. "Exceptional")
+   sits beside the 0-10 score in place of star icons. The score itself is badged
+   to match the per-card score badge (.sb-item-rating-score-badge), sized up a
+   touch for header prominence. SMASH-782. */
+/* 10px gap keeps the badge, the word and the "Over N Reviews" subtext evenly
+   spaced. The stars header gets its spacing from the icon-wrap margin; the
+   badge has none, so without this the subtext sits flush against it. */
+[id^=sb-reviews-container-] .sb-feed-header-average-booking{
+    gap: 10px;
+}
+[id^=sb-reviews-container-] .sb-feed-header-average-booking .sb-feed-header-rating{
+    background: #003580;
+    /* !important: the feed's header text-color rule otherwise wins and paints
+       the number dark-on-dark-blue (unreadable). The badge is always white. */
+    color: #fff !important;
+    font-weight: 700 !important;
+    /* !important so 16px/16px win over the feed's generated header-rating font
+       rule (#id .sb-feed-header-rating), which has higher (ID) specificity. */
+    font-size: 16px !important;
+    padding: 8px 6px;
+    border-radius: 6px 6px 6px 0;
+    min-width: auto;
+    text-align: center;
+    line-height: 16px !important;
+}
+[id^=sb-reviews-container-] .sb-feed-header-average-booking .sb-feed-header-rating-label{
+    font-weight: 600;
+}
 
 /*Posts Loop*/
 [data-layout="list"] .sb-post-item-wrap,
@@ -1313,13 +1341,18 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
 
 [id^=sb-reviews-container-] .sb-item-pros-cons {
     margin-bottom: 12px;
-    font-size: 0.95em;
+    clear: both;
 }
 
 [id^=sb-reviews-container-] .sb-item-pros,
 [id^=sb-reviews-container-] .sb-item-cons {
-    margin-bottom: 6px;
     line-height: 1.5;
+}
+[id^=sb-reviews-container-] .sb-item-pros {
+    margin-bottom: 6px;
+}
+[id^=sb-reviews-container-] .sb-reviewer-photos {
+    clear: both;
 }
 
 [id^=sb-reviews-container-] .sb-pros-label {
@@ -1474,3 +1507,238 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
 @keyframes sbr-spin {
     to { transform: rotate(360deg); }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   SMASH-782 Phase 2 — styles for NEW per-provider elements
+   These rules target only the new elements added by the extras/
+   templates (airbnb-reply, booking score badge + helpful, aliexpress
+   flag + variants + translated + followup). They do NOT touch the
+   existing card / author / rating / text / media markup. Hex fallbacks
+   inline so missing customizer tokens degrade gracefully.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* AliExpress: country flag (inline next to author row) */
+[id^="sb-reviews-container"] .sb-item-author-flag {
+    margin-left: 4px;
+    font-size: 14px;
+}
+
+/* AliExpress: translated indicator */
+[id^="sb-reviews-container"] .sb-item-translated {
+    font-size: 14px;
+    color: #B5B8C1;
+    font-style: italic;
+    margin-bottom: 6px;
+}
+
+/* AliExpress: variants pills (parsed from metadata.item_spec) */
+[id^="sb-reviews-container"] .sb-item-variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+[id^="sb-reviews-container"] .sb-item-variants-pill {
+    font-size: 12px;
+    color: #8C8F9A;
+    padding: 3px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}
+
+/* AliExpress: follow-up review (only renders when relay populates metadata.followup) */
+[id^="sb-reviews-container"] .sb-item-followup {
+    margin-top: 12px;
+    padding: 10px 0 10px 12px;
+    border-left: 1.5px solid #6b7280;
+}
+[id^="sb-reviews-container"] .sb-item-followup-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+[id^="sb-reviews-container"] .sb-item-followup-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #141B38;
+}
+[id^="sb-reviews-container"] .sb-item-followup-date {
+    font-size: 14px;
+    color: #8C8F9A;
+}
+[id^="sb-reviews-container"] .sb-item-followup-text {
+    font-size: 14px;
+    color: #434960;
+    line-height: 1.6;
+}
+
+/* Review section spacing. Each review section element carries
+   .sbr-review-horizontal-element and gets a uniform 12px bottom gap; the last
+   one drops it. Because the class sits on the section elements themselves (the
+   ones removed when a section is toggled off), hiding any section keeps the
+   spacing between the rest correct. The Rating keeps its own configurable
+   (ID-scoped) margin and collapses cleanly against this. Currently applied to
+   Booking; reusable for other providers. */
+[id^="sb-reviews-container"] .sbr-review-horizontal-element {
+    margin-bottom: 12px;
+}
+[id^="sb-reviews-container"] .sbr-review-horizontal-element:last-child {
+    margin-bottom: 0;
+}
+
+/* Booking: numeric score badge (8.7 Very Good) */
+[id^="sb-reviews-container"] .sb-item-rating-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+[id^="sb-reviews-container"] .sb-item-rating-score-badge {
+    background: #003580;
+    color: #fff;
+    font-weight: normal;
+    padding: 6px 4px;
+    border-radius: 6px 6px 6px 0;
+    min-width: 0;
+    text-align: center;
+    font-size: 14px;
+    line-height: 14px;
+}
+[id^="sb-reviews-container"] .sb-item-rating-score-label {
+    font-size: 14px;
+    color: #8C8F9A;
+}
+
+/* Booking: helpful count */
+[id^="sb-reviews-container"] .sb-item-helpful {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    color: #8C8F9A;
+    margin-top: 12px;
+}
+
+/* Reply block (Airbnb host reply + future Trustpilot company reply) */
+[id^="sb-reviews-container"] .sb-item-reply {
+    clear: both;
+    margin-top: 12px;
+    padding: 10px 0 10px 12px;
+    border-left: 1.5px solid #6b7280;
+}
+[id^="sb-reviews-container"] .sb-item-reply-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+[id^="sb-reviews-container"] .sb-item-reply-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+[id^="sb-reviews-container"] .sb-item-reply-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #141B38;
+}
+[id^="sb-reviews-container"] .sb-item-reply-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #141B38;
+}
+[id^="sb-reviews-container"] .sb-item-reply[data-from="host"] .sb-item-reply-label {
+    font-size: 12px;
+    margin-left: 1px;
+    border: 1px solid #141B38;
+    border-radius: 4px;
+    padding: 0 3px;
+}
+[id^="sb-reviews-container"] .sb-item-reply-text {
+    font-size: 14px;
+    color: #434960;
+    line-height: 1.65;
+}
+
+/* ── SMASH-782 Phase 2 — prototype parity refinements ─────────────────
+   - Hide the legacy star rating for Booking cards (score badge replaces it)
+   - Force inline display on new elements (legacy plugin styles force all
+     spans inside .sb-post-item to display:block, collapsing flex layouts)
+   - Helpful icon spacing
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Booking: prototype renders score badge IN PLACE of stars. The legacy
+   pipeline still emits .sb-item-rating with star SVGs nested as
+   .sb-item-rating > span > .sb-item-rating-ctn > .sb-item-rating-icon.
+   Hide the star container; score badge keeps showing because it lives
+   in .sb-item-rating-score (rendered by extras/booking.php). */
+[id^="sb-reviews-container"] .sb-post-item-wrap.sbr-provider-booking .sb-item-rating-ctn {
+    display: none !important;
+}
+
+/* Legacy plugin styles force all SPAN elements inside .sb-post-item to
+   `display: block` with `width: 0` for some descendants, which collapses
+   our prototype-style inline headers (reply-header, followup-header,
+   helpful, rating-score) into 0-width columns rendered against the
+   right edge of the card. Force the new elements' spans back to
+   inline/inline-flex AND set parent header widths to 100% so the flex
+   children expand and lay out horizontally. `!important` is required
+   to outrank the more-specific legacy rules. */
+[id^="sb-reviews-container"] .sb-item-reply-name,
+[id^="sb-reviews-container"] .sb-item-reply-label,
+[id^="sb-reviews-container"] .sb-item-followup-label,
+[id^="sb-reviews-container"] .sb-item-followup-date,
+[id^="sb-reviews-container"] .sb-item-rating-score-badge,
+[id^="sb-reviews-container"] .sb-item-rating-score-label,
+[id^="sb-reviews-container"] .sb-item-helpful-count,
+[id^="sb-reviews-container"] .sb-item-author-flag {
+    display: inline-block !important;
+    width: auto !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+[id^="sb-reviews-container"] .sb-item-reply-header,
+[id^="sb-reviews-container"] .sb-item-followup-header,
+[id^="sb-reviews-container"] .sb-item-rating-score,
+[id^="sb-reviews-container"] .sb-item-helpful {
+    width: 100% !important;
+    box-sizing: border-box;
+}
+/* Reduce the rating block padding for Booking since stars are hidden */
+[id^="sb-reviews-container"] .sb-post-item-wrap.sbr-provider-booking .sb-item-rating {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Helpful icon inline alignment with text */
+[id^="sb-reviews-container"] .sb-item-helpful-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+}
+[id^="sb-reviews-container"] .sb-item-helpful-count {
+    line-height: 1.4;
+}
+
+/* ── SMASH-782 — per-section read-more (Booking pros/cons) ──────────────
+   Pure-CSS toggle: a hidden checkbox flipped by the `…` label swaps the
+   truncated text for the full text. Used because the shared sbr-feed.js
+   truncation only handles a single .sb-item-text per card, which Booking
+   has none of. Scoped to .sbr-readmore-* so it never touches other
+   providers' JS-driven .sb-expand. */
+[id^="sb-reviews-container"] .sbr-readmore-full {
+    display: none;
+}
+[id^="sb-reviews-container"] .sbr-readmore-toggle:checked ~ .sbr-readmore-short {
+    display: none;
+}
+[id^="sb-reviews-container"] .sbr-readmore-toggle:checked ~ .sbr-readmore-full {
+    display: inline;
+}
+[id^="sb-reviews-container"] .sb-readmore-label {
+    cursor: pointer;
+}
+

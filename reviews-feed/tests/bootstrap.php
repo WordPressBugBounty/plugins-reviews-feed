@@ -48,6 +48,13 @@ if (!defined('SBR_POSTS_TABLE')) {
 	define('SBR_POSTS_TABLE', 'sbr_reviews_posts');
 }
 
+// Sources table name — mirrors the runtime define so tests exercising the
+// external-provider refresh path (SBR_Sources::sources_by_providers) resolve
+// the constant instead of erroring on an undefined constant.
+if (!defined('SBR_SOURCES_TABLE')) {
+	define('SBR_SOURCES_TABLE', 'sbr_sources');
+}
+
 // Mock WordPress functions used in tested code
 if (!function_exists('sanitize_text_field')) {
 	function sanitize_text_field($str)
@@ -206,6 +213,9 @@ if (!function_exists('do_action')) {
 // Transient stubs for silent-reactivation rate-limit + notice-payload tests.
 // Stored in a dedicated global ($wp_transients_mock) so tests can manipulate
 // them independently from $wp_options_mock.
+if (!defined('HOUR_IN_SECONDS')) {
+	define('HOUR_IN_SECONDS', 3600);
+}
 if (!defined('DAY_IN_SECONDS')) {
 	define('DAY_IN_SECONDS', 86400);
 }
@@ -356,9 +366,32 @@ if (!function_exists('wp_schedule_single_event')) {
 	}
 }
 
+// Recurring-event recorder so scheduling logic (idempotency, recurrence) is
+// unit-testable: wp_schedule_event() records into $wp_scheduled_events_mock and
+// wp_next_scheduled() reads it back. Tests reset the global in setUp().
+if (!function_exists('wp_schedule_event')) {
+	function wp_schedule_event($timestamp, $recurrence, $hook, $args = [], $wp_error = false)
+	{
+		global $wp_scheduled_events_mock;
+		if (!is_array($wp_scheduled_events_mock)) {
+			$wp_scheduled_events_mock = [];
+		}
+		$wp_scheduled_events_mock[$hook] = [
+			'timestamp'  => $timestamp,
+			'recurrence' => $recurrence,
+			'args'       => $args,
+		];
+		return true;
+	}
+}
+
 if (!function_exists('wp_next_scheduled')) {
 	function wp_next_scheduled($hook, $args = [])
 	{
+		global $wp_scheduled_events_mock;
+		if (is_array($wp_scheduled_events_mock) && isset($wp_scheduled_events_mock[$hook])) {
+			return $wp_scheduled_events_mock[$hook]['timestamp'];
+		}
 		return false;
 	}
 }
@@ -366,6 +399,10 @@ if (!function_exists('wp_next_scheduled')) {
 if (!function_exists('wp_clear_scheduled_hook')) {
 	function wp_clear_scheduled_hook($hook, $args = [], $wp_error = false)
 	{
+		global $wp_scheduled_events_mock;
+		if (is_array($wp_scheduled_events_mock)) {
+			unset($wp_scheduled_events_mock[$hook]);
+		}
 		return 0;
 	}
 }

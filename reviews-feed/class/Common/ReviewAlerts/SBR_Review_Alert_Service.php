@@ -1160,6 +1160,8 @@ class SBR_Review_Alert_Service extends ServiceProvider
 			'totalReviews'    => $result['totalReviews'],
 			'unfilteredTotal' => $result['unfilteredTotal'],
 			'averageRating'   => $result['averageRating'],
+			// SMASH-782: booking-only alerts show Booking's native 0-10 score + word.
+			'bookingHeader'   => $result['bookingHeader'] ?? null,
 		]);
 	}
 
@@ -1346,6 +1348,12 @@ class SBR_Review_Alert_Service extends ServiceProvider
 				$decoded_name = html_entity_decode($reviewer_name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 				$reviewer_avatar = is_array($reviewer) ? ($reviewer['avatar'] ?? '') : '';
+				// SMASH-782: the provider-specific payload (metadata/reply/response/
+				// reviewer_photos/source) comes from the SAME shared extractor the
+				// frontend formatter uses, so preview and frontend can't drift on which
+				// keys survive. The core shape below stays preview-specific (relativeDate
+				// + string provider) because the React preview consumes it differently
+				// than the JS cycler.
 				$complete_reviews[] = [
 					'id'           => $review['review_id'] ?? $review['id'] ?? uniqid(),
 					'reviewer'     => [
@@ -1354,9 +1362,10 @@ class SBR_Review_Alert_Service extends ServiceProvider
 					],
 					'rating'       => (int) $rating,
 					'text'         => $decoded_text,
+					'title'        => isset($review['title']) ? html_entity_decode((string) $review['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8') : '',
 					'relativeDate' => self::get_relative_date($review['time'] ?? 0),
 					'provider'     => $review_provider ?: 'unknown',
-				];
+				] + SBR_Review_Alert_Frontend::extract_provider_payload($review);
 			}
 		}
 
@@ -1365,7 +1374,7 @@ class SBR_Review_Alert_Service extends ServiceProvider
 		// Backfill from the FULL cached set (get_posts()), matching FeedDisplay and
 		// the frontend path — not the page slice — so the preview headline can't
 		// under-count providers with a zero API total.
-		[$total_reviews, $average_rating] = SBR_Review_Alert_Frontend::resolve_header_totals(
+		[$total_reviews, $average_rating, $booking_header] = SBR_Review_Alert_Frontend::resolve_header_totals(
 			$feed,
 			$feed->get_posts(),
 			$total_matching,
@@ -1377,6 +1386,7 @@ class SBR_Review_Alert_Service extends ServiceProvider
 			'totalReviews'    => $total_reviews,
 			'unfilteredTotal' => $unfiltered_total,
 			'averageRating'   => $average_rating,
+			'bookingHeader'   => $booking_header,
 		];
 	}
 

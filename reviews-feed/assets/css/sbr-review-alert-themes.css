@@ -478,6 +478,48 @@
     color: var(--sbr-popup-text);
 }
 
+/* SMASH-782: Booking native 0-10 score — shown INSTEAD of stars for Booking
+   reviews in the compact card and expanded view. Byte-for-byte the same look as
+   the single feed's per-card score (.sb-item-rating-score / -badge / -label):
+   blue badge + grey word label, with Booking's signature square-bottom-left
+   badge corner. Blue is Booking's brand (not the theme accent) so it reads as a
+   Booking score across Light/Dark/Minimal. */
+.sbr-review-alert__score {
+    display: flex;
+    align-self: flex-start; /* hug content in the flex-column layout, don't stretch */
+    align-items: center;
+    gap: 8px;
+}
+
+.sbr-review-alert__score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 4px;
+    border-radius: 6px 6px 6px 0; /* Booking signature: square bottom-left */
+    font-family: var(--sbr-popup-font);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 14px;
+    color: #fff;
+}
+
+.sbr-review-alert__score-badge--booking {
+    background-color: #003580; /* Booking.com brand blue */
+}
+
+.sbr-review-alert__score-label {
+    font-family: var(--sbr-popup-font);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: #8c8f9a; /* matches feed .sb-item-rating-score-label */
+}
+
+.sbr-review-alert__expanded-score {
+    margin-bottom: 6px;
+}
+
 /* Dark theme rating value - now handled by semantic tokens */
 
 /* ==========================================================================
@@ -598,6 +640,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid var(--sbr-popup-badge-border);
+    overflow: hidden; /* clip full-color square logos (Booking/AliExpress) to the round badge */
 }
 
 .sbr-review-alert__provider-badge img,
@@ -623,34 +666,34 @@
    Background elements (rects, circles) are hidden to ensure single-color icons
    work properly across all themes. This prevents multi-layer icons (e.g., WooCommerce,
    Facebook, TripAdvisor, Zomato) from having invisible foregrounds when both
-   background and foreground are forced to the same color. */
-.sbr-review-alert__provider-badge svg,
-.sbr-review-alert__provider-badge svg path,
-.sbr-review-alert__provider-badge svg g {
+   background and foreground are forced to the same color.
+
+   Exception: providers whose icon is a full-color brand TILE (colored background
+   + contrasting foreground) must keep their original colors and NOT have their
+   background stripped — the flatten collapses bg+fg to one color, hiding the
+   logo:
+   - Booking.com — <path> blue tile + white "B".
+   - AliExpress — single <rect> filled with an embedded image pattern.
+   - Facebook — blue circle + white "f" (was a solid blue blob on light).
+   - Zomato — red <rect> tile + white wordmark (was faint/invisible).
+   All excluded so their real logos render (matching the feed), clipped to the
+   round badge via overflow:hidden above. Monochrome/line icons (google, yelp,
+   tripadvisor, trustpilot, woocommerce, edd, wordpress.org, airbnb) still get
+   the theme-aware single-color treatment. */
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg,
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg path,
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg g {
     fill: var(--sbr-popup-badge-icon) !important;
 }
 
 /* Hide background elements in provider badges - many icons have colored
-   backgrounds (rects, circles) that conflict with single-color theming */
-.sbr-review-alert__provider-badge svg > rect,
-.sbr-review-alert__provider-badge svg > circle,
-.sbr-review-alert__provider-badge svg g > rect:first-child,
-.sbr-review-alert__provider-badge svg g > circle:first-child {
+   backgrounds (rects, circles) that conflict with single-color theming.
+   Booking / AliExpress / Facebook / Zomato excluded (full-color logos kept). */
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg > rect,
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg > circle,
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg g > rect:first-child,
+.sbr-review-alert__provider-badge:not([data-provider="booking"]):not([data-provider="aliexpress"]):not([data-provider="facebook"]):not([data-provider="zomato"]) svg g > circle:first-child {
     fill: transparent !important;
-}
-
-/* Facebook icon fix for dark themes:
-   Facebook SVG has two paths (circle background + "f" letter) instead of rect/circle + path.
-   On dark themes, we need the circle path white and the "f" path dark for contrast.
-   Use data-provider attribute to target ONLY Facebook, not other providers like Google. */
-.sbr-review-alert--dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:first-child,
-.sbr-review-alert--minimal-dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:first-child {
-    fill: var(--sbr-popup-white) !important;
-}
-
-.sbr-review-alert--dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:last-child,
-.sbr-review-alert--minimal-dark .sbr-review-alert__provider-badge[data-provider="facebook"] svg > g > path:last-child {
-    fill: var(--sbr-popup-badge-bg) !important;
 }
 
 /* ==========================================================================
@@ -2274,4 +2317,116 @@
     .sbr-review-alert__card {
         border: 1px solid CanvasText;
     }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SMASH-782 — new-source provider body elements in the popup.
+   Styled with the semantic --sbr-popup-* vars (remapped per theme) so Light /
+   Dark / Minimal all inherit without per-theme blocks.
+   ───────────────────────────────────────────────────────────────────────── */
+.sbr-review-alert__pros-cons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--sbr-popup-text);
+}
+.sbr-review-alert__pc {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+.sbr-review-alert__pc-mark {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1;
+    margin-top: 2px;
+}
+.sbr-review-alert__pc--pro .sbr-review-alert__pc-mark { background: rgba(0, 130, 52, 0.14); color: #12a150; }
+.sbr-review-alert__pc--con .sbr-review-alert__pc-mark { background: var(--sbr-popup-bg-inner); color: var(--sbr-popup-text-muted); }
+.sbr-review-alert__helpful {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--sbr-popup-text-muted);
+}
+
+/* SMASH-782: On dark + minimal-dark themes the booking pros/cons smiley icons
+   (green "pro" + near-black "con") are hard to read on the dark card. Recolor
+   both to a soft light gray so they stay visible. Shared CSS, so this covers
+   the frontend popup AND the admin React preview.
+   NOTE: target the __pc--pro/--con row classes (real JSX classNames) rather
+   than the sb-item-*-icon classes — the latter live only inside inline-SVG
+   strings and get tree-shaken out of the customizer bundle. */
+.sbr-review-alert--dark .sbr-review-alert__pc--pro svg path,
+.sbr-review-alert--dark .sbr-review-alert__pc--con svg path,
+.sbr-review-alert--minimal-dark .sbr-review-alert__pc--pro svg path,
+.sbr-review-alert--minimal-dark .sbr-review-alert__pc--con svg path {
+    fill: #c9ccd6 !important;
+}
+.sbr-review-alert__ali-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+.sbr-review-alert__buyer-flag { font-size: 15px; line-height: 1; }
+.sbr-review-alert__translated {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--sbr-popup-text-muted);
+}
+.sbr-review-alert__variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+}
+.sbr-review-alert__variant-pill {
+    font-size: 11px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--sbr-popup-bg-inner);
+    /* The pill bg (--sbr-popup-bg-inner) is a mid/dark tone on the default,
+       dark, and minimal-dark themes, where the muted text read poorly. Use
+       white for readability. Minimal (light) has a light pill bg, so it keeps
+       the muted text below. SMASH-782. */
+    color: #fff;
+}
+.sbr-review-alert--minimal .sbr-review-alert__variant-pill {
+    color: var(--sbr-popup-text-muted);
+}
+.sbr-review-alert__reply {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--sbr-popup-bg-inner);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--sbr-popup-text);
+}
+.sbr-review-alert__reply-label {
+    display: block;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--sbr-popup-text-muted);
+    margin-bottom: 2px;
+}
+
+/* SMASH-782 — Booking-only aggregate header: native 0-10 score + word in place of 0-5 stars. */
+.sbr-review-alert__booking-word {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-top: 2px;
+    color: var(--sbr-popup-text);
 }

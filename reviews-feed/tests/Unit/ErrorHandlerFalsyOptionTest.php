@@ -67,6 +67,7 @@ class ErrorHandlerFalsyOptionTest extends TestCase
 		$stored = SBR_Error_Handler::get_errors();
 		$this->assertIsArray($stored);
 		$this->assertCount(1, $stored);
+		// @phpstan-ignore-next-line — assertCount above guarantees offset 0; get_errors() returns an untyped array.
 		$this->assertSame('feed_1', $stored[0]['id']);
 	}
 
@@ -122,7 +123,9 @@ class ErrorHandlerFalsyOptionTest extends TestCase
 
 		$stored = SBR_Error_Handler::get_errors();
 		$this->assertCount(2, $stored);
+		// @phpstan-ignore-next-line — assertCount above guarantees offset 0; get_errors() returns an untyped array.
 		$this->assertSame('feed_1', $stored[0]['id']);
+		// @phpstan-ignore-next-line — assertCount above guarantees offset 1.
 		$this->assertSame('feed_2', $stored[1]['id']);
 	}
 }

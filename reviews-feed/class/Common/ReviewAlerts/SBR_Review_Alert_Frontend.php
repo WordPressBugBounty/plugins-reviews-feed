@@ -517,6 +517,7 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		$reviews = $result['reviews'];
 		$total_reviews = $result['totalReviews'];
 		$average_rating = $result['averageRating'];
+		$booking_header = $result['bookingHeader'] ?? null; // SMASH-782: booking-only 0-10 header.
 
 		// Don't render if no reviews available
 		if (empty($reviews)) {
@@ -524,7 +525,7 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		}
 
 		// Prepare frontend configuration
-		$config = $this->get_frontend_config($popup, $reviews, $total_reviews, $average_rating);
+		$config = $this->get_frontend_config($popup, $reviews, $total_reviews, $average_rating, $booking_header);
 
 		// Output config as inline script (wp_localize_script doesn't work in footer after script was enqueued in head)
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON encoding handles escaping
@@ -647,13 +648,14 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		// Backfill from the FULL cached set (get_posts()), exactly like
 		// FeedDisplay::backfill_review_counts — not the page slice — so providers
 		// whose API returned a zero count aren't under-counted vs the feed header.
-		[$total_reviews, $average_rating] = self::resolve_header_totals($feed, $feed->get_posts(), $cached_count, $cached_sum);
+		[$total_reviews, $average_rating, $booking_header] = self::resolve_header_totals($feed, $feed->get_posts(), $cached_count, $cached_sum);
 
 		// Pass up to MAX_POPUP_REVIEWS - JS shows a first batch, then loads the rest on "See all".
 		return [
 			'reviews'       => array_slice($complete_reviews, 0, self::MAX_POPUP_REVIEWS),
 			'totalReviews'  => $total_reviews,
 			'averageRating' => $average_rating,
+			'bookingHeader' => $booking_header,
 		];
 	}
 
@@ -669,7 +671,8 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 	 * @param array  $cached_reviews Cached review rows (for count backfill).
 	 * @param int    $cached_count   Count of cached complete reviews (fallback total).
 	 * @param int    $cached_sum     Sum of cached complete-review ratings (fallback avg).
-	 * @return array{0: int, 1: float} [total_reviews, average_rating]
+	 * @return array{0: int, 1: float, 2: array} [total_reviews, average_rating, booking_header]
+	 *               booking_header = {is_booking_only:bool, score:float, word:string} (SMASH-782).
 	 */
 	public static function resolve_header_totals($feed, array $cached_reviews, int $cached_count, int $cached_sum): array
 	{
@@ -688,7 +691,15 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 			$average = $cached_count > 0 ? round($cached_sum / $cached_count, 1) : 5.0;
 		}
 
-		return [$total, $average];
+		// SMASH-782: a booking-only alert shows Booking's native 0-10 count-weighted
+		// score + word (matching the feed header) instead of the 0-5 star average.
+		// Reuses the exact feed helper so the two can't drift. Third return element;
+		// callers that only need [total, average] destructure the first two (BC).
+		$booking = \SmashBalloon\Reviews\Common\FeedDisplay::get_booking_header_rating(
+			is_array($businesses) ? $businesses : []
+		);
+
+		return [$total, $average, $booking];
 	}
 
 	/**
@@ -827,7 +838,7 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 	 * @param float $average_rating Average rating from all matching reviews
 	 * @return array Configuration for frontend JS
 	 */
-	private function get_frontend_config(array $popup, array $reviews, int $total_reviews, float $average_rating): array
+	private function get_frontend_config(array $popup, array $reviews, int $total_reviews, float $average_rating, ?array $booking_header = null): array
 	{
 		$settings = $popup['settings'];
 		$review_feed = $settings['review_feed'] ?? [];
@@ -835,6 +846,9 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		return [
 			'popupId'       => $popup['id'],
 			'pluginUrl'     => trailingslashit(SBR_PLUGIN_URL),
+			// SMASH-782: default avatar for reviewers without a photo (same image
+			// the single feed uses) so the cycler can fall back to it, not a "?".
+			'defaultAvatar' => SB_COMMON_ASSETS . 'sb-customizer/assets/images/avatar.jpg',
 			'theme'         => $settings['theme'] ?? 'default',
 			'variation'     => $settings['variation'] ?? 'v1',
 			'popupType'     => $settings['popup_type'] ?? 'aggregate', // 'aggregate' or 'recent'
@@ -875,10 +889,17 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 			'i18n'          => [
 				/* translators: %s: reviewer name */
 				'reviewerHeadingTemplate' => __('%s left us a review', 'reviews-feed'),
+				// SMASH-782: labels the JS cycler needs to rebuild the provider block
+				// per review (so pros/cons, translated, host reply update on rotation).
+				'translatedText'          => __('Translated from original', 'reviews-feed'),
+				'hostLabel'               => __('Host', 'reviews-feed'),
+				'helpfulSingular'         => __('%d person found this helpful', 'reviews-feed'),
+				'helpfulPlural'           => __('%d people found this helpful', 'reviews-feed'),
 			],
 			'reviews'       => $this->format_reviews_for_frontend($reviews),
 			'totalReviews'  => $total_reviews,
 			'averageRating' => $average_rating,
+			'bookingHeader' => $booking_header,
 		];
 	}
 
@@ -916,9 +937,10 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 				'UTF-8'
 			);
 
-			$formatted[] = [
+			$row = [
 				'id'          => $review['review_id'] ?? uniqid(),
 				'text'        => $text,
+				'title'       => isset($review['title']) ? html_entity_decode((string) $review['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8') : '',
 				'rating'      => (int) ($review['rating'] ?? 5),
 				'time'        => $review['time'] ?? '',
 				'reviewer'    => [
@@ -929,9 +951,42 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 					'name' => $provider_name,
 				],
 			];
+
+			// SMASH-782: append the provider-specific payload via the shared
+			// extractor so the frontend and the builder-preview formatters can't
+			// drift on which keys survive (dropping one silently breaks a body
+			// element — that happened repeatedly during 782 development).
+			$formatted[] = $row + self::extract_provider_payload($review);
 		}
 
 		return $formatted;
+	}
+
+	/**
+	 * Provider-specific payload forwarded to the popup body, as a whitelist.
+	 *
+	 * Single source of truth shared by this frontend formatter and the builder
+	 * preview formatter (SBR_Review_Alert_Service::get_preview_reviews) so the
+	 * two can never disagree on which provider fields reach the renderer.
+	 *
+	 * Rendered now (popup.php, React preview, and the JS cycler): Booking
+	 * pros/cons + helpful, AliExpress translated + buyer-flag + variants, Airbnb
+	 * reply. Forwarded for future use (not yet rendered): reviewer_photos,
+	 * source. Each value is coerced to a safe shape. Purely additive — add a new
+	 * provider field HERE and both render paths pick it up at once.
+	 *
+	 * @param array $review Raw review row.
+	 * @return array{metadata: array, reply: array, response: string, reviewer_photos: array, source: array}
+	 */
+	public static function extract_provider_payload(array $review): array
+	{
+		return [
+			'metadata'        => is_array($review['metadata'] ?? null) ? $review['metadata'] : [],
+			'reply'           => is_array($review['reply'] ?? null) ? $review['reply'] : [],
+			'response'        => is_string($review['response'] ?? null) ? $review['response'] : '',
+			'reviewer_photos' => is_array($review['reviewer_photos'] ?? null) ? $review['reviewer_photos'] : [],
+			'source'          => is_array($review['source'] ?? null) ? $review['source'] : [],
+		];
 	}
 
 }
