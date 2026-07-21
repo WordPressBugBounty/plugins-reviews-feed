@@ -99,8 +99,12 @@ class Util
 				'name' => 'TripAdvisor',
 				'heading' => __('Page URL', 'reviews-feed'),
 				'placeholder' => __('https://tripadvisor.com/...', 'reviews-feed'),
+				// API key is OPTIONAL: the relay falls back to a shared TripAdvisor
+				// Content API key when none is sent, so the add-source flow must keep
+				// the Skip button. 'apiKey' => true still shows the (optional) key step;
+				// dropping 'mandatoryApiKey' stops the customizer from hiding Skip and
+				// gating Next on a non-empty field. (SMASH-1690 / WPSA #71949)
 				'apiKey' => true,
-				'mandatoryApiKey'    => true,
 				'docLink' => 'https://smashballoon.com/doc/creating-a-tripadvisor-api-key/?utm_campaign=' . $campaign . '&utm_source=settings&utm_medium=docs'
 			],
 			[

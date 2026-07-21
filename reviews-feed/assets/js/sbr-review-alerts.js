@@ -1331,7 +1331,11 @@
 		 */
 		parseItemSpec(spec) {
 			if (!spec) return [];
-			const matches = spec.match(/([A-Za-z][A-Za-z0-9 _-]*):([^\s][^\s]*(?:\s+[^\s:]+)*?)(?=\s+[A-Za-z][A-Za-z0-9 _-]*:|$)/g) || [];
+			// Cap length before the match-all regex: it can backtrack catastrophically
+			// on a long malformed item_spec (ReDoS). Real specs are short. Mirrors the
+			// single-feed cap in PostText.js (cd239ad).
+			const capped = String(spec).slice(0, 500);
+			const matches = capped.match(/([A-Za-z][A-Za-z0-9 _-]*):([^\s][^\s]*(?:\s+[^\s:]+)*?)(?=\s+[A-Za-z][A-Za-z0-9 _-]*:|$)/g) || [];
 			return matches.map((v) => v.trim().replace(/^([^:]+):\s*/, '$1: '));
 		}
 

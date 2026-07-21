@@ -1313,6 +1313,10 @@ class SBR_New_Providers_Manager extends ServiceProvider
 					'rating' => $source_info['rating'] ?? 0,
 					'total_rating' => $source_info['review_count'] ?? $review_count,
 					'review_count' => $source_info['review_count'] ?? $review_count,
+					// Location (e.g. "Rome") from the relay's getPropertyDetails. Persisted
+					// so the sources-list subtitle shows the address instead of falling back
+					// to the generic "airbnb Reviews" (Source.js:123 reads info.address).
+					'address' => $source_info['address'] ?? '',
 					'provider' => 'airbnb'
 				]),
 				'error' => '',

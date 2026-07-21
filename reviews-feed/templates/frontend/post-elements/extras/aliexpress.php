@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AliExpress extras — additive per-provider markup (SMASH-782 Phase 2).
  *
@@ -27,7 +28,12 @@ if (!defined('ABSPATH')) {
 
 // Parse both sections, then render follow-up BEFORE variants to match the
 // prototype AliExpressCard.jsx order.
-$item_spec = isset($post['metadata']['item_spec']) ? trim((string) $post['metadata']['item_spec']) : '';
+// Cap before the match-all regex (defense-in-depth): the pattern can backtrack
+// heavily on a long malformed item_spec. Real specs are short. Mirrors the JS cap.
+// Guard mb_substr for environments without mbstring (plugin convention, see
+// text-booking.php:56).
+$item_spec_raw = isset($post['metadata']['item_spec']) ? trim((string) $post['metadata']['item_spec']) : '';
+$item_spec     = function_exists('mb_substr') ? mb_substr($item_spec_raw, 0, 500) : substr($item_spec_raw, 0, 500);
 $variants  = [];
 if ($item_spec !== '') {
 	preg_match_all('/([A-Za-z][A-Za-z0-9 _-]*):([^\s][^\s]*(?:\s+[^\s:]+)*?)(?=\s+[A-Za-z][A-Za-z0-9 _-]*:|$)/', $item_spec, $matches);
@@ -57,7 +63,7 @@ $has_followup = $followup !== null && (! empty($followup['text']) || ! empty($fo
 <div class="sb-item-variants sb-fs sbr-review-horizontal-element">
 	<?php foreach ($variants as $variant) :
 		$variant_pretty = preg_replace('/^([^:]+):\s*/', '$1: ', trim($variant));
-	?>
+		?>
 	<span class="sb-item-variants-pill"><?php echo esc_html($variant_pretty); ?></span>
 	<?php endforeach; ?>
 </div>

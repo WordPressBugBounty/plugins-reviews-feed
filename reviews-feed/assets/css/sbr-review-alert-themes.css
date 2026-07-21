@@ -2378,9 +2378,9 @@
     gap: 8px;
     margin-top: 6px;
 }
-.sbr-review-alert__buyer-flag { font-size: 15px; line-height: 1; }
+.sbr-review-alert__buyer-flag { font-size: 14px; line-height: 1; }
 .sbr-review-alert__translated {
-    font-size: 11px;
+    font-size: 12px;
     font-style: italic;
     color: var(--sbr-popup-text-muted);
 }
@@ -2388,38 +2388,49 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 6px;
+    margin-top: 10px;
     margin-bottom: 8px;
 }
+/* SMASH-782: match the single-feed variant pill (.sb-item-variants-pill) so the
+   alert reads identically to the feed — an OUTLINED box (1px border, 4px radius,
+   transparent bg, muted text), not a filled rounded pill. The border/text derive
+   from the popup's muted token so it stays legible on Light / Dark / Minimal. */
 .sbr-review-alert__variant-pill {
-    font-size: 11px;
-    padding: 2px 9px;
-    border-radius: 999px;
-    background: var(--sbr-popup-bg-inner);
-    /* The pill bg (--sbr-popup-bg-inner) is a mid/dark tone on the default,
-       dark, and minimal-dark themes, where the muted text read poorly. Use
-       white for readability. Minimal (light) has a light pill bg, so it keeps
-       the muted text below. SMASH-782. */
-    color: #fff;
-}
-.sbr-review-alert--minimal .sbr-review-alert__variant-pill {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid color-mix(in oklch, var(--sbr-popup-text-muted) 35%, transparent);
+    background: transparent;
     color: var(--sbr-popup-text-muted);
 }
+/* SMASH-782: match the single-feed host reply (.sb-item-reply, sb-common.css) —
+   a LEFT-BORDER block, NOT a filled box. The old filled --sbr-popup-bg-inner
+   background rendered as an unreadable accent "blob" on the accent/dark themes.
+   Same geometry/feel as the feed; only the text + left-border colors come from
+   the popup theme tokens so it stays readable on Light / Dark / Minimal. */
 .sbr-review-alert__reply {
-    margin-top: 8px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: var(--sbr-popup-bg-inner);
+    clear: both;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    padding: 10px 0 10px 12px;
+    border-left: 1.5px solid color-mix(in oklch, var(--sbr-popup-text-muted) 55%, transparent);
+    background: transparent;
     font-size: 12px;
-    line-height: 1.45;
+    line-height: 1.6;
     color: var(--sbr-popup-text);
 }
 .sbr-review-alert__reply-label {
-    display: block;
+    display: inline-block;
     font-weight: 600;
-    font-size: 11px;
-    color: var(--sbr-popup-text-muted);
+    font-size: 12px;
+    color: var(--sbr-popup-text);
     margin-bottom: 2px;
+}
+.sbr-review-alert__reply-text {
+    display: block;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--sbr-popup-text);
 }
 
 /* SMASH-782 — Booking-only aggregate header: native 0-10 score + word in place of 0-5 stars. */

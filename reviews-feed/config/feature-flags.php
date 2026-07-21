@@ -21,7 +21,7 @@ return [
 	 * spec-compliance ask in .claude/docs/SMASH-782-DESIGN-HANDOFF.md is in.
 	 */
 	'disabled_providers' => [
-		'airbnb',
+//		'airbnb',
 //		'booking',
 		'aliexpress',
 	],
