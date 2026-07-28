@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.0
-Stable tag: 2.8.0
+Stable tag: 2.9.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -204,6 +204,10 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.9.0 =
+* Improved: The upgrade prompts for our premium review sources — Airbnb, Booking.com, AliExpress and Easy Digital Downloads — now show each service's own branding, for a clearer, more consistent look.
+* Maintenance: behind-the-scenes improvements and compatibility updates.
+
 = 2.8.0 =
 * Fix: You can now add a TripAdvisor source without entering an API key — the API key step now has a Skip option.
 * Maintenance: behind-the-scenes improvements and compatibility updates.

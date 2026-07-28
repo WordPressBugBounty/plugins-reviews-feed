@@ -120,7 +120,7 @@ class Tooltip_Wizard extends ServiceProvider
 	{
 		?>
 		<div id="sbr-gutenberg-tooltip-content">
-			<div class="sbr-tlp-wizard-cls sbr-tlp-wizard-close"></div>
+			<button type="button" class="sbr-tlp-wizard-cls sbr-tlp-wizard-close" aria-label="<?php echo esc_attr__('Close', 'reviews-feed'); ?>"></button>
 			<div class="sbr-tlp-wizard-content">
 				<strong class="sbr-tooltip-wizard-head">
 					<?php echo esc_html__('Add a Block', 'reviews-feed') ?>

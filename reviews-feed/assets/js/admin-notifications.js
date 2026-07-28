@@ -41,7 +41,8 @@ var SBRAdminNotifications = window.SBRAdminNotifications || ( function( document
 		 */
 		init: function() {
 			el.$notifications.find( '.messages a').each(function() {
-				if ($(this).attr('href').indexOf('dismiss=') > -1 ) {
+				var href = $(this).attr('href');
+				if (href && href.indexOf('dismiss=') > -1 ) {
 					$(this).addClass('button-dismiss');
 				}
 			})
@@ -192,17 +193,22 @@ var SBRAdminNotifications = window.SBRAdminNotifications || ( function( document
 			el.$nextMessage = el.$currentMessage.next( '.message' );
 			el.$prevMessage = el.$currentMessage.prev( '.message' );
 
-			if ( el.$nextMessage.length === 0 ) {
-				el.$nextButton.addClass( 'disabled' );
-			} else {
-				el.$nextButton.removeClass( 'disabled' );
-			}
+			app.setNavState( el.$nextButton, el.$nextMessage.length === 0 );
+			app.setNavState( el.$prevButton, el.$prevMessage.length === 0 );
+		},
 
-			if ( el.$prevMessage.length === 0 ) {
-				el.$prevButton.addClass( 'disabled' );
-			} else {
-				el.$prevButton.removeClass( 'disabled' );
-			}
+		/**
+		 * Sync a nav button's disabled class with its native disabled state.
+		 *
+		 * The nav controls are real <button> elements, so toggling the native
+		 * `disabled` property keeps them out of the tab order and conveys the
+		 * disabled state to assistive tech. The `disabled` class is kept for CSS.
+		 *
+		 * @param {object}  $btn       jQuery-wrapped nav button.
+		 * @param {boolean} isDisabled Whether the button should be disabled.
+		 */
+		setNavState: function( $btn, isDisabled ) {
+			$btn.toggleClass( 'disabled', isDisabled ).prop( 'disabled', isDisabled );
 		},
 	};
 

@@ -1164,7 +1164,7 @@ class Util
 			'eddProvider' => [
 				'heading' => __('Upgrade to Pro to display Easy Digital Downloads reviews', 'reviews-feed'),
 				'description' => __('Upgrade to our "Plus" tier to display download reviews from your EDD store.', 'reviews-feed'),
-				'image' => 'upsell-woocommerce.png',
+				'image' => 'upsell-edd.png',
 				'buttons' => [
 					'lite' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=all-feeds&utm_medium=edd-modal&utm_content=LiteUsers50OFF',
 					'upgrade' => 'https://smashballoon.com/pricing/reviews-feed/?utm_campaign=reviews-free&utm_source=customizer&utm_medium=edd-modal&utm_content=Upgrade'
@@ -1173,7 +1173,7 @@ class Util
 			],
 			'airbnbProvider' => [
 				'heading' => __('Upgrade to Pro to display Airbnb reviews', 'reviews-feed'),
-				'description' => __('Upgrade to our "Plus" tier to display reviews from the popular accommodation platform.', 'reviews-feed'),
+				'description' => __('Upgrade to our "Elite" tier to display reviews from the popular accommodation platform.', 'reviews-feed'),
 				'image' => 'upsell-airbnb.png',
 				'buttons' => [
 					'lite' => 'https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_campaign=reviews-free&utm_source=all-feeds&utm_medium=airbnb-modal&utm_content=LiteUsers50OFF',
@@ -1183,7 +1183,7 @@ class Util
 			],
 			'bookingProvider' => [
 				'heading' => __('Upgrade to Pro to display Booking.com reviews', 'reviews-feed'),
-				'description' => __('Upgrade to our "Plus" tier to display reviews from the leading travel booking site.', 'reviews-feed'),
+				'description' => __('Upgrade to our "Elite" tier to display reviews from the leading travel booking site.', 'reviews-feed'),
 				'image' => 'upsell-booking.png',
 				'buttons' => [
 					'lite' => 'https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_campaign=reviews-free&utm_source=all-feeds&utm_medium=booking-modal&utm_content=LiteUsers50OFF',

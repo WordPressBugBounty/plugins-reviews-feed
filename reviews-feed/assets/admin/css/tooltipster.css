@@ -486,6 +486,13 @@ corresponds to the arrow we want to display */
     right: 14px;
     top: 14px;
     cursor: pointer;
+    /* Reset native <button> chrome (close control converted from <div> for keyboard a11y). */
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .sbr-tlp-wizard-cls:before,

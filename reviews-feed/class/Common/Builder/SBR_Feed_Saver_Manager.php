@@ -1159,22 +1159,26 @@ class SBR_Feed_Saver_Manager
 
 	public static function get_place_id_tripadvisor($place_url)
 	{
-		// probably a place ID
+		$place_url = trim((string) $place_url);
+
+		// The TripAdvisor location id is the "-d<digits>" token, present in every
+		// listing URL form: Attraction_Review / Hotel_Review / Restaurant_Review,
+		// short or long, any TLD (.com/.ca/.co.uk), with or without a trailing
+		// "-Reviews-...html". "g" is the geo id, "d" is the location id — only "d".
+		// Match this FIRST so scheme-less pastes (e.g. "tripadvisor.com/...", which
+		// FILTER_VALIDATE_URL rejects) still resolve to the id.
+		if (preg_match('/-d(\d{4,})/i', $place_url, $matches)) {
+			return $matches[1];
+		}
+
+		// No location token — a bare location id (e.g. "2422991") passes through.
 		if ((bool) filter_var($place_url, FILTER_VALIDATE_URL) === false) {
 			return $place_url;
 		}
 
+		// Legacy fallback: last path segment (matches get_place_id() behaviour).
 		$broken_up = explode('/', $place_url);
-
-		foreach ($broken_up as $url_piece) {
-			if (strpos($url_piece, '.html') !== false) {
-				preg_match('/-d+\d{0,10}-/i', $url_piece, $matches, PREG_OFFSET_CAPTURE);
-				if (! empty($matches[0])) {
-					return str_replace(array('-', 'd'), '', $matches[0][0]);
-				}
-			}
-		}
-		return $place_url;
+		return end($broken_up);
 	}
 
 	//WordPress Org Theme/Plugin Source

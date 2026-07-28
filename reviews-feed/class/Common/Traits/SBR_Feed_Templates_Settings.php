@@ -82,7 +82,7 @@ trait SBR_Feed_Templates_Settings {
 		$settings['loadButtonHoverBg'] = '#0096CC';
 
 		//Colors
-		$settings['headerButtonBg'] = '#0096CC';
+		$settings['headerButtonBg'] = '#0077A3'; // a11y: 5.0:1 with white text (was #0096CC, 3.37:1)
 		$settings['headerAvReviewIconColor'] = '#0096CC';
 		$settings['ratingIconColor'] = '#0096CC';
 
@@ -143,7 +143,7 @@ trait SBR_Feed_Templates_Settings {
 		$settings['loadButtonHoverBg'] = '#0096CC';
 
 		//Colors
-		$settings['headerButtonBg'] = '#0096CC';
+		$settings['headerButtonBg'] = '#0077A3'; // a11y: 5.0:1 with white text (was #0096CC, 3.37:1)
 		$settings['headerAvReviewIconColor'] = '#0096CC';
 		$settings['ratingIconColor'] = '#0096CC';
 		return $settings;
@@ -209,7 +209,7 @@ trait SBR_Feed_Templates_Settings {
 		$settings['loadButtonHoverBg'] = '#0096CC';
 
 		//Colors
-		$settings['headerButtonBg'] = '#0096CC';
+		$settings['headerButtonBg'] = '#0077A3'; // a11y: 5.0:1 with white text (was #0096CC, 3.37:1)
 		$settings['headerAvReviewIconColor'] = '#0096CC';
 		$settings['ratingIconColor'] = '#0096CC';
 		return $settings;
@@ -273,7 +273,7 @@ trait SBR_Feed_Templates_Settings {
 		$settings['loadButtonHoverBg'] = '#0096CC';
 
 		//Colors
-		$settings['headerButtonBg'] = '#0096CC';
+		$settings['headerButtonBg'] = '#0077A3'; // a11y: 5.0:1 with white text (was #0096CC, 3.37:1)
 		$settings['headerAvReviewIconColor'] = '#0096CC';
 		$settings['ratingIconColor'] = '#0096CC';
 		return $settings;

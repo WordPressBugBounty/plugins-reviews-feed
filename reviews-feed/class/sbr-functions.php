@@ -439,6 +439,22 @@ function sbr_scripts_enqueue($enqueue = false)
 
 	$data = array(
 		'adminAjaxUrl'  => admin_url('admin-ajax.php'),
+		// Translatable strings for JS-injected accessible names and SR announcements (WCAG 3.1.2).
+		'a11y'          => array(
+			/* translators: %s: number of reviews just loaded. Announced to screen readers after Load More. */
+			'reviewLoaded'     => __('%s review loaded.', 'reviews-feed'),
+			/* translators: %s: number of reviews just loaded. Announced to screen readers after Load More. */
+			'reviewsLoaded'    => __('%s reviews loaded.', 'reviews-feed'),
+			'allReviewsShown'  => __('All reviews shown.', 'reviews-feed'),
+			'photoViewer'      => __('Review photo viewer', 'reviews-feed'),
+			'previousPhoto'    => __('Previous photo', 'reviews-feed'),
+			'nextPhoto'        => __('Next photo', 'reviews-feed'),
+			'closePhotoViewer' => __('Close photo viewer', 'reviews-feed'),
+			'close'            => __('Close', 'reviews-feed'),
+			'previous'         => __('Previous', 'reviews-feed'),
+			'next'             => __('Next', 'reviews-feed'),
+			'reviewerPhoto'    => __('Reviewer photo', 'reviews-feed'),
+		),
 	);
 	//Pass option to JS file
 	wp_localize_script('sbr_scripts', 'sbrOptions', $data);

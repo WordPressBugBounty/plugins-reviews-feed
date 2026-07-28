@@ -26,11 +26,11 @@ $is_edd_source = $provider_name === 'edd' && ! empty($post['business']['id'] ?? 
 $show_icon = $provider_name !== '' && $provider_name !== 'none'
 	&& (! in_array($provider_name, $no_icon, true) || $is_edd_source);
 ?>
-<div class="sb-post-item-wrap sb-new <?php echo esc_attr($item_classes); ?>">
+<div class="sb-post-item-wrap sb-new <?php echo esc_attr($item_classes); ?>"<?php if (($settings['layout'] ?? '') !== 'carousel') : ?> role="listitem"<?php endif; ?>>
 	<div class="sb-post-item">
 		<?php if ($show_icon) { ?>
 			<span class="sb-item-provider-icon">
-				<img src="<?php echo esc_html($this->provider_icon_url($post, $settings)); ?>" alt="<?php echo esc_html($this->parser->get_provider_name($post)); ?>" />
+				<img src="<?php echo esc_html($this->provider_icon_url($post, $settings)); ?>" alt="<?php echo esc_attr(sprintf(/* translators: %s: review provider, e.g. Google */ __('Review from %s', 'reviews-feed'), ucwords($provider_name))); ?>" />
 			</span>
 		<?php } ?>
 		<?php $this->render_post_elements($post); ?>

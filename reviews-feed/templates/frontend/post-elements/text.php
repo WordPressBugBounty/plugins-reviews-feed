@@ -69,8 +69,8 @@ $sbr_text_section_class = ( $provider === 'airbnb' ) ? ' sbr-review-horizontal-e
 	<?php echo sbr_neutralize_shortcodes(wp_kses_post(nl2br($this->get_review_text($post)))); ?>
 </div>
 <div class="sb-expand">
-	<a href="#" data-link="<?php echo esc_url($this->more_link($post)); ?>">
-		<span class="sb-more">...</span>
-	</a>
+	<button type="button" data-link="<?php echo esc_url($this->more_link($post)); ?>" aria-label="<?php esc_attr_e('Read the full review', 'reviews-feed'); ?>">
+		<span class="sb-more" aria-hidden="true">...</span>
+	</button>
 </div>
 

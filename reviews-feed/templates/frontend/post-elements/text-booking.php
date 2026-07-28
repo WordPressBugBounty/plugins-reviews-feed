@@ -61,9 +61,13 @@ $render_prosncons = function (string $text, string $uid) use ($prosncons_limit):
 	}
 	$id = esc_attr($uid);
 	// All dynamic parts escaped via esc_attr() / wp_kses_post(); static markup is safe.
-	echo '<input type="checkbox" id="' . $id . '" class="sbr-readmore-toggle" hidden />'
+	// a11y (SMASH-1383): the checkbox is the keyboard-operable control — never
+	// `hidden` (display:none is unfocusable); CSS visually hides it while the
+	// label stays the pointer affordance. Name lives on the input; the label's
+	// ellipsis glyph is decorative for AT.
+	echo '<input type="checkbox" id="' . $id . '" class="sbr-readmore-toggle" aria-label="' . esc_attr__('Show the full text', 'reviews-feed') . '" />'
 		. '<span class="sbr-readmore-short">' . sbr_neutralize_shortcodes(wp_kses_post(nl2br($short)))
-		. '<label for="' . $id . '" class="sb-expand sb-readmore-label"><span class="sb-more">&hellip;</span></label></span>'
+		. '<label for="' . $id . '" class="sb-expand sb-readmore-label" aria-hidden="true"><span class="sb-more">&hellip;</span></label></span>'
 		. '<span class="sbr-readmore-full">' . sbr_neutralize_shortcodes(wp_kses_post(nl2br($text))) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 };
 

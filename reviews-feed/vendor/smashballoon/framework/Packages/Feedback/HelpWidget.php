@@ -218,11 +218,28 @@ class HelpWidget
              * @param string $url Default URL with UTM params.
              */
             'allAccessUrl' => apply_filters('sb_help_widget_all_access_url', self::ALL_ACCESS_URL),
-            'i18n' => ['descriptionTooShort' => __('Too short. Try adding at least a sentence.', 'sb-common'), 'rateLimitTitle' => __('Too many requests', 'sb-common'), 'rateLimitMessage' => __('Please wait a moment and try again.', 'sb-common'), 'errorTitle' => __('Something went wrong', 'sb-common'), 'errorMessage' => sprintf(
-                /* translators: %s: support email link HTML */
-                __('Please try again. If the problem persists, email us at %s', 'sb-common'),
-                '<a href="mailto:support@smashballoon.com">support@smashballoon.com</a>'
-            )],
+            'i18n' => [
+                'descriptionTooShort' => __('Too short. Try adding at least a sentence.', 'sb-common'),
+                'rateLimitTitle' => __('Too many requests', 'sb-common'),
+                'rateLimitMessage' => __('Please wait a moment and try again.', 'sb-common'),
+                'errorTitle' => __('Something went wrong', 'sb-common'),
+                'errorMessage' => sprintf(
+                    /* translators: %s: support email link HTML */
+                    __('Please try again. If the problem persists, email us at %s', 'sb-common'),
+                    '<a href="mailto:support@smashballoon.com">support@smashballoon.com</a>'
+                ),
+                // FAB toggle labels + live-region announcements (a11y: keep these
+                // translatable rather than hardcoded English in the JS).
+                'openHelpMenu' => __('Open help menu', 'sb-common'),
+                'closeHelpMenu' => __('Close help menu', 'sb-common'),
+                'announceOpened' => __('Help menu opened', 'sb-common'),
+                'announceClosed' => __('Help menu closed', 'sb-common'),
+                'announceFeatureForm' => __('Feature request form', 'sb-common'),
+                'announceBrowsePlugins' => __('Browse plugins', 'sb-common'),
+                'announceBackToMenu' => __('Back to help menu', 'sb-common'),
+                'announceSubmitted' => __('Feature request submitted successfully', 'sb-common'),
+                'announceError' => __('Error submitting feature request', 'sb-common'),
+            ],
         ];
         $asset_url = $this->get_asset_url();
         wp_enqueue_script('sb-help-widget', $asset_url . 'help-widget.js', [], $this->get_version(), \true);
@@ -306,11 +323,11 @@ class HelpWidget
         ?>" aria-expanded="false" data-help-trigger>
 				<span class="sb-hw-fab-icon sb-hw-fab-icon--help">
 					<!-- IoHelp icon (react-icons/io5) — exact SVG from package -->
-					<svg width="28" height="28" viewBox="0 0 512 512" fill="currentColor" stroke="currentColor" stroke-width="0"><path fill="none" stroke-linecap="round" stroke-miterlimit="10" stroke-width="40" d="M160 164s1.44-33 33.54-59.46C212.6 88.83 235.49 84.28 256 84c18.73-.23 35.47 2.94 45.48 7.82C318.59 100.2 352 120.6 352 164c0 45.67-29.18 66.37-62.35 89.18S248 298.36 248 324"/><circle cx="248" cy="399.99" r="32"/></svg>
+					<svg aria-hidden="true" focusable="false" width="28" height="28" viewBox="0 0 512 512" fill="currentColor" stroke="currentColor" stroke-width="0"><path fill="none" stroke-linecap="round" stroke-miterlimit="10" stroke-width="40" d="M160 164s1.44-33 33.54-59.46C212.6 88.83 235.49 84.28 256 84c18.73-.23 35.47 2.94 45.48 7.82C318.59 100.2 352 120.6 352 164c0 45.67-29.18 66.37-62.35 89.18S248 298.36 248 324"/><circle cx="248" cy="399.99" r="32"/></svg>
 				</span>
 				<span class="sb-hw-fab-icon sb-hw-fab-icon--close">
 					<!-- Phosphor X (bold) -->
-					<svg width="26" height="26" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></svg>
+					<svg aria-hidden="true" focusable="false" width="26" height="26" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></svg>
 				</span>
 			</button>
 
@@ -329,7 +346,7 @@ class HelpWidget
 							<button type="button" class="sb-hw-close" aria-label="<?php 
         esc_attr_e('Close', 'sb-common');
         ?>">
-								<svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></svg>
 							</button>
 							<h2 class="sb-hw-title"><?php 
         /* translators: Line break for visual layout — keeps "How can we" on line 1. */
@@ -340,7 +357,7 @@ class HelpWidget
 							<button type="button" class="sb-hw-home-card" data-action="feature">
 								<span class="sb-hw-home-card-icon sb-hw-home-card-icon--amber">
 									<!-- Phosphor Hand (regular) — exact path from @phosphor-icons/react -->
-									<svg width="28" height="28" viewBox="0 0 256 256" fill="currentColor"><path d="M188,48a27.75,27.75,0,0,0-12,2.71V44a28,28,0,0,0-54.65-8.6A28,28,0,0,0,80,60v64l-3.82-6.13a28,28,0,0,0-48.6,27.82c16,33.77,28.93,57.72,43.72,72.69C86.24,233.54,103.2,240,128,240a88.1,88.1,0,0,0,88-88V76A28,28,0,0,0,188,48Zm12,104a72.08,72.08,0,0,1-72,72c-20.38,0-33.51-4.88-45.33-16.85C69.44,193.74,57.26,171,41.9,138.58a6.36,6.36,0,0,0-.3-.58,12,12,0,0,1,20.79-12,1.76,1.76,0,0,0,.14.23l18.67,30A8,8,0,0,0,96,152V60a12,12,0,0,1,24,0v60a8,8,0,0,0,16,0V44a12,12,0,0,1,24,0v76a8,8,0,0,0,16,0V76a12,12,0,0,1,24,0Z"/></svg>
+									<svg aria-hidden="true" focusable="false" width="28" height="28" viewBox="0 0 256 256" fill="currentColor"><path d="M188,48a27.75,27.75,0,0,0-12,2.71V44a28,28,0,0,0-54.65-8.6A28,28,0,0,0,80,60v64l-3.82-6.13a28,28,0,0,0-48.6,27.82c16,33.77,28.93,57.72,43.72,72.69C86.24,233.54,103.2,240,128,240a88.1,88.1,0,0,0,88-88V76A28,28,0,0,0,188,48Zm12,104a72.08,72.08,0,0,1-72,72c-20.38,0-33.51-4.88-45.33-16.85C69.44,193.74,57.26,171,41.9,138.58a6.36,6.36,0,0,0-.3-.58,12,12,0,0,1,20.79-12,1.76,1.76,0,0,0,.14.23l18.67,30A8,8,0,0,0,96,152V60a12,12,0,0,1,24,0v60a8,8,0,0,0,16,0V44a12,12,0,0,1,24,0v76a8,8,0,0,0,16,0V76a12,12,0,0,1,24,0Z"/></svg>
 								</span>
 								<span class="sb-hw-home-card-text">
 									<span class="sb-hw-home-card-title"><?php 
@@ -354,7 +371,7 @@ class HelpWidget
 							<a href="#" class="sb-hw-home-card" data-action="help" target="_blank" rel="noopener noreferrer">
 								<span class="sb-hw-home-card-icon sb-hw-home-card-icon--emerald">
 									<!-- Phosphor Question (regular) — exact path from @phosphor-icons/react -->
-									<svg width="28" height="28" viewBox="0 0 256 256" fill="currentColor"><path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>
+									<svg aria-hidden="true" focusable="false" width="28" height="28" viewBox="0 0 256 256" fill="currentColor"><path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>
 								</span>
 								<span class="sb-hw-home-card-text">
 									<span class="sb-hw-home-card-title"><?php 
@@ -366,7 +383,7 @@ class HelpWidget
 								</span>
 								<span class="sb-hw-home-card-arrow">
 									<!-- Phosphor ArrowUpRight (bold) -->
-									<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/></svg>
+									<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/></svg>
 								</span>
 							</a>
 							<button type="button" class="sb-hw-home-card sb-hw-home-card--plugins" data-action="plugins">
@@ -378,7 +395,7 @@ class HelpWidget
         esc_html_e('Explore our other plugins', 'sb-common');
         ?></span>
 									<!-- Phosphor CaretRight (bold) -->
-									<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+									<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
 								</span>
 							</button>
 						</div>
@@ -392,7 +409,7 @@ class HelpWidget
 							<button type="button" class="sb-hw-back" aria-label="<?php 
         esc_attr_e('Back to menu', 'sb-common');
         ?>">
-								<svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
 							</button>
 							<h2 class="sb-hw-title"><?php 
         esc_html_e('Feature Request', 'sb-common');
@@ -432,7 +449,7 @@ class HelpWidget
 							<!-- Submit -->
 							<div class="sb-hw-form-submit">
 								<button type="submit" class="sb-hw-btn sb-hw-btn--primary sb-hw-submit-btn">
-									<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
+									<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
 									<span class="sb-hw-submit-text"><?php 
         esc_html_e('Submit Request', 'sb-common');
         ?></span>
@@ -443,7 +460,7 @@ class HelpWidget
 						<!-- Success State -->
 						<div class="sb-hw-success" style="display:none;">
 							<div class="sb-hw-success-icon">
-								<svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
 							</div>
 							<h3 class="sb-hw-success-title"><?php 
         esc_html_e('Feature Request Submitted!', 'sb-common');
@@ -453,7 +470,7 @@ class HelpWidget
         ?></p>
 							<button type="button" class="sb-hw-btn sb-hw-btn--secondary sb-hw-reset-btn">
 								<!-- Phosphor ArrowCounterClockwise (bold) — exact path from @phosphor-icons/react -->
-								<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a100,100,0,0,1-98.66,100H128a99.39,99.39,0,0,1-68.62-27.29,12,12,0,0,1,16.48-17.45,76,76,0,1,0-1.57-109c-.13.13-.25.25-.39.37L54.89,92H72a12,12,0,0,1,0,24H24a12,12,0,0,1-12-12V56a12,12,0,0,1,24,0V76.72L57.48,57.06A100,100,0,0,1,228,128Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M228,128a100,100,0,0,1-98.66,100H128a99.39,99.39,0,0,1-68.62-27.29,12,12,0,0,1,16.48-17.45,76,76,0,1,0-1.57-109c-.13.13-.25.25-.39.37L54.89,92H72a12,12,0,0,1,0,24H24a12,12,0,0,1-12-12V56a12,12,0,0,1,24,0V76.72L57.48,57.06A100,100,0,0,1,228,128Z"/></svg>
 								<?php 
         esc_html_e('Submit another request', 'sb-common');
         ?>
@@ -463,7 +480,7 @@ class HelpWidget
 						<!-- Error State -->
 						<div class="sb-hw-error-state" style="display:none;">
 							<div class="sb-hw-error-icon">
-								<svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-8,56a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm8,104a12,12,0,1,1,12-12A12,12,0,0,1,128,184Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm-8,56a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm8,104a12,12,0,1,1,12-12A12,12,0,0,1,128,184Z"/></svg>
 							</div>
 							<h3 class="sb-hw-error-title"><?php 
         esc_html_e('Something went wrong', 'sb-common');
@@ -487,7 +504,7 @@ class HelpWidget
 							<button type="button" class="sb-hw-back" aria-label="<?php 
         esc_attr_e('Back to menu', 'sb-common');
         ?>">
-								<svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
 							</button>
 							<h2 class="sb-hw-title"><?php 
         esc_html_e('More from Smash Balloon', 'sb-common');
@@ -509,7 +526,7 @@ class HelpWidget
         ?></span>
 								</div>
 								<span class="sb-hw-all-access-arrow">
-									<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/></svg>
+									<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/></svg>
 								</span>
 							</div>
 						</a>
@@ -526,13 +543,13 @@ class HelpWidget
 
 						<div class="sb-hw-trust-signals">
 							<div class="sb-hw-trust-item">
-								<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M243.31,90.91l-128,128a16,16,0,0,1-22.62,0l-71.62-72a16,16,0,0,1,0-22.61l20-20a16,16,0,0,1,22.37-.27L104,143.87l109.07-107.3a16,16,0,0,1,22.37.26l20,20.37A15.89,15.89,0,0,1,243.31,90.91Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M243.31,90.91l-128,128a16,16,0,0,1-22.62,0l-71.62-72a16,16,0,0,1,0-22.61l20-20a16,16,0,0,1,22.37-.27L104,143.87l109.07-107.3a16,16,0,0,1,22.37.26l20,20.37A15.89,15.89,0,0,1,243.31,90.91Z"/></svg>
 								<span><?php 
         esc_html_e('Trusted by 1.75 million websites', 'sb-common');
         ?></span>
 							</div>
 							<div class="sb-hw-trust-item">
-								<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M243.31,90.91l-128,128a16,16,0,0,1-22.62,0l-71.62-72a16,16,0,0,1,0-22.61l20-20a16,16,0,0,1,22.37-.27L104,143.87l109.07-107.3a16,16,0,0,1,22.37.26l20,20.37A15.89,15.89,0,0,1,243.31,90.91Z"/></svg>
+								<svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M243.31,90.91l-128,128a16,16,0,0,1-22.62,0l-71.62-72a16,16,0,0,1,0-22.61l20-20a16,16,0,0,1,22.37-.27L104,143.87l109.07-107.3a16,16,0,0,1,22.37.26l20,20.37A15.89,15.89,0,0,1,243.31,90.91Z"/></svg>
 								<span><?php 
         esc_html_e('6,000+ 5-star reviews', 'sb-common');
         ?></span>

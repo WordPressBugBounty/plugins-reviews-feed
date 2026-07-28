@@ -1,5 +1,13 @@
 var sbr_js_exists = (typeof sbr_js_exists !== 'undefined') ? true : false;
 if(!sbr_js_exists) {
+	// Localized a11y strings (wp_localize_script sbrOptions.a11y) with English fallbacks (WCAG 3.1.2).
+	window.sbrA11yStr = function (key, fallback) {
+		return (typeof window.sbrOptions !== 'undefined' && window.sbrOptions.a11y && window.sbrOptions.a11y[key]) ? window.sbrOptions.a11y[key] : fallback;
+	};
+	// HTML/attribute-safe variant for strings interpolated into HTML template strings.
+	window.sbrA11yAttr = function (key, fallback) {
+		return String(window.sbrA11yStr(key, fallback)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+	};
 	/*!
          * Isotope PACKAGED v3.0.6
          *
@@ -2620,6 +2628,38 @@ if(!sbr_js_exists) {
 									if (typeof window.sbrLightboxPlayer !== 'undefined') { YT.get('sbr_lb-player').pauseVideo(); }
 
 									return b.end(), !1
+								});
+								// a11y: Escape-to-close + focus trap while the dialog is open
+								this.$lightbox.on("keydown", function(c) {
+									var key = c.key || "";
+									if (c.keyCode === 27 || key === "Escape") {
+										b.end();
+										return !1;
+									}
+									if (c.keyCode !== 9 && key !== "Tab") { return; }
+									var f = b.$lightbox.find("button, a[href], input, select, textarea, [tabindex]").filter(":visible").filter(function() {
+										return a(this).attr("tabindex") !== "-1";
+									});
+									if (!f.length) {
+										// No focusable controls yet (e.g. during the image-load
+										// fade) — pin focus on the tabindex=-1 dialog container
+										// so Tab can't escape the modal (WCAG 2.1.2).
+										b.$lightbox[0].focus();
+										c.preventDefault();
+										return;
+									}
+									var first = f[0],
+										last = f[f.length - 1],
+										active = document.activeElement;
+									if (c.shiftKey) {
+										if (active === first || !b.$lightbox[0].contains(active)) {
+											last.focus();
+											c.preventDefault();
+										}
+									} else if (active === last || !b.$lightbox[0].contains(active)) {
+										first.focus();
+										c.preventDefault();
+									}
 								})
 							}, b.prototype.start = function(b) {
 								function c(a) {
@@ -2627,6 +2667,7 @@ if(!sbr_js_exists) {
 								}
 								var d = this,
 									e = a(window);
+								d.sbrTrigger = b;
 								e.on("resize", a.proxy(this.sizeOverlay, this)), a("select, object, embed").css({
 									visibility: "hidden"
 								}), this.sizeOverlay(), this.album = [];
@@ -2645,7 +2686,11 @@ if(!sbr_js_exists) {
 								this.$lightbox.css({
 									top: k + "px",
 									left: l + "px"
-								}).fadeIn(this.options.fadeDuration), this.changeImage(g)
+								}).fadeIn(this.options.fadeDuration, function() {
+									// Move focus into the dialog itself (tabindex=-1); its controls
+									// live in the dataContainer which is still hidden during this fade.
+									d.$lightbox.trigger("focus");
+								}), this.changeImage(g)
 							}, b.prototype.changeImage = function(b) {
 								var c = this;
 								this.disableKeyboardNav();
@@ -2655,7 +2700,7 @@ if(!sbr_js_exists) {
 								e.onload = function() {
 									var f, g, h, i, j, k, l;
 									var sbrArrowWidth = 100;
-									d.attr("src", c.album[b].link), f = a(e), d.width(e.width), d.height(e.height), c.options.fitImagesInViewport && (l = a(window).width(), k = a(window).height(), j = l - c.containerLeftPadding - c.containerRightPadding - 20 - sbrArrowWidth, i = k - c.containerTopPadding - c.containerBottomPadding - 150, (e.width > j || e.height > i) && (e.width / j > e.height / i ? (h = j, g = parseInt(e.height / (e.width / h), 10), d.width(h), d.height(g)) : (g = i, h = parseInt(e.width / (e.height / g), 10), d.width(h), d.height(g)))), c.sizeContainer(d.width(), d.height())
+									d.attr("src", c.album[b].link), d.attr("alt", c.album[b].alt || ""), f = a(e), d.width(e.width), d.height(e.height), c.options.fitImagesInViewport && (l = a(window).width(), k = a(window).height(), j = l - c.containerLeftPadding - c.containerRightPadding - 20 - sbrArrowWidth, i = k - c.containerTopPadding - c.containerBottomPadding - 150, (e.width > j || e.height > i) && (e.width / j > e.height / i ? (h = j, g = parseInt(e.height / (e.width / h), 10), d.width(h), d.height(g)) : (g = i, h = parseInt(e.width / (e.height / g), 10), d.width(h), d.height(g)))), c.sizeContainer(d.width(), d.height())
 								}, e.src = this.album[b].link, this.currentImageIndex = b
 							}, b.prototype.sizeOverlay = function() {
 								this.$overlay.width(a(window).width()).height(a(document).height())
@@ -2733,7 +2778,8 @@ if(!sbr_js_exists) {
 								var keycode = event.keyCode;
 								var key     = String.fromCharCode(keycode).toLowerCase();
 								if (keycode === KEYCODE_ESC || key.match(/x|o|c/)) {
-									if( sbr_supports_video() ) $('#sbr_lightbox video.sbr_video')[0].pause();
+									var sbrLbVideo = $('#sbr_lightbox video.sbr_video');
+									if( sbr_supports_video() && sbrLbVideo.length ) sbrLbVideo[0].pause();
 									$('#sbr_lightbox iframe').attr('src', '');
 									this.end();
 								} else if (key === 'p' || keycode === KEYCODE_LEFTARROW) {
@@ -2753,7 +2799,7 @@ if(!sbr_js_exists) {
 							}, b.prototype.end = function() {
 								this.disableKeyboardNav(), a(window).off("resize", this.sizeOverlay), this.$lightbox.fadeOut(this.options.fadeDuration), this.$overlay.fadeOut(this.options.fadeDuration), a("select, object, embed").css({
 									visibility: "visible"
-								})
+								}), this.sbrTrigger && this.sbrTrigger.length && this.sbrTrigger.trigger("focus")
 							}, b
 						}();
 					a(function() {
@@ -3012,7 +3058,7 @@ if(!sbr_js_exists) {
 					onChange: onChange,
 					onInitialize: afterInit
 				};
-				$self.find('.sbr_carousel').sbrOwlCarousel(this.carouselArgs);
+				$self.find('.sbr_carousel').attr('data-sbr-autoplay', this.carouselArgs.autoplay ? '1' : '0').sbrOwlCarousel(this.carouselArgs);
 				//if (parseInt(settings.general.carousel[5]) === 2) {
 				//	$sbi.addClass('sbi_carousel_2_row');
 				//}
@@ -3113,7 +3159,7 @@ if(!sbr_js_exists) {
 									$item.find('.sb-expand a').addClass('sb-expand-on-click');
 								}
 								*/
-								$item.find('.sb-expand a').addClass('sb-expand-on-click');
+								$item.find('.sb-expand button').addClass('sb-expand-on-click');
 
 							}
 
@@ -3125,12 +3171,16 @@ if(!sbr_js_exists) {
 							$item.find('.sb-expand').show();
 						}
 						//Click function
-						$item.find('.sb-expand a.sb-expand-on-click').off('click').on('click', function (e) {
+						$item.find('.sb-expand button.sb-expand-on-click').off('click').on('click', function (e) {
 							e.preventDefault();
 							var $expand = jQuery(this);
 							$expand.closest('.sbr-expand').remove();
 							$caption.html($item.attr('data-text'));
 							$item.addClass('sb-item-full-text');
+							// The read-more control was just removed from the DOM, so move focus
+							// to the now-expanded review text — otherwise focus drops to <body>
+							// and keyboard/SR users lose their place (WCAG 2.4.3 Focus Order).
+							$caption.attr('tabindex', '-1').focus();
 							feed.afterResize();
 						});
 					}
@@ -3242,10 +3292,33 @@ if(!sbr_js_exists) {
 				var onSuccess = function (data) {
 					feed.appendNewPosts(data.data.html);
 					feed.settings.nextPage++;
+					var $newItems = $self.find('.sb-feed-posts .sb-post-item-wrap.sb-new');
 					feed.afterNewImagesLoaded();
+					// Announce appended reviews to screen readers (WCAG 4.1.3 Status Messages).
+					var $status = $self.find('.sbr-feed-status');
+					if ($status.length) {
+						var n = $newItems.length;
+						var statusMsg = (n === 1 ? window.sbrA11yStr('reviewLoaded', '%s review loaded.') : window.sbrA11yStr('reviewsLoaded', '%s reviews loaded.')).replace('%s', n);
+						if (data.data.is_last_page) {
+							statusMsg += ' ' + window.sbrA11yStr('allReviewsShown', 'All reviews shown.');
+						}
+						$status.text(statusMsg);
+					}
 					if (data.data.is_last_page) {
 						feed.outOfPages = true;
 						$self.find('.sb-load-button-ctn').remove();
+						// Load More button was just removed from the DOM — move focus to the first
+						// newly-loaded review so keyboard/SR users aren't dropped to <body> (WCAG 2.4.3).
+						if ($newItems.length) {
+							$newItems.first().attr('tabindex', '-1').focus();
+						} else {
+							// 0 new items returned on the last page — fall back to a stable
+							// anchor (last existing review, else the feed container) so focus
+							// is never dropped to <body> (WCAG 2.4.3).
+							var $anchor = $self.find('.sb-feed-posts .sb-post-item-wrap').last();
+							if (!$anchor.length) { $anchor = $self; }
+							$anchor.attr('tabindex', '-1').focus();
+						}
 					}
 
 				};
@@ -3886,19 +3959,24 @@ if(!sbr_js_exists) {
 				var closestFeedIndex = parseInt(a.closest('.sb-feed-container').attr('data-sbr-index')-1);
 				return {
 					feedIndex : closestFeedIndex,
-					link: a.attr("href")
+					link: a.attr("href"),
+					alt: a.attr("aria-label") || a.find("img").attr("alt") || ""
 					//videoTitle: typeof a.attr("data-video-title") !== 'undefined' ? a.attr("data-video-title") : 'YouTube Video',
 					//video: a.attr("data-video-id")
 				}
 			},
 			template: function () {
+				var lbViewerLabel = window.sbrA11yAttr('photoViewer', 'Review photo viewer'),
+					lbPrevLabel = window.sbrA11yAttr('previousPhoto', 'Previous photo'),
+					lbNextLabel = window.sbrA11yAttr('nextPhoto', 'Next photo'),
+					lbCloseLabel = window.sbrA11yAttr('closePhotoViewer', 'Close photo viewer');
 				return "<div id='sbr_lightboxOverlay' class='sbr_lightboxOverlay'></div>"+
-					"<div id='sbr_lightbox' class='sbr_lightbox'>"+
+					"<div id='sbr_lightbox' class='sbr_lightbox' role='dialog' aria-modal='true' aria-label='" + lbViewerLabel + "' tabindex='-1'>"+
 					"<div class='sbr_lb-outerContainer'>"+
 					"<div class='sbr_lb-container'>"+
-					"<img class='sbr_lb-image' alt='Lightbox image placeholder' src='' />"+
+					"<img class='sbr_lb-image' alt='' src='' />"+
 					"<div class='sbr_lb-player sbr_lb-player-placeholder' id='sbr_lb-player'></div>" +
-					"<div class='sbr_lb-nav'><a class='sbr_lb-prev' href='#' ><p class='sbr-screenreader'>Previous Slide</p><span></span></a><a class='sbr_lb-next' href='#' ><p class='sbr-screenreader'>Next Slide</p><span></span></a></div>"+
+					"<div class='sbr_lb-nav'><button type='button' class='sbr_lb-prev' aria-label='" + lbPrevLabel + "'><span class='sbr-screenreader'>" + lbPrevLabel + "</span><span></span></button><button type='button' class='sbr_lb-next' aria-label='" + lbNextLabel + "'><span class='sbr-screenreader'>" + lbNextLabel + "</span><span></span></button></div>"+
 					"<div class='sbr_lb-loader'><a class='sbr_lb-cancel'></a></div>"+
 					"</div>"+
 					"</div>"+
@@ -3910,7 +3988,7 @@ if(!sbr_js_exists) {
 					"<div class='sbr_lb-number'></div>"+
 					"</div>"+
 					"</div>"+
-					"<div class='sbr_lb-closeContainer'><a class='sbr_lb-close'></a></div>"+
+					"<div class='sbr_lb-closeContainer'><button type='button' class='sbr_lb-close' aria-label='" + lbCloseLabel + "'></button></div>"+
 					"</div>"+
 					"</div>"+
 					"</div>";
@@ -4034,13 +4112,13 @@ if(!sbr_js_exists) {
 
 					// Create lightbox overlay on first use
 					if (!this.overlay) {
-						var overlayHtml = '<div class="sbr-lightbox-overlay">' +
-							'<button class="sbr-lightbox-close" aria-label="Close">&times;</button>' +
-							'<button class="sbr-lightbox-nav sbr-prev" aria-label="Previous">&lsaquo;</button>' +
+						var overlayHtml = '<div class="sbr-lightbox-overlay" role="dialog" aria-modal="true" aria-label="' + window.sbrA11yAttr('photoViewer', 'Review photo viewer') + '" tabindex="-1">' +
+							'<button class="sbr-lightbox-close" aria-label="' + window.sbrA11yAttr('close', 'Close') + '">&times;</button>' +
+							'<button class="sbr-lightbox-nav sbr-prev" aria-label="' + window.sbrA11yAttr('previous', 'Previous') + '">&lsaquo;</button>' +
 							'<div class="sbr-lightbox-content">' +
-								'<img class="sbr-lightbox-image" src="" alt="Reviewer photo" />' +
+								'<img class="sbr-lightbox-image" src="" alt="' + window.sbrA11yAttr('reviewerPhoto', 'Reviewer photo') + '" />' +
 							'</div>' +
-							'<button class="sbr-lightbox-nav sbr-next" aria-label="Next">&rsaquo;</button>' +
+							'<button class="sbr-lightbox-nav sbr-next" aria-label="' + window.sbrA11yAttr('next', 'Next') + '">&rsaquo;</button>' +
 						'</div>';
 
 						$('body').append(overlayHtml);
@@ -4076,6 +4154,27 @@ if(!sbr_js_exists) {
 								self.prev();
 							} else if (e.key === 'ArrowRight' || e.keyCode === 39) {
 								self.next();
+							} else if (e.key === 'Tab' || e.keyCode === 9) {
+								// Trap focus within the dialog
+								var $f = self.overlay.find('button:visible');
+								if (!$f.length) {
+									// No focusable controls yet (e.g. during the image-load
+									// fade) — pin focus on the tabindex=-1 dialog container
+									// so Tab can't escape the modal (WCAG 2.1.2).
+									self.overlay[0].focus();
+									e.preventDefault();
+									return;
+								}
+								var first = $f[0], last = $f[$f.length - 1], active = document.activeElement;
+								if (e.shiftKey) {
+									if (active === first || !self.overlay[0].contains(active)) {
+										last.focus();
+										e.preventDefault();
+									}
+								} else if (active === last || !self.overlay[0].contains(active)) {
+									first.focus();
+									e.preventDefault();
+								}
 							}
 						});
 					}
@@ -4085,6 +4184,7 @@ if(!sbr_js_exists) {
 						e.preventDefault();
 
 						var $link = $(this);
+						self.triggerEl = this;
 						var reviewId = $link.attr('data-sbr-lightbox');
 
 						// Collect all images for this review
@@ -4115,6 +4215,9 @@ if(!sbr_js_exists) {
 
 					// Prevent body scroll
 					$('body').css('overflow', 'hidden');
+
+					// Move focus into the dialog
+					this.overlay.find('.sbr-lightbox-close').trigger('focus');
 				},
 
 				close: function() {
@@ -4124,6 +4227,11 @@ if(!sbr_js_exists) {
 
 					// Restore body scroll
 					$('body').css('overflow', '');
+
+					// Return focus to the trigger
+					if (this.triggerEl && typeof this.triggerEl.focus === 'function') {
+						this.triggerEl.focus();
+					}
 				},
 
 				showImage: function() {
@@ -4150,3 +4258,94 @@ if(!sbr_js_exists) {
 	});
 
 } // if sbr_js_exists
+
+
+/* Carousel accessibility wiring (SMASH-1383): the vendored Owl fork renders
+ * mouse-only div arrows/dots, exposes cloned slides to assistive tech, and
+ * autoplays with no pause control (WCAG 2.1.1 / 1.3.1 / 2.2.2). Wired here,
+ * outside the fork, so the vendored carousel code stays untouched. */
+(function ($) {
+	if (!$) { return; }
+
+	// Owl's stop() only acts while "rotating", but its changed-handler calls
+	// _setAutoPlayInterval() on ANY position change — so a stopped carousel
+	// gets a stray timeout it can never clear. Hard-stop disables the setting
+	// and clears the plugin's pending timeout directly.
+	function hardStopAutoplay($car) {
+		var inst = $car.data('owl.carousel');
+		if (!inst) { return; }
+		inst.settings.autoplay = false;
+		var ap = inst._plugins && inst._plugins.autoplay;
+		if (ap) {
+			ap._paused = true;
+			if (ap._timeout) { window.clearTimeout(ap._timeout); ap._timeout = null; }
+		}
+		if (inst.is && inst.is('rotating')) { inst.leave('rotating'); }
+	}
+
+	function resumeAutoplay($car) {
+		var inst = $car.data('owl.carousel');
+		if (!inst) { return; }
+		inst.settings.autoplay = true;
+		var ap = inst._plugins && inst._plugins.autoplay;
+		if (ap) { ap._paused = false; }
+		$car.trigger('play.owl.autoplay');
+	}
+
+	function wire($car) {
+		// Arrows: operable, named buttons (Owl renders bare divs)
+		$car.find('.sbr-owl-prev').attr({ role: 'button', tabindex: '0', 'aria-label': 'Previous reviews' });
+		$car.find('.sbr-owl-next').attr({ role: 'button', tabindex: '0', 'aria-label': 'Next reviews' });
+		// Dots: operable, named, current page exposed
+		$car.find('.sbr-owl-dot').each(function (i) {
+			$(this).attr({ role: 'button', tabindex: '0', 'aria-label': 'Go to reviews page ' + (i + 1) });
+			if ($(this).hasClass('active')) { this.setAttribute('aria-current', 'true'); } else { this.removeAttribute('aria-current'); }
+		});
+		// Cloned slides (infinite loop): hide the duplicates from AT + keyboard
+		$car.find('.sbr-owl-item.cloned').attr('aria-hidden', 'true').find('a, button, [tabindex]').attr('tabindex', '-1');
+
+		// Autoplay: pause/play control, and pause while keyboard focus is inside
+		if ($car.attr('data-sbr-autoplay') === '1' && !$car.data('sbrPauseWired')) {
+			$car.data('sbrPauseWired', true);
+			var $btn = $('<button type="button" class="sbr-carousel-playpause" data-paused="0" aria-label="Pause reviews carousel"><span aria-hidden="true">&#10074;&#10074;</span></button>');
+			$btn.on('click', function () {
+				if ($btn.attr('data-paused') === '1') {
+					resumeAutoplay($car);
+					$btn.attr({ 'data-paused': '0', 'aria-label': 'Pause reviews carousel' }).find('span').html('&#10074;&#10074;');
+				} else {
+					hardStopAutoplay($car);
+					$btn.attr({ 'data-paused': '1', 'aria-label': 'Play reviews carousel' }).find('span').html('&#9654;');
+				}
+			});
+			$btn.insertBefore($car);
+			$car.on('focusin', function () { hardStopAutoplay($car); });
+			$car.on('focusout', function () {
+				window.setTimeout(function () {
+					if ($btn.attr('data-paused') !== '1' && !$car[0].contains(document.activeElement)) {
+						resumeAutoplay($car);
+					}
+				}, 0);
+			});
+		}
+	}
+
+	function wireAll() {
+		$('.sbr_carousel.sbr-owl-loaded').each(function () { wire($(this)); });
+	}
+
+	// Owl rebuilds nav/dots on init, breakpoint refresh and slide changes.
+	$(document).on('initialized.owl.carousel refreshed.owl.carousel changed.owl.carousel', '.sbr_carousel', function () {
+		var $c = $(this);
+		window.setTimeout(function () { wire($c); }, 60);
+	});
+	$(function () { window.setTimeout(wireAll, 400); });
+
+	// Keyboard activation for the role=button divs Owl renders
+	$(document).on('keydown', '.sbr-owl-prev, .sbr-owl-next, .sbr-owl-dot', function (e) {
+		var key = e.key || '';
+		if (key === 'Enter' || key === ' ' || e.keyCode === 13 || e.keyCode === 32) {
+			e.preventDefault();
+			$(this).trigger('click');
+		}
+	});
+})(window.jQuery);

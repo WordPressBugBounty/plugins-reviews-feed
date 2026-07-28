@@ -29,7 +29,7 @@ do_action('sbr_before_feed', $posts, $settings);
 $classes = $this->feed_classes($settings);
 $misc_atts = $this->misc_atts();
 ?>
-<section id="<?php echo esc_attr(sbr_container_id($feed_id)); ?>" class="sbr-feed">
+<section id="<?php echo esc_attr(sbr_container_id($feed_id)); ?>" class="sbr-feed" aria-label="<?php esc_attr_e('Customer reviews', 'reviews-feed'); ?>">
 	<?php
 	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- error_html() returns safe HTML
 	echo $this->error_html();
@@ -42,9 +42,11 @@ $misc_atts = $this->misc_atts();
 			include sbr_get_feed_template_part('header', $settings);
 		endif; ?>
 
-		<section class="sb-feed-posts" data-icon-size="small" data-avatar-size="medium">
+		<div class="sb-feed-posts" data-icon-size="small" data-avatar-size="medium"<?php if (($settings['layout'] ?? '') !== 'carousel') : // Owl re-wraps slides, breaking list structure ?> role="list"<?php endif; ?>>
 			<?php $this->posts_loop($posts, $settings); ?>
-		</section>
+		</div>
+
+		<div class="sbr-feed-status sbr-screenreader" role="status" aria-live="polite" aria-atomic="true"></div>
 
 		<?php
 		/**
