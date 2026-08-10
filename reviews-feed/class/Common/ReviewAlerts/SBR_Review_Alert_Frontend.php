@@ -528,10 +528,18 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 		$config = $this->get_frontend_config($popup, $reviews, $total_reviews, $average_rating, $booking_header);
 
 		// Output config as inline script (wp_localize_script doesn't work in footer after script was enqueued in head)
+		//
+		// JSON_HEX_* because this is an INLINE script element carrying attacker-influenced
+		// review text (SMASH-1795). Without them the only thing stopping a stored
+		// `</script><img src=x onerror=…>` from closing the element early is json_encode's
+		// default slash escaping — `<\/script>`, which does hold, but it is one
+		// JSON_UNESCAPED_SLASHES away from not holding. HEX_TAG encodes `<` and `>` as
+		// </>, so no review body can produce a tag boundary here at all.
+		// Values are unchanged after JSON.parse; only their encoding differs.
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON encoding handles escaping
 		printf(
 			'<script id="sbr-review-alert-config">var sbrReviewAlertConfig = %s;</script>',
-			wp_json_encode($config)
+			wp_json_encode($config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
 		);
 
 		// Render template
@@ -951,6 +959,17 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 					'name' => $provider_name,
 				],
 			];
+
+			// Booking's per-reviewer 0-10 score + band word, resolved HERE rather than
+			// mirrored in the JS. Two reasons: `rating` above is cast to int for the star
+			// renderer, and doubling a truncated 4 would print "8.0 Very good" on a card
+			// the feed and the JSON-LD both call 9.0; and the word stays translated,
+			// which a hardcoded JS ladder could not do — popup.php server-renders the
+			// first review's label and the cycler overwrites it on every rotation.
+			if ('booking' === $provider_name) {
+				$row['bookingScore']     = sbr_booking_review_score($review);
+				$row['bookingScoreWord'] = sbr_booking_score_word($row['bookingScore']);
+			}
 
 			// SMASH-782: append the provider-specific payload via the shared
 			// extractor so the frontend and the builder-preview formatters can't

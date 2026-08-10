@@ -279,6 +279,8 @@ function sbr_plugin_settings_defaults()
 		'enqueue_js_in_header' => false,
 		'admin_error_notices' => true,
 		'feed_issue_reports' => true,
+		// SMASH-1756 — emit schema.org rich-snippet markup for feeds (global, default on).
+		'enableSchema' => true,
 		'translations' => [
 			'second' => __('second', 'reviews-feed'),
 			'seconds' => __('seconds', 'reviews-feed'),
@@ -480,13 +482,13 @@ function sbr_esc_html_with_br($text)
  * 11, so any shortcode left in the rendered block markup is expanded
  * server-side — including a shortcode an unauthenticated visitor planted in a
  * public review (e.g. a reviewer name or review body of `[gallery ids=1]`).
- * The escaping helpers (`esc_html()`, `wp_kses_post()`) deliberately leave the
+ * The escaping helpers (`esc_html()`, `sbr_kses_review_text()`) deliberately leave the
  * `[` and `]` characters untouched, so they do not stop this on their own.
  *
  * Encoding the square brackets to HEX HTML entities (`&#x5B;` / `&#x5D;`) keeps
  * the literal text visible to the visitor (the browser renders them as `[` / `]`)
  * while ensuring `do_shortcode()` can never match them. Apply this as the
- * OUTERMOST wrapper around already-escaped output: `esc_html()` / `wp_kses_post()`
+ * OUTERMOST wrapper around already-escaped output: `esc_html()` / `sbr_kses_review_text()`
  * run first on the raw text (they leave `[` and `]` alone), then this encodes the
  * brackets last.
  *
@@ -521,6 +523,130 @@ function sbr_neutralize_shortcodes($text)
 	// str_replaces decimal &#91;/&#93; back to [/] inside do_shortcode(), which would
 	// re-arm the shortcode. Hex forms are not reversed. See docblock + SMASH-1607.
 	return str_replace(array( '[', ']' ), array( '&#x5B;', '&#x5D;' ), $text);
+}
+
+/**
+ * Allowlist for rendering a review body. Use this instead of wp_kses_post().
+ *
+ * SMASH-1795 — wp_kses_post() is the *post editor* allowlist and keeps `<img>` with
+ * its class/src/alt, which the feed script then re-parsed out of the alt. This permits
+ * WordPress's comment-formatting set instead: emphasis, lists, quotes, headings and
+ * `a[href|title|rel]`. Links are allowed because Woo/EDD bodies contain them and
+ * wp_kses() drops a disallowed protocol from the href. `img` never is, nor any
+ * attribute the front end reads back and re-parses.
+ *
+ * Runs on the READ path, at every review-text sink, so it also covers bodies already
+ * stored and writers that bypass the write-side filter — Woo and EDD pass
+ * `comment_content` straight into `$review['text']`. `nl2br()` output survives.
+ *
+ * @param string|null $text Raw review body.
+ * @return string Sanitised body, safe to echo.
+ */
+function sbr_kses_review_text($text)
+{
+	if (! is_string($text) || $text === '') {
+		return '';
+	}
+
+	// Resolve an emoji image to its alt BEFORE the allowlist drops the tag, so a 😀
+	// is shown rather than silently deleted. Server-side twin of stripEmojihtml()
+	// (assets/js/sbr-feed.js), resolved the same way — decode once, then escape — so
+	// a payload hidden in the alt lands as inert text here too.
+	// Never let a PCRE failure blank the review. preg_replace_callback() returns NULL
+	// on any engine error (backtrack/recursion limit, JIT stack) and `(string) null`
+	// is '' — which would silently empty the body instead of degrading to unresolved
+	// emoji markup. Same failure shape as the read-more blanking bug (ae11c55): the
+	// safe fallback is the text we already had.
+	//
+	// Measured, so the next reader doesn't have to re-derive it: the pattern is NOT
+	// quadratic on a `>`-less run. Six adversarial shapes — repeated `class=`,
+	// repeated `emoji`, unterminated quotes, stacked `<img` prefixes — at 4 KB to
+	// 36 KB all return in under 1.4ms with preg_last_error() == PREG_NO_ERROR on
+	// PHP 8.2 (pcre.backtrack_limit 1000000). The character classes exclude `>`, so
+	// the required literals gate progression and PCRE fails fast. Invalid UTF-8 is
+	// not a NULL route either: there is no /u modifier, so the match is byte-wise.
+	// The guard is here because the cast was unsafe in principle, not because a
+	// reachable payload was found.
+	$emoji_resolved = preg_replace_callback(
+		'#<img\b[^>]*\bclass\s*=\s*["\']?[^"\'>]*\bemoji\b[^"\'>]*["\']?[^>]*>#i',
+		static function ($match) {
+			if (preg_match('#\balt\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s>]+))#i', $match[0], $alt) !== 1) {
+				return '';
+			}
+			$value = $alt[2] ?? '';
+			if ($value === '') {
+				$value = $alt[3] ?? '';
+			}
+			if ($value === '') {
+				$value = $alt[4] ?? '';
+			}
+			return esc_html(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+		},
+		$text
+	);
+	if (is_string($emoji_resolved)) {
+		$text = $emoji_resolved;
+	}
+
+	/**
+	 * Filter the tags allowed in a rendered review body.
+	 *
+	 * Intentionally narrow. Widening this re-opens SMASH-1795 if a tag that can
+	 * carry an attribute the front end later reads back is added.
+	 *
+	 * MUST return an array. A non-array return is ignored — see the guard below.
+	 *
+	 * @param array<string,array<string,array<mixed>>> $tags Allowed tags in wp_kses() format.
+	 */
+	$default = array(
+		'br'         => array(),
+		'em'         => array(),
+		'strong'     => array(),
+		'b'          => array(),
+		'i'          => array(),
+		'p'          => array(),
+		'span'       => array(),
+		// Woo/EDD bodies are raw comment_content, so they legitimately carry the
+		// WP-comment markup below; a narrower list drops it from stored reviews.
+		// No `target`: permitting it without forcing rel="noopener" hands the opened
+		// page a window.opener handle. WP's comment allowlist omits it too.
+		'a'          => array('href' => array(), 'title' => array(), 'rel' => array()),
+		'blockquote' => array('cite' => array()),
+		'q'          => array('cite' => array()),
+		'cite'       => array(),
+		'code'       => array(),
+		'pre'        => array(),
+		'del'        => array(),
+		'ins'        => array(),
+		'ul'         => array(),
+		'ol'         => array(),
+		'li'         => array(),
+		's'          => array(),
+		'strike'     => array(),
+		'u'          => array(),
+		'sub'        => array(),
+		'sup'        => array(),
+		'hr'         => array(),
+		'abbr'       => array('title' => array()),
+		'acronym'    => array('title' => array()),
+		'h1'         => array(),
+		'h2'         => array(),
+		'h3'         => array(),
+		'h4'         => array(),
+		'h5'         => array(),
+		'h6'         => array(),
+	);
+
+	$allowed = apply_filters('sbr_allowed_review_text_tags', $default);
+
+	// wp_kses() reads a STRING second argument as a CONTEXT NAME, so a filter
+	// returning 'post' resolves $allowedposttags — img included — and re-opens this
+	// exact chain. Non-arrays fall back to the default rather than being trusted.
+	if (! is_array($allowed)) {
+		$allowed = $default;
+	}
+
+	return wp_kses($text, $allowed);
 }
 
 
@@ -769,4 +895,74 @@ function sbr_get_lang_providers()
 	return [
 		'google'
 	];
+}
+
+/**
+ * Booking.com score band for a single review, on Booking's native 0-10 scale.
+ *
+ * Booking does NOT send a per-review qualifier: the only word its API returns is
+ * `review_score_word`, and that belongs to the PROPERTY (sb-relay
+ * RapidBookingRemoteSourcesRepository:492 — the SOURCE repository, not the reviews one).
+ * Verified on booking.com itself: the property block reads "Scored 9.5 / Exceptional",
+ * while an individual review card reads "Scored 8.0" followed straight by the review text,
+ * with no word. The per-review `title` is the guest's own headline, not a band — at rating 4
+ * our cached rows carry "Very good", "Fabulous", "Wonderful", "Good" and "Fantasico" all at
+ * once, so it cannot be a label.
+ *
+ * So the band is derived from the reviewer's own score. Provenance of each threshold,
+ * because it matters if these ever need defending:
+ *   9.5+  Exceptional  — confirmed twice: Booking's API sent it for source 12166067 at 9.5,
+ *                        and booking.com renders "Rated exceptional / Exceptional" there.
+ *   9.0+  Superb       — confirmed: Booking's API sent it for source 280149 at 9.4. Note
+ *                        third-party write-ups claim "Excellent" for this band; the API
+ *                        disagrees, and the API wins.
+ *   8.0+  Very good    — Booking's published ladder. Their capitalisation, not "Very Good".
+ *   7.0+  Good         — Booking's published ladder.
+ *   6.0+  Pleasant     — Booking's published ladder.
+ *   below              — no word; Booking shows only the number.
+ *
+ * @param float $score Score on the 0-10 scale.
+ * @return string Band word, or '' when the score is below the lowest named band.
+ */
+function sbr_booking_score_word($score)
+{
+	$score = (float) $score;
+
+	if ($score >= 9.5) {
+		return __('Exceptional', 'reviews-feed');
+	}
+	if ($score >= 9) {
+		return __('Superb', 'reviews-feed');
+	}
+	if ($score >= 8) {
+		return __('Very good', 'reviews-feed');
+	}
+	if ($score >= 7) {
+		return __('Good', 'reviews-feed');
+	}
+	if ($score >= 6) {
+		return __('Pleasant', 'reviews-feed');
+	}
+
+	return '';
+}
+
+/**
+ * A single review's Booking score on the native 0-10 scale, from the reviewer's own rating.
+ *
+ * `$post['rating']` is stored 0-5 like every other provider. Booking's reviews API actually
+ * sends `average_score` on a 0-4 scale and the relay converts it with
+ * `round($value * 1.25, 1)` (sb-relay RapidRemoteBookingReviewsRepository::convertRating),
+ * so doubling back inherits up to ±0.125 of that rounding. Exactness needs the relay to
+ * forward the raw score. Verified against booking.com: our 4 -> 8.0 and 4.5 -> 9.0 match the
+ * "Scored 8.0" / "Scored 9.0" cards on the live page for source 12166067.
+ *
+ * @param array $post Normalised review.
+ * @return float Score on the 0-10 scale; 0.0 when there is no usable rating.
+ */
+function sbr_booking_review_score($post)
+{
+	$rating = isset($post['rating']) ? (float) $post['rating'] : 0.0;
+
+	return $rating > 0 ? round($rating * 2, 1) : 0.0;
 }

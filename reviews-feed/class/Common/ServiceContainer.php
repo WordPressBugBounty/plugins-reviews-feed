@@ -83,6 +83,8 @@ class ServiceContainer extends ServiceProvider
 		SBR_Review_Alert_Service::class,
 		SBR_Review_Alert_Frontend::class,
 		SBR_ReviewAlert_Builder::class,
+		// SMASH-1756 — schema.org rich-snippet output (AIOSEO handshake + JSON-LD fallback)
+		SBR_Schema_Service::class,
 	];
 
 	public function register(): void

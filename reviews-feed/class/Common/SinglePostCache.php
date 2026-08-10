@@ -198,8 +198,42 @@ class SinglePostCache {
 			$this->storage_data['aspect_ratio'] = $feed_id_match['aspect_ratio'];
 			$this->storage_data['images_done'] = $feed_id_match['images_done'];
 			$this->storage_data['json_data'] = $feed_id_match['json_data'];
+			// SMASH-1785: mirror the stored avatar_id so update_single() writes back
+			// the same value it read, and so localized_avatar_missing() can see it.
+			$this->storage_data['avatar_id'] = $feed_id_match['avatar_id'] ?? '';
 		}
 		return null !== $feed_id_match;
+	}
+
+	/**
+	 * Whether this review's localized avatar file has gone missing.
+	 *
+	 * `avatar_id` is written once, when the review is first cached, and
+	 * `resize_avatar()` only runs for new reviews. So a cleared or deleted avatar
+	 * file left the row pointing at something that no longer exists, forever
+	 * (SMASH-1785). Callers use this on the fetch path to re-resize.
+	 *
+	 * `error` means the original download/resize already failed; retrying it on
+	 * every fetch would hammer a permanently bad remote URL, so it is left alone.
+	 *
+	 * @return bool
+	 */
+	public function localized_avatar_missing()
+	{
+		// Read through the getter, NOT $this->storage_data: both this class and
+		// Pro\SinglePostCache declare `private $storage_data`, so a method defined here
+		// only ever sees the Common copy, which the Pro subclass never populates. The
+		// getter is overridden in Pro, so it returns whichever copy is actually in use.
+		$storage_data = $this->get_storage_data();
+		$avatar_id    = is_array($storage_data) && isset($storage_data['avatar_id'])
+			? $storage_data['avatar_id']
+			: '';
+
+		if (! is_string($avatar_id) || $avatar_id === '' || $avatar_id === 'error') {
+			return false;
+		}
+
+		return ! file_exists(Util::get_upload_folder_name() . $avatar_id . '.png');
 	}
 
 	public function db_record()
@@ -315,6 +349,20 @@ class SinglePostCache {
 			array('images_done', $this->storage_data['images_done'], '%d'),
 			array('last_requested', date('Y-m-d H:i:s'), '%s'),
 		);
+
+		// SMASH-1785 (hardened after PR #510 review): persist avatar_id ONLY when we
+		// actually hold one. db_record_exists() mirrors the stored value, but not every
+		// caller routes through it — SBR_Feed_Saver_Manager::create_update_collection_review()
+		// branches on its own $is_new flag and reaches update_single() with storage_data
+		// still at the constructor default. Writing unconditionally clobbered that
+		// review's stored avatar_id to '' and un-localized its avatar. Omitting the
+		// column leaves the stored value untouched, so a caller that skipped the mirror
+		// is a no-op instead of destructive. Nothing legitimately needs to blank it —
+		// a failed resize stores the non-empty marker 'error'.
+		$avatar_id = $this->storage_data['avatar_id'] ?? '';
+		if (is_string($avatar_id) && $avatar_id !== '') {
+			$to_store[] = array('avatar_id', $avatar_id, '%s');
+		}
 		$data = array();
 		$format = array();
 		foreach ($to_store as $single_store) {

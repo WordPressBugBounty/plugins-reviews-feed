@@ -138,16 +138,15 @@ namespace SbReviews\Tests\Unit {
 
 		public function test_booking_rating_extras_renders_score_badge_inside_rating_slot(): void
 		{
-			// Booking's REAL 0-10 hotel score + word, forwarded by the relay as
-			// metadata.review_score / metadata.review_score_word (no derived value,
-			// no invented bands — see rating-extras/booking.php docblock).
+			// THIS reviewer's own score, on Booking's 0-10 scale: the stored 0-5
+			// rating doubled, plus the band word for that score.
 			$out = $this->render('rating-extras/booking.php', [
-			'metadata' => ['review_score' => 8.7, 'review_score_word' => 'Very Good'],
+			'rating'   => 4,
 			'provider' => ['name' => 'booking'],
 			]);
 			$this->assertStringContainsString('class="sb-item-rating-score"', $out);
-			$this->assertStringContainsString('class="sb-item-rating-score-badge">8.7', $out);
-			$this->assertStringContainsString('class="sb-item-rating-score-label">Very Good', $out);
+			$this->assertStringContainsString('class="sb-item-rating-score-badge">8.0', $out);
+			$this->assertStringContainsString('class="sb-item-rating-score-label">Very good', $out);
 		}
 
 		public function test_booking_rating_extras_emits_nothing_when_rating_zero(): void
@@ -159,31 +158,45 @@ namespace SbReviews\Tests\Unit {
 			$this->assertSame('', trim($out));
 		}
 
-		public function test_booking_score_renders_real_metadata_score_and_word_verbatim(): void
+		public function test_booking_score_and_word_derive_from_each_reviewers_own_rating(): void
 		{
-			// The badge shows Booking's real 0-10 score verbatim (number_format 1dp)
-			// and the label shows Booking's own word verbatim — never a value/band
-			// derived from the 0-5 star rating.
+			// Score = this reviewer's 0-5 rating doubled; word = the band that score
+			// falls in (sbr_booking_score_word() carries each threshold's provenance).
 			$cases = [
-			['score' => 10.0, 'word' => 'Exceptional'],
-			['score' => 8.5,  'word' => 'Very Good'],
-			['score' => 7.5,  'word' => 'Good'],
-			['score' => 6.5,  'word' => 'Pleasant'],
+			['rating' => 5,    'score' => '10.0', 'word' => 'Exceptional'],
+			['rating' => 4.75, 'score' => '9.5',  'word' => 'Exceptional'],
+			['rating' => 4.5,  'score' => '9.0',  'word' => 'Superb'],
+			['rating' => 4,    'score' => '8.0',  'word' => 'Very good'],
+			['rating' => 3.5,  'score' => '7.0',  'word' => 'Good'],
+			['rating' => 3,    'score' => '6.0',  'word' => 'Pleasant'],
 			];
 			foreach ($cases as $c) {
-				$out = $this->render('rating-extras/booking.php', [
-				'metadata' => ['review_score' => $c['score'], 'review_score_word' => $c['word']],
-				]);
-				$this->assertStringContainsString('>' . number_format($c['score'], 1) . '<', $out, 'score ' . $c['score']);
-				$this->assertStringContainsString($c['word'], $out, 'score ' . $c['score']);
+				$out = $this->render('rating-extras/booking.php', ['rating' => $c['rating']]);
+				$this->assertStringContainsString('>' . $c['score'] . '<', $out, 'rating ' . $c['rating']);
+				$this->assertStringContainsString('>' . $c['word'] . '<', $out, 'rating ' . $c['rating']);
 			}
 
-			// Real score present but no word from the relay -> badge only, no label.
+			// Below the lowest band Booking publishes -> badge only, no invented word.
+			$out = $this->render('rating-extras/booking.php', ['rating' => 2.5]);
+			$this->assertStringContainsString('>5.0<', $out);
+			$this->assertStringNotContainsString('rating-score-label', $out);
+		}
+
+		public function test_booking_score_ignores_the_property_wide_metadata_score(): void
+		{
+			// Regression guard for the 6525848 fallout: metadata.review_score /
+			// review_score_word are the HOTEL's general rating and the relay stamps the
+			// same pair onto every card, so reading them here showed all 20 reviews as
+			// "9.5 Exceptional". The property score belongs in the feed header only.
 			$out = $this->render('rating-extras/booking.php', [
-			'metadata' => ['review_score' => 8.0],
+			'rating'   => 4,
+			'metadata' => ['review_score' => 9.5, 'review_score_word' => 'Exceptional'],
+			'provider' => ['name' => 'booking'],
 			]);
 			$this->assertStringContainsString('>8.0<', $out);
-			$this->assertStringNotContainsString('rating-score-label', $out);
+			$this->assertStringContainsString('>Very good<', $out);
+			$this->assertStringNotContainsString('9.5', $out);
+			$this->assertStringNotContainsString('Exceptional', $out);
 		}
 
 		public function test_booking_extras_renders_helpful_when_count_positive(): void

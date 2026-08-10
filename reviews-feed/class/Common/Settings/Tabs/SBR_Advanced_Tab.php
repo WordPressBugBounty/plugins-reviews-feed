@@ -61,6 +61,18 @@ class SBR_Advanced_Tab extends SB_SettingsPage_Tab {
 					]
 				]
 			],
+			// SMASH-1756 — toggle schema.org rich-snippet output (default on).
+			'schema_section' => [
+				'id'        => 'enableSchema',
+				'type'      => 'switcher',
+				'heading'   => __('Rich Snippets (SEO Schema)', 'reviews-feed'),
+				'info'      => __('Add schema.org markup (star ratings + reviews) so your feeds can appear as rich snippets in Google search results. When All in One SEO is active the markup is merged into its schema. Turn this off if another plugin or your theme already outputs review schema for the page.', 'reviews-feed'),
+				'options' => [
+					'enabled' => true,
+					'disabled' => false
+				],
+				'separator' => true
+			],
 			/*
 			'reseterrorlogs_section' => [
 				'heading'       => __('Reset Error Log', 'reviews-feed'),

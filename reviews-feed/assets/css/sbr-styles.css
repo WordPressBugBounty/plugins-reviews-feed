@@ -164,8 +164,15 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
     text-align: center;
     line-height: 16px !important;
 }
+/* Booking header word ("Exceptional"). Pinned, because with no font-size of its own it
+   inherited the theme's — measured 21.76px on a stock theme against the 16px score badge
+   sitting right next to it, while the admin preview showed 13px because it inherits
+   wp-admin's base instead. Same values as the preview computes (13px / 18.2px = 1.4), so
+   the frontend and the customizer now agree. SMASH-782. */
 [id^=sb-reviews-container-] .sb-feed-header-average-booking .sb-feed-header-rating-label{
     font-weight: 600;
+    font-size: 13px;
+    line-height: 1.4;
 }
 
 /*Posts Loop*/
@@ -375,10 +382,15 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
 [data-layout="carousel"] .owl-dot.active {
     background: #d0d0d8!important;
 }
-[id^=sb-reviews-container-] .sbr-provider-google .sb-item-author-img,
-[id^=sb-reviews-container-] .sbr-provider-google img {
-    border-radius: 0 !important;
-}
+/* SMASH-1785: the 2023 rule that squared Google reviewer avatars
+   (`.sbr-provider-google .sb-item-author-img, .sbr-provider-google img`) is
+   removed — avatars are round for every provider, which is what the admin
+   customizer preview has always shown and what the per-feed
+   authorImageBorderRadius setting emits. The old rule used !important, so it
+   beat both, leaving the front end disagreeing with the preview.
+   It also matched *any* img inside a Google item, so once the avatar became an
+   <img> it squared that too. The provider icon is unaffected: nothing rounds
+   it, verified in-browser before and after. */
 
 [id^=sb-reviews-container-] .sb-item-author-img,
 [id^=sb-reviews-container-] .sb-item-author-img img {
@@ -390,6 +402,12 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
 [id^=sb-reviews-container-] .sb-item-author-img{
     background-size: cover;
     background-position: center center;
+}
+/* SMASH-1785: the avatar renders as an <img>; match the cropping the
+   background-size:cover above gave it so non-square avatars are not stretched. */
+[id^=sb-reviews-container-] .sb-item-author-img img{
+    object-fit: cover;
+    object-position: center center;
 }
 
 

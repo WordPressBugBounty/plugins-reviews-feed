@@ -3146,7 +3146,13 @@ if(!sbr_js_exists) {
 								$caption.next('.sb-expand').remove();
 							} else {
 
-								$item.attr('data-text',$item.find('.sb-item-text').html());
+								// Keep the full text as detached DOM nodes rather than
+								// serialising it into an attribute and re-parsing it on
+								// expand (SMASH-1795). .text() is not usable here: the
+								// body legitimately carries <br> from nl2br() plus the
+								// em/strong the kses allowlist permits, and those would
+								// render as literal markup.
+								$item.data('sbrFullText', $item.find('.sb-item-text').contents().clone());
 								if (short_text.length > 1) {
 									$item.find('.sb-item-text').html(short_text);
 								}
@@ -3173,13 +3179,18 @@ if(!sbr_js_exists) {
 						//Click function
 						$item.find('.sb-expand button.sb-expand-on-click').off('click').on('click', function (e) {
 							e.preventDefault();
-							var $expand = jQuery(this);
-							$expand.closest('.sbr-expand').remove();
-							$caption.html($item.attr('data-text'));
+							// Bail instead of blanking the card: with no cached nodes .empty()
+							// wipes the review body, where the attribute round-trip this
+							// replaced was a jQuery getter and a harmless no-op.
+							var $sbrFullText = $item.data('sbrFullText');
+							if (! $sbrFullText || ! $sbrFullText.length) {
+								return;
+							}
+							$caption.empty().append($sbrFullText.clone());
 							$item.addClass('sb-item-full-text');
-							// The read-more control was just removed from the DOM, so move focus
-							// to the now-expanded review text — otherwise focus drops to <body>
-							// and keyboard/SR users lose their place (WCAG 2.4.3 Focus Order).
+							// empty() also removed the read-more control — it was moved inside
+							// .sb-item-text at :3159 — so move focus to the expanded text or it
+							// drops to <body> and keyboard/SR users lose their place (WCAG 2.4.3).
 							$caption.attr('tabindex', '-1').focus();
 							feed.afterResize();
 						});
@@ -3188,7 +3199,12 @@ if(!sbr_js_exists) {
 			},
 			stripEmojihtml: function ($el) {
 				$el.find('.emoji').each(function() {
-					$(this).replaceWith($(this).attr('alt'));
+					// Insert the alt as a TEXT NODE. Passing the string to
+					// replaceWith() parses it as HTML, which re-parses a value the
+					// server escaped for the attribute context only (SMASH-1795).
+					// `|| ''` guards an <img class="emoji"> with no alt, which
+					// replaceWith(undefined) would render as the literal "undefined".
+					$(this).replaceWith(document.createTextNode($(this).attr('alt') || ''));
 				});
 
 				return $el.html();

@@ -1700,6 +1700,45 @@ class SBR_Feed_Saver_Manager
 			return;
 		}
 		// Decode HTML entities in review text and reviewer name (fixes Danish characters, emojis, etc.)
+		//
+		// Do NOT narrow the body with wp_kses() here. It was tried (SMASH-1795) and removed:
+		// this is a WRITE path, so anything kses drops is gone from the database for good,
+		// and kses deletes from a `<` to the next `>` when what sits between them is not an
+		// allowed tag. Measured on real WordPress with the br/em/strong list, after the
+		// decode above:
+		//
+		//   "Great value 5 &lt; 10 and 20 &gt; 15" -> stored "Great value 5  15"
+		//   "Price &lt; $10 &gt; shipping"          -> stored "Price  shipping"
+		//   "Loved it &lt;b&gt;so much&lt;/b&gt;"    -> stored "Loved it so much"
+		//
+		// The first two are ordinary customer prose about price, and the deletion happened
+		// on every keyed/bulk fetch.
+		//
+		// Be precise about what this buys, because it is narrower than it looks:
+		// sbr_kses_review_text() deletes "5 < 10 and 20 > 15" at render exactly the same
+		// way, so what the visitor SEES is unchanged. What changes is that the database
+		// keeps the customer's actual words, so the display side stays fixable. Filtering
+		// on read is reversible; filtering on write is not.
+		//
+		// Nothing is lost defensively either. The render allowlist is the layer that
+		// protects, and it is deliberately the layer that also covers rows already stored
+		// plus the writers that never reach this function (Woo/EDD comment_content, the
+		// bulk updaters, the review form). Full sink list for the stored body, so the next
+		// audit does not have to rebuild it:
+		//   - feed templates + shortcode atts — sbr_kses_review_text() (5 sites)
+		//   - Review Alerts frontend — inline config via wp_json_encode() with
+		//     JSON_HEX_TAG, consumed by textContent/escapeHTML() in sbr-review-alerts.js
+		//   - Review Alerts BUILDER PREVIEW — SBR_Review_Alert_Service::get_preview_reviews()
+		//     (:1347) returns the body unfiltered over ajax_preview_reviews, and it is the
+		//     one sink with neither the allowlist nor JSON_HEX_TAG. Safe because the
+		//     consumer is React: customizer ReviewAlertPreview.js:733 and :844 interpolate
+		//     it as a JSX text child, which React escapes. The only
+		//     dangerouslySetInnerHTML in that component (:311-312) takes the static
+		//     PROS_ICON/CONS_ICON constants, not review data. Verified in the customizer
+		//     source; if that ever becomes dangerouslySetInnerHTML, this sink needs the
+		//     allowlist before anything else changes.
+		//   - JSON-LD — SBR_Schema_Service, escaped per path (JSON_HEX_TAG /
+		//     escape_markup_for_aioseo()).
 		if (isset($single_review['text'])) {
 			$single_review['text'] = html_entity_decode($single_review['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
 		}

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Smash Balloon Reviews Feed Text Template - AliExpress
  *
@@ -19,12 +20,12 @@ if (! defined('ABSPATH')) {
 // machine-translated by AliExpress (metadata.translated derived from a
 // non-empty translation block in the upstream response).
 if (! empty($post['metadata']['translated'])) :
-?>
+	?>
 <div class="sb-item-translated"><?php echo esc_html__('Translated from original', 'reviews-feed'); ?></div>
 <?php endif; ?>
 
 <div class="sb-item-text sb-fs sbr-review-horizontal-element">
-	<?php echo sbr_neutralize_shortcodes(wp_kses_post(nl2br($this->get_review_text($post)))); ?>
+	<?php echo sbr_neutralize_shortcodes(sbr_kses_review_text(nl2br($this->get_review_text($post)))); ?>
 </div>
 <div class="sb-expand">
 	<a href="#" data-link="<?php echo esc_url($this->more_link($post)); ?>">

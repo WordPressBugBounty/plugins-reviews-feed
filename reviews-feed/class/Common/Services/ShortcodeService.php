@@ -8,6 +8,7 @@ use SmashBalloon\Reviews\Common\FeedDisplay;
 use SmashBalloon\Reviews\Common\Feed_Locator;
 use SmashBalloon\Reviews\Common\Parser;
 use SmashBalloon\Reviews\Common\SBR_Settings;
+use SmashBalloon\Reviews\Common\Util;
 use Smashballoon\Stubs\Services\ServiceProvider;
 
 class ShortcodeService extends ServiceProvider
@@ -179,13 +180,20 @@ class ShortcodeService extends ServiceProvider
 	{
 		$settings                                = array();
 		$settings['singleManualReview']          = true;
+		// These attributes are Contributor-authorable and never reach
+		// SBR_Feed_Saver_Manager::cache_single_review(), so this path carries its own
+		// sanitisers (SMASH-1795). Each is picked for the attribute's real value space
+		// — the obvious general-purpose choice breaks a supported input in four of the
+		// six cases: sanitize_key('wordpress.org') is 'wordpressorg', absint('positive')
+		// is 0, esc_url_raw('wp-content/a.jpg') gains an http:// host, and
+		// sanitize_textarea_field('<strong>hi</strong>') is 'hi'.
 		$settings['singleManualReviewContent']   = array(
-			'name'     => isset($atts['name']) && ! empty($atts['name']) ? $atts['name'] : false,
-			'content'  => isset($atts['content']) && ! empty($atts['content']) ? $atts['content'] : false,
-			'rating'   => isset($atts['rating']) && ! empty($atts['rating']) ? $atts['rating'] : false,
-			'avatar'   => isset($atts['avatar']) && ! empty($atts['avatar']) ? $atts['avatar'] : false,
-			'time'     => isset($atts['time']) && ! empty($atts['time']) ? $atts['time'] : false,
-			'provider' => isset($atts['provider']) && ! empty($atts['provider']) ? $atts['provider'] : false,
+			'name'     => ! empty($atts['name']) ? sanitize_text_field(Util::payload_string($atts['name'])) : false,
+			'content'  => ! empty($atts['content']) ? sbr_kses_review_text(Util::payload_string($atts['content'])) : false,
+			'rating'   => ! empty($atts['rating']) ? Util::sanitize_rating($atts['rating']) : false,
+			'avatar'   => ! empty($atts['avatar']) ? Util::sanitize_avatar_url($atts['avatar']) : false,
+			'time'     => ! empty($atts['time']) ? Util::sanitize_time($atts['time']) : false,
+			'provider' => ! empty($atts['provider']) ? Util::sanitize_provider_slug($atts['provider']) : false,
 		);
 		$settings['showHeader']                  = false;
 		$settings['showLoadButton']              = false;

@@ -814,8 +814,8 @@
 			const showDate = settings.showDate !== false;
 
 			const prov = typeof review.provider === 'object' ? (review.provider?.name || '') : (review.provider || '');
-			const bkScore = prov === 'booking' ? parseFloat(review.metadata?.review_score) : NaN;
-			const bkWord = prov === 'booking' ? String(review.metadata?.review_score_word || '').trim() : '';
+			const bkScore = prov === 'booking' ? this.bookingReviewScore(review) : NaN;
+			const bkWord = prov === 'booking' ? this.bookingScoreWord(review) : '';
 			const rating = review.rating || 5;
 			// SMASH-782: Booking shows its native 0-10 score badge + word (e.g.
 			// "8.5 Very good"), matching the single feed; others show stars.
@@ -853,6 +853,38 @@
 					${metaHTML}
 				</div>
 			`;
+		}
+
+		/**
+		 * THIS reviewer's Booking score on the native 0-10 scale.
+		 *
+		 * Not metadata.review_score — that is the PROPERTY's rating and the relay stamps the
+		 * same value onto every review, so the popup showed one score no matter who was
+		 * cycled in.
+		 *
+		 * Read, not computed. SBR_Review_Alert_Frontend::format_reviews_for_frontend()
+		 * resolves the pair through sbr_booking_review_score() / sbr_booking_score_word()
+		 * and ships it on the review. Recomputing it here would mean doubling this
+		 * payload's `rating`, which is cast to int for the star renderer — a 4.5 review
+		 * would render 8.0 where the feed card and the JSON-LD both say 9.0 — and would
+		 * put an untranslated copy of the band ladder on this side.
+		 *
+		 * @param {Object} review Normalised review.
+		 * @returns {number} Score on the 0-10 scale, 0 when there is no usable rating.
+		 */
+		bookingReviewScore(review) {
+			return Number(review && review.bookingScore) || 0;
+		}
+
+		/**
+		 * Booking's band word for this review, as resolved and translated server-side.
+		 * See bookingReviewScore() for why neither value is computed here.
+		 *
+		 * @param {Object} review Normalised review.
+		 * @returns {string} Band word, or '' below the lowest named band.
+		 */
+		bookingScoreWord(review) {
+			return (review && review.bookingScoreWord) || '';
 		}
 
 		/**
@@ -1117,12 +1149,22 @@
 			if (this.config.content.showAvatar) {
 				const avatar = reviewElement.querySelector('.sbr-review-alert__avatar');
 				if (avatar) {
+					// SMASH-1785: the markup's inline onerror disarms itself after the
+					// first failure (this.onerror = null), so an avatar rotated in later
+					// had no handler left and simply stayed broken. Re-arm on every swap.
+					const fallbackAvatar = this.config.defaultAvatar || '';
+					avatar.onerror = function () {
+						this.onerror = null;
+						if (fallbackAvatar && this.src !== fallbackAvatar) {
+							this.src = fallbackAvatar;
+						}
+					};
 					if (review.reviewer && review.reviewer.avatar) {
 						avatar.src = review.reviewer.avatar;
 						avatar.alt = review.reviewer.name || 'Reviewer';
 					} else {
 						// SMASH-782: fall back to the default avatar image (same as the single feed), not a "?".
-						avatar.src = this.config.defaultAvatar || '';
+						avatar.src = fallbackAvatar;
 						avatar.alt = review.reviewer?.name || 'Reviewer';
 					}
 				}
@@ -1203,9 +1245,8 @@
 			const content = reviewElement.querySelector('.sbr-review-alert__content');
 			if (!content) return;
 			const prov = typeof review.provider === 'object' ? (review.provider?.name || '') : (review.provider || '');
-			const md = review.metadata || {};
-			const bkScore = prov === 'booking' ? parseFloat(md.review_score) : NaN;
-			const bkWord = prov === 'booking' ? String(md.review_score_word || '').trim() : '';
+			const bkScore = prov === 'booking' ? this.bookingReviewScore(review) : NaN;
+			const bkWord = prov === 'booking' ? this.bookingScoreWord(review) : '';
 			let stars = content.querySelector('.sbr-review-alert__stars');
 			let score = content.querySelector('.sbr-review-alert__score');
 
@@ -1223,7 +1264,12 @@
 					content.insertBefore(score, stars || content.firstChild);
 				}
 				score.querySelector('.sbr-review-alert__score-badge').textContent = bkScore.toFixed(1);
-				const label = score.querySelector('.sbr-review-alert__score-label');
+				let label = score.querySelector('.sbr-review-alert__score-label');
+				if (!label) {
+					label = document.createElement('span');
+					label.className = 'sbr-review-alert__score-label';
+					score.appendChild(label);
+				}
 				label.textContent = bkWord;
 				label.style.display = bkWord ? '' : 'none';
 				if (stars) stars.remove();

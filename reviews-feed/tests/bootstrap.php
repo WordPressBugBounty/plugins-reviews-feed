@@ -63,6 +63,162 @@ if (!function_exists('sanitize_text_field')) {
 	}
 }
 
+// SMASH-1795 — parse_single_review() and sbr_kses_review_text() now use these.
+// Approximations of WordPress behaviour, enough for the unit contracts under test:
+// tags stripped, newlines kept by the textarea variant, allowlist honoured by kses.
+if (!function_exists('sanitize_textarea_field')) {
+	function sanitize_textarea_field($str)
+	{
+		// Like sanitize_text_field but newline-preserving.
+		return trim(strip_tags((string) $str));
+	}
+}
+
+if (!function_exists('sanitize_key')) {
+	function sanitize_key($key)
+	{
+		return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $key));
+	}
+}
+
+// SMASH-1795 — sbr_kses_review_text() resolves an emoji alt through esc_html().
+// These lived only inside individual test files, which made any class relying on
+// them pass in a full run and fatal in isolation. They belong here.
+if (!function_exists('esc_html')) {
+	function esc_html($text)
+	{
+		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+	}
+}
+
+if (!function_exists('esc_attr')) {
+	function esc_attr($text)
+	{
+		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+	}
+}
+
+if (!function_exists('esc_url_raw')) {
+	/**
+	 * Mirrors the parts of WordPress's esc_url() that this ticket depends on, in the
+	 * same ORDER — the order is what makes it safe, and a stub that skipped a step
+	 * would give false coverage on exactly the attack class under test.
+	 *
+	 * Verified against a real WP install; all of these return '':
+	 *   javascript:alert(1) · data:text/html;base64,x · java<TAB>script:alert(1)
+	 *   jav&#x0A;ascript:alert(1) · jav&amp;#x0A;ascript:alert(1)
+	 * and these round-trip: /wp-content/a.jpg · https://x.test/my%20photo.jpg
+	 * while a scheme-less relative path gains a host: wp-content/a.jpg ->
+	 * http://wp-content/a.jpg.
+	 */
+	function esc_url_raw($url)
+	{
+		$url = str_replace(' ', '%20', ltrim((string) $url));
+		// WP strips every character outside this set BEFORE testing the protocol,
+		// which is what disarms `java<TAB>script:` and the entity-encoded forms.
+		$url = (string) preg_replace('|[^a-z0-9-~+_.?#=!&;,/:%@$\|*\'()\[\]\x80-\xff]|i', '', $url);
+		if ($url === '') {
+			return '';
+		}
+		if (stripos($url, 'mailto:') !== 0) {
+			$url = str_ireplace(array('%0d', '%0a'), '', $url);
+		}
+		$url = str_replace(';//', '://', $url);
+
+		if (strpos($url, ':') !== false) {
+			$scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+			// A leading '//' is protocol-relative, not a scheme.
+			if (
+				strpos($url, '//') !== 0
+				&& !in_array($scheme, array('http', 'https', 'mailto', 'tel'), true)
+			) {
+				return '';
+			}
+			return $url;
+		}
+		if (!in_array($url[0], array('/', '#', '?'), true)) {
+			return 'http://' . $url;
+		}
+		return $url;
+	}
+}
+
+if (!function_exists('wp_kses')) {
+	/**
+	 * strip_tags() alone is NOT a faithful enough stand-in: it keeps every attribute
+	 * on an allowed tag, so `<span onmouseover=…>` would survive and a test asserting
+	 * that attributes are dropped would pass against a broken implementation. Real
+	 * wp_kses() drops any attribute not in the tag's allowlist, so the stub strips
+	 * attributes too and only honours the ones explicitly permitted.
+	 */
+	function wp_kses($string, $allowed_html = array())
+	{
+		// Real wp_kses() treats a STRING second argument as a CONTEXT NAME and resolves
+		// it through wp_kses_allowed_html() — 'post' yields $allowedposttags, which
+		// KEEPS <img class src alt>. Reproducing that here is what makes the
+		// non-array-filter-return test non-vacuous: a stub that quietly cast the string
+		// to an array would let the unguarded implementation pass. Verified against
+		// WordPress: wp_kses('<img class="emoji" src="x" alt="pwn">', 'post') returns
+		// the img intact.
+		if (is_string($allowed_html)) {
+			$allowed_html = $allowed_html === 'strip'
+				? array()
+				: array('img' => array('class' => array(), 'src' => array(), 'alt' => array()),
+					'a' => array('href' => array()), 'em' => array(), 'strong' => array(), 'br' => array());
+		}
+		$allowed_html = (array) $allowed_html;
+		$allowed      = array_keys($allowed_html);
+		$string       = (string) $string;
+
+		if (empty($allowed)) {
+			return strip_tags($string);
+		}
+
+		$string = strip_tags($string, '<' . implode('><', $allowed) . '>');
+
+		// Drop attributes that the tag's own allowlist doesn't name.
+		return (string) preg_replace_callback(
+			'#<([a-zA-Z0-9]+)([^>]*)>#',
+			static function ($m) use ($allowed_html) {
+				$tag   = strtolower($m[1]);
+				$attrs = isset($allowed_html[$tag]) ? (array) $allowed_html[$tag] : array();
+				if (empty($attrs)) {
+					// Preserve a self-closing marker (`<br />`) but nothing else.
+					return substr(rtrim($m[2]), -1) === '/' ? '<' . $tag . ' />' : '<' . $tag . '>';
+				}
+				$kept = '';
+				foreach (array_keys($attrs) as $name) {
+					if (preg_match('#\s' . preg_quote($name, '#') . '\s*=\s*("[^"]*"|\'[^\']*\'|\S+)#i', $m[2], $a)) {
+						$value = trim($a[1], '"\'');
+						// Real wp_kses() runs URL attributes through an allowed-protocol
+						// list, so `javascript:` / `data:` hrefs are dropped. Without this
+						// the stub would let an `a[href]` allowlist look safe when it isn't.
+						if (in_array($name, array('href', 'src', 'cite'), true)) {
+							$scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
+							if ($scheme !== '' && !in_array($scheme, array('http', 'https', 'mailto', 'tel'), true)) {
+								continue;
+							}
+						}
+						$kept .= ' ' . $name . '=' . $a[1];
+					}
+				}
+				return '<' . $tag . $kept . '>';
+			},
+			$string
+		);
+	}
+}
+
+
+if (!function_exists('wp_strip_all_tags')) {
+	function wp_strip_all_tags($text, $remove_breaks = false)
+	{
+		$text = preg_replace('@<(script|style)[^>]*?>.*?</\\1>@si', '', (string) $text);
+		$text = strip_tags($text);
+		return $remove_breaks ? trim(preg_replace('/[\\r\\n\\t ]+/', ' ', $text)) : trim($text);
+	}
+}
+
 if (!function_exists('absint')) {
 	function absint($maybeint)
 	{
@@ -122,6 +278,27 @@ if (!function_exists('delete_option')) {
 		}
 		unset($wp_options_mock[$option]);
 		return true;
+	}
+}
+
+if (!function_exists('home_url')) {
+	// Core signature: home_url($path = '', $scheme = null).
+	function home_url($path = '', $scheme = null)
+	{
+		global $wp_home_url_mock;
+		$base = $wp_home_url_mock ?? 'https://example.test';
+		return rtrim($base, '/') . ($path === '' ? '' : '/' . ltrim($path, '/'));
+	}
+}
+
+if (!function_exists('get_bloginfo')) {
+	function get_bloginfo($show = '')
+	{
+		global $wp_bloginfo_mock;
+		if (is_array($wp_bloginfo_mock) && array_key_exists($show, $wp_bloginfo_mock)) {
+			return $wp_bloginfo_mock[$show];
+		}
+		return 'Test Site';
 	}
 }
 
@@ -409,3 +586,14 @@ if (!function_exists('wp_clear_scheduled_hook')) {
 
 // Autoloader
 require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+// Util::should_store_local_images() passes sbr_plugin_settings_defaults() as
+// get_option()'s default, so it is evaluated eagerly even when a test has already
+// mocked `sbr_settings`. Load the real helper rather than shadowing it — declaring a
+// duplicate here fatals as soon as any test require_once's class/sbr-functions.php,
+// which has no function_exists guard. Safe at this point: the add_action /
+// register_activation_hook / add_filter stubs above absorb its top-level calls.
+// (SMASH-1785)
+if (!function_exists('sbr_plugin_settings_defaults')) {
+	require_once dirname(__DIR__) . '/class/sbr-functions.php';
+}

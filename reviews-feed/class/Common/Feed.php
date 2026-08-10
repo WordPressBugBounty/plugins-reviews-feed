@@ -698,6 +698,17 @@ class Feed
 				}
 				$single_post_cache->store();
 			} else {
+				// SMASH-1785 — rebuild a localized avatar whose file has gone missing
+				// (Clear Local Images, a migration, host cleanup). Only brand-new
+				// reviews were ever resized, so a cleared avatar stayed dead forever.
+				// This is the fetch path, so the work is bounded by the refresh
+				// cadence, not per page view.
+				if (
+					Util::should_store_local_images()
+					&& $single_post_cache->localized_avatar_missing()
+				) {
+					$single_post_cache->resize_avatar(150);
+				}
 				$single_post_cache->update_single();
 			}
 		}

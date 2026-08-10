@@ -165,9 +165,9 @@ $link_url = $content_settings['link_url'] ?? '';
 						<?php if ($show_rating) : ?>
 							<?php if ($is_booking_only) : ?>
 							<!-- Booking native 0-10 score word (e.g. "Very good") replaces the 0-5 stars -->
-							<?php if ('' !== $booking_word) : ?>
+								<?php if ('' !== $booking_word) : ?>
 							<div class="sbr-review-alert__booking-word"><?php echo esc_html($booking_word); ?></div>
-							<?php endif; ?>
+								<?php endif; ?>
 							<?php else : ?>
 							<!-- Stars (decorative — the numeric rating is announced separately) -->
 							<div class="sbr-review-alert__stars" aria-hidden="true">
@@ -248,21 +248,27 @@ $link_url = $content_settings['link_url'] ?? '';
 					<div class="sbr-review-alert__content">
 						<?php if ($show_rating) : ?>
 							<?php
-							// SMASH-782: Booking shows its native 0-10 score + word (e.g.
-							// "8.5 Very good") instead of 0-5 stars, matching the single feed's
-							// .sb-item-rating-score badge+label. Other providers keep stars.
+							// SMASH-782: Booking shows its native 0-10 score instead of 0-5 stars,
+							// matching the single feed's .sb-item-rating-score badge.
+							//
+							// THIS reviewer's own score, not metadata.review_score — that is the
+							// PROPERTY's rating and the relay stamps the same value onto every
+							// review, so the popup showed one score no matter who was cycled in.
+							// Score and band come from the shared rules in class/sbr-functions.php
+							// (sbr_booking_review_score / sbr_booking_score_word), which the feed
+							// card, the JS cycler and both customizer previews also use.
 							$sbr_bk_score = ('booking' === $provider)
-								? trim((string) ($first_review['metadata']['review_score'] ?? ''))
-								: '';
-							$sbr_bk_word = ('booking' === $provider)
-								? trim((string) ($first_review['metadata']['review_score_word'] ?? ''))
-								: '';
+								? sbr_booking_review_score($first_review)
+								: 0;
+							$sbr_bk_word = $sbr_bk_score > 0 ? sbr_booking_score_word($sbr_bk_score) : '';
 							?>
-							<?php if (is_numeric($sbr_bk_score) && (float) $sbr_bk_score > 0) : ?>
-							<!-- Booking native 0-10 score badge + word label -->
+							<?php if ($sbr_bk_score > 0) : ?>
+							<!-- Booking native 0-10 score badge + band word -->
 							<div class="sbr-review-alert__score sbr-review-alert__score--booking">
-								<span class="sbr-review-alert__score-badge sbr-review-alert__score-badge--booking"><?php echo esc_html(number_format((float) $sbr_bk_score, 1)); ?></span>
-								<?php if ('' !== $sbr_bk_word) : ?><span class="sbr-review-alert__score-label"><?php echo esc_html($sbr_bk_word); ?></span><?php endif; ?>
+								<span class="sbr-review-alert__score-badge sbr-review-alert__score-badge--booking"><?php echo esc_html(number_format($sbr_bk_score, 1)); ?></span>
+								<?php if ('' !== $sbr_bk_word) :
+									?><span class="sbr-review-alert__score-label"><?php echo esc_html($sbr_bk_word); ?></span><?php
+								endif; ?>
 							</div>
 							<?php else : ?>
 							<!-- Stars -->

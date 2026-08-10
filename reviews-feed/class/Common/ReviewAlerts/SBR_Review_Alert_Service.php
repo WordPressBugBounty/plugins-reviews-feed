@@ -1360,7 +1360,27 @@ class SBR_Review_Alert_Service extends ServiceProvider
 						'name'   => $decoded_name,
 						'avatar' => $reviewer_avatar,
 					],
-					'rating'       => (int) $rating,
+					// Booking keeps its fractional rating, because the React preview derives
+					// the badge from THIS field rather than from a server-resolved score:
+					// ReviewAlertPreview.js:293 calls SbUtils.bookingReviewScore(review),
+					// and that helper reads `review.rating` and doubles it (SbUtils.js:1232).
+					// So a truncated 4.5 showed "8.0 Very good" in the popup editor while
+					// the live popup — which resolves from the raw row via
+					// sbr_booking_review_score() — showed "9.0 Superb". One band off, on the
+					// surface whose whole job is to match.
+					//
+					// NOT the same contract as the frontend cycler: that one reads the
+					// server-resolved bookingScore/bookingScoreWord, because its payload
+					// casts `rating` to int for the star renderer. The preview has no such
+					// cast to work around and no PHP round-trip, so it computes locally.
+					// Sending the pair here too would be dead weight until the customizer
+					// reads it — worth doing, but it needs its own PR and a re-pin.
+					//
+					// Safe to send a float: neither preview layout renders stars for a
+					// Booking card, the score badge takes that slot.
+					'rating'       => 'booking' === $review_provider
+						? (float) ($review['rating'] ?? 0)
+						: (int) $rating,
 					'text'         => $decoded_text,
 					'title'        => isset($review['title']) ? html_entity_decode((string) $review['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8') : '',
 					'relativeDate' => self::get_relative_date($review['time'] ?? 0),

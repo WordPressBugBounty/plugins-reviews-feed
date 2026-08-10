@@ -1548,6 +1548,109 @@ class Util
 		return $review;
 	}
 
+	/**
+	 * Narrow a payload value to a string before handing it to a sanitiser.
+	 *
+	 * Shortcode attributes and JSON-decoded review payloads are `mixed`. A blind
+	 * `(string)` cast is what level 9 objects to, and rightly — an array warns and an
+	 * object without __toString() fatals. Non-scalars become ''.
+	 *
+	 * @param  mixed $value
+	 * @return string
+	 */
+	public static function payload_string($value): string
+	{
+		if (is_string($value)) {
+			return $value;
+		}
+		if (is_scalar($value)) {
+			return (string) $value;
+		}
+		return '';
+	}
+
+	/**
+	 * Sanitise a rating, preserving Facebook's 'positive'/'negative' sentinels.
+	 *
+	 * Parser::get_rating() maps those two strings to 5 and 1, and maps anything falsy
+	 * to 1 — so coercing them (absint('positive') === 0) turns a 5-star recommendation
+	 * into 1 star. Numerics pass through uncast because
+	 * Feed::sort_array_byrating_and_date() compares stored ratings with ===, which a
+	 * 5 -> 5.0 change would break. Values are NOT clamped to 0-5: that matches the
+	 * previous behaviour, and every render sink already bounds the star loop.
+	 *
+	 * @param  mixed $rating
+	 * @return float|int|string
+	 */
+	public static function sanitize_rating($rating)
+	{
+		if ($rating === 'positive' || $rating === 'negative') {
+			return $rating;
+		}
+		if (is_numeric($rating)) {
+			return $rating;
+		}
+		// absint(), not 0 — "3 stars" must stay 3. is_numeric('5 ') is false on PHP 7.4
+		// (our floor), so trailing whitespace reaches this branch too.
+		return absint(trim(self::payload_string($rating)));
+	}
+
+	/**
+	 * Normalise a review time, keeping the non-numeric form.
+	 *
+	 * A date string is supported — SB_Analytics branches on is_numeric() — and
+	 * FeedDisplay drops the date element entirely on a falsy time, so coercing to 0
+	 * makes the date vanish rather than merely look wrong.
+	 *
+	 * @param  mixed $time
+	 * @return int|string
+	 */
+	public static function sanitize_time($time)
+	{
+		if (is_numeric($time)) {
+			return absint($time);
+		}
+		return sanitize_text_field(self::payload_string($time));
+	}
+
+	/**
+	 * Sanitise a provider slug: sanitize_key() semantics, but the dot survives.
+	 *
+	 * The dot matters because 'wordpress.org' is a real slug (WordpressOrg::$name)
+	 * compared as a literal at RemoteRequest:189, Util:274/:319 and
+	 * SBR_Feed_Saver_Manager:743. Everything else sanitize_key() does is load-bearing
+	 * and kept: downstream provider checks are lowercase case-sensitive literals, and
+	 * FeedDisplay::provider_icon_url() concatenates this value into
+	 * `assets/icons/{$provider}-provider.svg`, so the charset has to exclude `/`.
+	 *
+	 * @param  mixed $provider
+	 * @return string
+	 */
+	public static function sanitize_provider_slug($provider): string
+	{
+		$slug = strtolower(trim(self::payload_string($provider)));
+		$slug = (string) preg_replace('/[^a-z0-9._\-]/', '', $slug);
+		// '..' survives the charset above and is never part of a real slug.
+		return str_replace('..', '', $slug);
+	}
+
+	/**
+	 * Narrow an avatar value to a safe URL.
+	 *
+	 * Deliberately a thin wrapper: esc_url_raw() already handles every obfuscation of
+	 * a dangerous scheme, including the entity-encoded ones. Do not reintroduce a
+	 * scheme test to preserve relative paths — the render site (author.php:25) wraps
+	 * the value in esc_url(), which prepends the same `http://`, so a scheme-less
+	 * avatar never worked end-to-end anyway.
+	 *
+	 * @param  mixed $url
+	 * @return string
+	 */
+	public static function sanitize_avatar_url($url): string
+	{
+		return esc_url_raw(trim(wp_strip_all_tags(self::payload_string($url))));
+	}
+
 	 /**
 	 * Transform Single Review for storing purposes
 	 *

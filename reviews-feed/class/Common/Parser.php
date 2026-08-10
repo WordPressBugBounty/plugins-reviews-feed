@@ -21,8 +21,52 @@ class Parser {
 	public function get_text($post)
 	{
 		if (! empty($post['text'])) {
-			// Decode HTML entities (fixes Danish characters like æ, ø, å and other special chars)
-			return html_entity_decode((string) $post['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			// No decode here. Doing it a second time re-armed a stored
+			// &lt;img class=emoji alt=…&gt; into live markup after a write filter had already
+			// accepted it as inert text — the extra encoding layer every writer could hide
+			// behind (SMASH-1795).
+			//
+			// Do NOT "restore this for consistency with ingest": the write side does not
+			// decode everywhere, and that asymmetry is deliberate rather than an oversight
+			// to tidy up. ONE writer decodes: the bulk/builder path
+			// (SBR_Feed_Saver_Manager::cache_single_review). The on-demand frontend path —
+			// Feed::cache_single_posts_from_set (Feed.php:677, note the same method name on
+			// a different class) — writes straight through SinglePostCache, as do the
+			// Woo/EDD cache handlers, the bulk updaters and the review form
+			// (SubmissionsManager::get_db_store_data, which stores entities as-is on
+			// purpose: decoding there shifts a byte length two rule evaluators depend on).
+			//
+			// Util::normalize_review_shape() is not a fix location either: PostAggregator
+			// calls it on READ (:114, :186, :245), so decoding there would reintroduce
+			// exactly this bug.
+			//
+			// Consequence, accepted: a body stored DOUBLE-encoded by one of the
+			// non-decoding writers renders its entities literally. Single-encoded text is
+			// unaffected — wp_kses() leaves a valid entity alone and esc_html() passes it
+			// through ($double_encode = false), so the browser still resolves it. Verified
+			// against WordPress: wp_kses('Caf&eacute;', [...]) returns it unchanged, and
+			// esc_html('S&oslash;ren') returns 'S&oslash;ren', not '&amp;oslash;'.
+			//
+			// This is the FEED contract only. Two other surfaces read the same value and
+			// both decode it, each for its own reason. Do not "unify" any of the three in
+			// either direction without re-reading all the sink sets.
+			//
+			//   Review Alerts — SBR_Review_Alert_Frontend:941, SBR_Review_Alert_Service:1347.
+			//   Their sinks are textContent and escapeHTML(), neither of which resolves an
+			//   entity, so an accented body would display "sm&oslash;rrebr&oslash;d"
+			//   literally without the decode. Safe because both insert as TEXT.
+			//
+			//   JSON-LD — SBR_Schema_Service::map_reviews() and ::entity_identity()
+			//   (SMASH-1756). Same problem, worse: inside
+			//   <script type="application/ld+json"> the HTML parser treats the block as raw
+			//   text, so nothing ever resolves the entity. That surface decodes at its own
+			//   boundary and does NOT strip markup — stripping would truncate a legitimate
+			//   "cheaper than < $10" at the unclosed bracket, which
+			//   test_map_preserves_review_text_without_truncation pins. What keeps a decoded
+			//   tag inert there is per-sink escaping, JSON_HEX_TAG on the own-block path and
+			//   escape_markup_for_aioseo() on the AIOSEO path — do not remove either on the
+			//   assumption that the text was sanitised upstream.
+			return (string) $post['text'];
 		}
 		return '';
 	}
@@ -53,8 +97,11 @@ class Parser {
 	public function get_reviewer_name($post)
 	{
 		if (! empty($post['reviewer']['name'])) {
-			// Decode HTML entities (fixes Danish characters like æ, ø, å and other special chars)
-			return html_entity_decode($post['reviewer']['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+			// No decode, same as the review body above (SMASH-1795). Accented names are
+			// unaffected: every consumer runs esc_html(), which is _wp_specialchars() with
+			// $double_encode = false, so a stored `S&oslash;ren` reaches the browser
+			// untouched and renders as Søren. Verified against WordPress.
+			return (string) $post['reviewer']['name'];
 		}
 		return '';
 	}
