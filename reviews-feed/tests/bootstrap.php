@@ -48,11 +48,23 @@ if (!defined('SBR_POSTS_TABLE')) {
 	define('SBR_POSTS_TABLE', 'sbr_reviews_posts');
 }
 
+// Feed-caches table name — mirrors bootstrap.php / phpstan-ci-bootstrap.php
+// for tests exercising ReviewsReporter::get_performance_metrics() (SMASH-1130).
+if (!defined('SBR_FEED_CACHES_TABLE')) {
+	define('SBR_FEED_CACHES_TABLE', 'sbr_feed_caches');
+}
+
 // Sources table name — mirrors the runtime define so tests exercising the
 // external-provider refresh path (SBR_Sources::sources_by_providers) resolve
 // the constant instead of erroring on an undefined constant.
 if (!defined('SBR_SOURCES_TABLE')) {
 	define('SBR_SOURCES_TABLE', 'sbr_sources');
+}
+
+// Usage-tracking API base — mirrors the runtime define (plugin bootstrap.php)
+// so Config::get_api_url() validation tests exercise the real fallback value.
+if (!defined('SBR_SMASH_USAGE_TRACKING_API_URL')) {
+	define('SBR_SMASH_USAGE_TRACKING_API_URL', 'https://usage.smashballoon.com/api');
 }
 
 // Mock WordPress functions used in tested code
@@ -234,6 +246,43 @@ if (!function_exists('get_option')) {
 	}
 }
 
+if (!function_exists('check_ajax_referer')) {
+	// Controllable via $GLOBALS['sbr_test_nonce_ok'] (SMASH-1130 listener guard tests).
+	// Records the requested action so tests can assert the guard verifies the
+	// SAME nonce action the primary handlers use.
+	function check_ajax_referer($action, $query_arg = false, $stop = true)
+	{
+		$GLOBALS['sbr_test_nonce_actions_checked'][] = $action;
+		return $GLOBALS['sbr_test_nonce_ok'] ?? false;
+	}
+}
+
+if (!function_exists('current_user_can')) {
+	// Controllable via $GLOBALS['sbr_test_user_can']; the real
+	// sbr_current_user_can() (class/sbr-functions.php) delegates here.
+	// Records the requested capability so tests can assert it.
+	function current_user_can($capability)
+	{
+		$GLOBALS['sbr_test_caps_checked'][] = $capability;
+		return $GLOBALS['sbr_test_user_can'] ?? false;
+	}
+}
+
+if (!function_exists('current_action')) {
+	// Controllable via $GLOBALS['sbr_test_current_action'].
+	function current_action()
+	{
+		return $GLOBALS['sbr_test_current_action'] ?? '';
+	}
+}
+
+if (!function_exists('wp_unslash')) {
+	function wp_unslash($value)
+	{
+		return is_string($value) ? stripslashes($value) : $value;
+	}
+}
+
 if (!function_exists('wp_parse_url')) {
 	function wp_parse_url($url, $component = -1)
 	{
@@ -283,6 +332,7 @@ if (!function_exists('delete_option')) {
 
 if (!function_exists('home_url')) {
 	// Core signature: home_url($path = '', $scheme = null).
+	// SmashUsageTracking::send_checkin() and RegisterSite::register() call the short form.
 	function home_url($path = '', $scheme = null)
 	{
 		global $wp_home_url_mock;
@@ -358,7 +408,9 @@ if (!function_exists('register_activation_hook')) {
 if (!function_exists('add_action')) {
 	function add_action($hook, $callback, $priority = 10, $accepted_args = 1)
 	{
-		// no-op for tests
+		// Recorded so tests can assert hook wiring (e.g. SMASH-1130 usage
+		// tracking cron); otherwise a no-op.
+		$GLOBALS['sbr_test_actions'][$hook][] = ['callback' => $callback, 'priority' => $priority];
 	}
 }
 if (!function_exists('add_filter')) {
@@ -511,7 +563,19 @@ if (!function_exists('__')) {
 if (!function_exists('wp_remote_post')) {
 	function wp_remote_post($url, $args = [])
 	{
+		// Record calls so tests can assert whether an HTTP request was
+		// attempted (e.g. the usage-tracking failure backoff must NOT reach
+		// the network).
+		$GLOBALS['sbr_test_http_posts'][] = ['url' => $url, 'args' => $args];
 		return [];
+	}
+}
+
+if (!function_exists('wp_remote_retrieve_response_code')) {
+	function wp_remote_retrieve_response_code($response)
+	{
+		global $wp_http_response_code_mock;
+		return $wp_http_response_code_mock ?? 0;
 	}
 }
 if (!function_exists('wp_remote_get')) {
@@ -530,6 +594,16 @@ if (!function_exists('wp_remote_retrieve_body')) {
 	function wp_remote_retrieve_body($response)
 	{
 		return '';
+	}
+}
+
+// Scheduler::schedule() jitters its first run with wp_rand(). Without this, a test
+// that reaches schedule() unexpectedly dies on an undefined function instead of
+// failing on its own assertion.
+if (!function_exists('wp_rand')) {
+	function wp_rand($min = 0, $max = 0)
+	{
+		return $min;
 	}
 }
 

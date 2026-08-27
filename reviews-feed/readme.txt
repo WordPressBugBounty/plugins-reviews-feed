@@ -2,8 +2,8 @@
 Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
-Tested up to: 7.0
-Stable tag: 2.10.0
+Tested up to: 7.1
+Stable tag: 2.11.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -132,6 +132,10 @@ Yep. You can add multiple accounts from both Google and Yelp using the customize
 
 We include a handy link to Google's place ID finder when connecting your Google account to the plugin.
 
+= Does the plugin send any data to Smash Balloon? =
+
+Only if you turn on the optional Usage Tracking setting (Reviews Feed → Settings → Advanced), which is off by default in the free plugin. When enabled, it sends a weekly background report about your plugin settings and relevant site stats (like WordPress and PHP versions) to help us prevent conflicts and improve the product. It never sends sensitive information such as access tokens, email addresses, or user info, and you can turn it off at any time — doing so also deletes the data collected on your site. [Learn More](https://smashballoon.com/doc/usage-tracking-reviews/)
+
 = My review feed is empty. What happened!? =
 
 There are a few common reasons for this:
@@ -204,6 +208,13 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.11.0 =
+* New: Optional usage tracking, off by default. The free plugin has never sent anything and still will not unless you switch it on under Settings → Advanced. With it on, we get a weekly report about your plugin settings and site details like your WordPress and PHP versions. Never access tokens, email addresses or anything about your users. Switching it back off deletes what was collected on your site.
+* Improvement: Tested and supported on WordPress 7.1.
+* Fix: Adding a source now tells you what is wrong instead of doing nothing. Clicking Finish with the box empty looked like a dead button, and some providers gave no message at all when what you typed was not accepted.
+* Fix: Duplicating a feed keeps its styling instead of rendering with none.
+* Maintenance: behind-the-scenes improvements and compatibility updates.
+
 = 2.10.0 =
 * New: Rich snippets. Your reviews can now show as star ratings in Google search results — the plugin adds schema.org markup for your feeds. Works with or without an SEO plugin (it merges into All in One SEO when that's active). On by default, with a toggle under Settings → Advanced.
 * Improvement: "Read more" reliably expands long reviews.

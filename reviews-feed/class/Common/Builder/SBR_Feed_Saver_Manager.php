@@ -51,9 +51,13 @@ class SBR_Feed_Saver_Manager
 
 
 		add_action('wp_ajax_sbr_feed_saver_manager_add_source', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'add_source'));
-		add_action('wp_ajax_sbr_feed_saver_manager_add_facebook_souce', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'add_facebook_souce'));
-		add_action('wp_ajax_sbr_feed_saver_manager_connect_manual_facebook', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'add_manual_facebook_souce'));
-		add_action('wp_ajax_sbr_feed_saver_manager_delete_source', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'delete_souce'));
+		add_action('wp_ajax_sbr_feed_saver_manager_add_facebook_source', array( 'SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'add_facebook_source' ));
+		// The bundled customizer (vendor/smashballoon/customizer AddSourceModal.js) still
+		// sends the historical misspelled action name — keep it registered or adding a
+		// Facebook source from the feed builder 400s.
+		add_action('wp_ajax_sbr_feed_saver_manager_add_facebook_souce', array( 'SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'add_facebook_source' ));
+		add_action('wp_ajax_sbr_feed_saver_manager_connect_manual_facebook', array( 'SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'add_manual_facebook_source' ));
+		add_action('wp_ajax_sbr_feed_saver_manager_delete_source', array( 'SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'delete_source' ));
 		add_action('wp_ajax_sbr_feed_saver_manager_get_source_impact', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'get_source_impact'));
 		add_action('wp_ajax_sbr_feed_saver_manager_update_api_key', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'update_api_key'));
 		add_action('wp_ajax_sbr_import_feed_settings', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'import_feed_settings'));
@@ -443,13 +447,21 @@ class SBR_Feed_Saver_Manager
 	}
 
 	/**
+	 * @deprecated Misspelled variant kept for third-party callers; use add_facebook_source().
+	 */
+	public static function add_facebook_souce(): void
+	{
+		self::add_facebook_source();
+	}
+
+	/**
 	* Used to Add Facebook Sources
 	*
 	*
 	*
 	* @since 1.0
 	*/
-	public static function add_facebook_souce()
+	public static function add_facebook_source(): void
 	{
 		check_ajax_referer('sbr-admin', 'nonce');
 
@@ -480,13 +492,21 @@ class SBR_Feed_Saver_Manager
 	}
 
 	/**
+	 * @deprecated Misspelled variant kept for third-party callers; use add_manual_facebook_source().
+	 */
+	public static function add_manual_facebook_souce(): void
+	{
+		self::add_manual_facebook_source();
+	}
+
+	/**
 	* Used to Add Manual Facebook Source
 	*
 	*
 	*
 	* @since 1.0
 	*/
-	public static function add_manual_facebook_souce()
+	public static function add_manual_facebook_source(): void
 	{
 		check_ajax_referer('sbr-admin', 'nonce');
 
@@ -539,7 +559,15 @@ class SBR_Feed_Saver_Manager
 			|| 404 === (int) ($relay_response['code'] ?? 0);
 	}
 
-	public static function delete_souce()
+	/**
+	 * @deprecated Misspelled variant kept for third-party callers; use delete_source().
+	 */
+	public static function delete_souce(): void
+	{
+		self::delete_source();
+	}
+
+	public static function delete_source(): void
 	{
 		check_ajax_referer('sbr-admin', 'nonce');
 
@@ -805,10 +833,13 @@ class SBR_Feed_Saver_Manager
 					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id_tripadvisor($data['providerIdUrl']) : 'XXX';
 					break;
 				case 'trustpilot':
-					$relay_args['place_id'] = $data['providerIdUrl'];
+						// update_api_key() builds $data with provider + apiKey only, so the key
+						// probe reaches here with no providerIdUrl at all (SMASH-1973).
+						// Reading it blind raised "Undefined array key".
+						$relay_args['place_id'] = $data['providerIdUrl'] ?? '';
 					break;
 				case 'wordpress.org':
-						$wordpressorg_args = self::get_place_id_wordpressorg($data['providerIdUrl']);
+						$wordpressorg_args = self::get_place_id_wordpressorg($data['providerIdUrl'] ?? null);
 						$relay_args['place_id'] = $wordpressorg_args['type'] . '/' . $wordpressorg_args['slug'];
 						$relay_args['type'] = $wordpressorg_args['type'];
 						$relay_args['slug'] = $wordpressorg_args['slug'];
@@ -880,7 +911,10 @@ class SBR_Feed_Saver_Manager
 					break;
 			}
 			if ($info !== false) {
+				// A non-JSON body (an HTML error page, for instance) decodes to null, and
+				// every offset read below then works on null.
 				$info = json_decode($info, true);
+				$info = is_array($info) ? $info : [];
 				//Checks if there is an error
 				if (
 					!empty($info['error'])
@@ -902,8 +936,17 @@ class SBR_Feed_Saver_Manager
 				 * OR
 				 * Return an error which if it's invalid location
 				 */
+				// `info.error` arrives either as a code string or, alongside `info.errorId`,
+				// as an object carrying the code under `info.error.error`. Comparing the
+				// object to a string made every check below silently fall through.
+				$error_code = self::get_source_error_code($info);
+				$error_id   = self::get_source_error_id($info);
+
+				// Only an explicit code may satisfy this gate. An errorId alone means the
+				// relay failed for a reason it did not name, which is no evidence the key
+				// works — treating it as such stored invalid keys as valid.
 				$checkValidKey = (
-						!empty($info['info']['error']) && $info['info']['error'] !== 'invalidKey'
+						$error_code !== null && $error_code !== 'invalidKey'
 					)
 					|| !empty($info['info']['id'])
 					|| !empty($info['info']['successId']);
@@ -919,13 +962,29 @@ class SBR_Feed_Saver_Manager
 					$info['apiKeyLimits'] = get_option('sbr_apikeys_limit', []);
 				}
 
-				if (isset($info['info']['error'])) {
-					if ($info['info']['error'] === 'invalidKey') {
+				if ($error_code !== null) {
+					if ($error_code === 'invalidKey') {
 						$return['apikey'] = 'invalid';
 					}
-					if ($info['info']['error'] === 'invalidLocation') {
+					if ($error_code === 'invalidLocation') {
 						$return['placeId'] = 'invalid';
 					}
+				}
+
+				// Without this the object shape returns only the housekeeping keys
+				// (apiKeys, sourcesList, …), which is indistinguishable from success:
+				// the modal takes its success branch and the user is told nothing.
+				if (($error_code !== null || $error_id !== null) && empty($info['info']['id'])) {
+					$return['success'] = false;
+					$return['error']   = $error_code !== null ? $error_code : $error_id;
+					$return['message'] = self::get_source_error_message($info);
+					if ($error_id !== null) {
+						$return['errorId'] = $error_id;
+					}
+					$return['apiKeyLimits']  = get_option('sbr_apikeys_limit', []);
+					$return['pluginNotices'] = Util::get_plugin_notices();
+
+					return $return;
 				}
 				if (isset($info['info']['id'])) {
 					$info['info']['provider'] = $provider;
@@ -1157,6 +1216,86 @@ class SBR_Feed_Saver_Manager
 		return end($res);
 	}
 
+	/**
+	 * Read the source error code out of a relay `sources/*` response.
+	 *
+	 * Two shapes are in the wild: `info.error` as the code itself, and `info.error` as
+	 * an object holding the code under `info.error.error` next to `info.errorId`. The
+	 * object arrives with HTTP 200 and `success: true` at the envelope level, so the
+	 * only signal is inside `info`.
+	 *
+	 * @param  mixed $info Decoded relay response.
+	 * @return string|null  Error code, or null when the response has none.
+	 */
+	public static function get_source_error_code($info)
+	{
+		if (!is_array($info) || !isset($info['info']) || !is_array($info['info'])) {
+			return null;
+		}
+
+		$error = isset($info['info']['error']) ? $info['info']['error'] : null;
+
+		if (is_string($error) && $error !== '') {
+			return $error;
+		}
+
+		if (is_array($error) && !empty($error['error']) && is_string($error['error'])) {
+			return $error['error'];
+		}
+
+		// Deliberately no errorId fallback. An errorId is evidence of failure but not
+		// evidence of WHICH failure, and the caller feeds this into the gate that
+		// decides whether to store the submitted key — an opaque code is not equal to
+		// 'invalidKey', so returning it here persisted bad keys as valid. Callers pair
+		// this with get_source_error_id() to detect failure.
+		return null;
+	}
+
+	/**
+	 * The relay's opaque failure marker, when it sent one.
+	 *
+	 * Separate from get_source_error_code() on purpose: this says "something failed",
+	 * that one says "this specific thing failed". Only the latter may inform whether a
+	 * submitted API key is worth storing.
+	 *
+	 * @param  mixed $info Decoded relay response.
+	 * @return string|null
+	 */
+	public static function get_source_error_id($info)
+	{
+		if (!is_array($info) || !isset($info['info']) || !is_array($info['info'])) {
+			return null;
+		}
+
+		return !empty($info['info']['errorId']) && is_string($info['info']['errorId'])
+			? $info['info']['errorId']
+			: null;
+	}
+
+	/**
+	 * Human-readable message for a source error, falling back to a generic line when
+	 * the relay sends only a code.
+	 *
+	 * @param  mixed $info Decoded relay response.
+	 * @return string
+	 */
+	public static function get_source_error_message($info)
+	{
+		$info  = is_array($info) ? $info : [];
+		$nested = isset($info['info']) && is_array($info['info']) ? $info['info'] : [];
+		$error = isset($nested['error']) ? $nested['error'] : null;
+
+		if (is_array($error) && !empty($error['message']) && is_string($error['message'])) {
+			return $error['message'];
+		}
+
+		if (!empty($info['message']) && is_string($info['message'])) {
+			return $info['message'];
+		}
+
+		return __('Could not connect this source, please make sure you have provided the right info.', 'reviews-feed');
+	}
+
 	public static function get_place_id_tripadvisor($place_url)
 	{
 		$place_url = trim((string) $place_url);
@@ -1181,16 +1320,28 @@ class SBR_Feed_Saver_Manager
 		return end($broken_up);
 	}
 
-	//WordPress Org Theme/Plugin Source
+	/**
+	 * WordPress Org Theme/Plugin Source.
+	 *
+	 * Both callers can hand this a value that is not a string: the refresh path
+	 * reads a stored `info['url']` that is absent on a source row whose info was
+	 * never populated (RemoteRequest.php:190), and the key probe reads a
+	 * `providerIdUrl` the Settings modal never sends. `null` reached `trim()` and
+	 * `strpos()` and raised two PHP 8 deprecations per call.
+	 *
+	 * Return shape is unchanged, and an unusable url still yields an empty slug,
+	 * so callers behave exactly as before — this removes the diagnostics, not a
+	 * behaviour. `parse_url()` also returns null for a path-less url, which the
+	 * old `explode()` passed straight in.
+	 *
+	 * @param mixed $place_url Listing URL, or anything a caller happened to have.
+	 * @return array{type:string,slug:string}
+	 */
 	public static function get_place_id_wordpressorg($place_url)
 	{
-		$broken_up = explode(
-			'/',
-			parse_url(
-				trim($place_url, '/'),
-				PHP_URL_PATH
-			)
-		);
+		$place_url = is_string($place_url) ? $place_url : '';
+		$path      = parse_url(trim($place_url, '/'), PHP_URL_PATH);
+		$broken_up = explode('/', is_string($path) ? $path : '');
 
 		$slug = $broken_up[count($broken_up) - 1];
 		$type = strpos($place_url, 'theme') !== false ? 'theme' : 'plugin';

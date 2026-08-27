@@ -84,6 +84,8 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 			)
 		);
 
+		self::copy_feed_style_to_duplicate((int) $feed_id, (int) $wpdb->insert_id);
+
 		echo sbr_json_encode(
 			[
 				'feedsList' => DB::get_feeds_list(),
@@ -91,6 +93,65 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 			]
 		);
 		wp_die();
+	}
+
+	/**
+	 * Carry the source feed's rendered CSS onto its duplicate, re-scoped.
+	 *
+	 * `feed_style` is pre-rendered CSS whose every selector is scoped to the
+	 * source feed's container id, so the INSERT above deliberately leaves it out
+	 * — copying it verbatim would style the original, not the copy. The column
+	 * being absent is what made a duplicate render with base styling only until
+	 * someone opened and re-saved it, because the render path reads this column
+	 * rather than regenerating from settings (Feed.php:57).
+	 *
+	 * @param int $source_id Feed the duplicate was copied from.
+	 * @param int $new_id    Freshly inserted duplicate.
+	 *
+	 * @return void
+	 */
+	private static function copy_feed_style_to_duplicate($source_id, $new_id)
+	{
+		global $wpdb;
+
+		if ($source_id <= 0 || $new_id <= 0) {
+			return;
+		}
+
+		$feeds_table_name = $wpdb->prefix . SBR_FEEDS_TABLE;
+
+		// Already-sanitised DB content going back to the DB: feed_style is passed
+		// through sanitize_text_field() on save (SBR_Feed_Saver.php:280), which is
+		// the only thing standing between it and the unescaped echo at
+		// FeedDisplay.php:87. No new taint enters here, but this path
+		// will faithfully propagate whatever is in the column — so a future write
+		// path that skips that sanitiser would reach the duplicate too.
+		$source_style = $wpdb->get_var(
+			$wpdb->prepare("SELECT feed_style FROM $feeds_table_name WHERE id = %d", $source_id)
+		);
+
+		if (!is_string($source_style) || $source_style === '') {
+			return;
+		}
+
+		// \b so a source id of 19 cannot match the 194 in another feed's selector.
+		$rescoped = preg_replace(
+			'/#' . preg_quote(sbr_container_id($source_id), '/') . '\b/',
+			'#' . sbr_container_id($new_id),
+			$source_style
+		);
+
+		if (!is_string($rescoped) || $rescoped === '') {
+			return;
+		}
+
+		$wpdb->update(
+			$feeds_table_name,
+			['feed_style' => $rescoped],
+			['id' => $new_id],
+			['%s'],
+			['%d']
+		);
 	}
 
 	/**

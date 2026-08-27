@@ -105,6 +105,9 @@ class Util
 				// dropping 'mandatoryApiKey' stops the customizer from hiding Skip and
 				// gating Next on a non-empty field. (SMASH-1690 / WPSA #71949)
 				'apiKey' => true,
+				// Same shape as google and yelp above. The page itself is being
+				// rewritten for Terra under SMASH-1974 — until it is, it still walks
+				// the reader to the retired ?screen=credentials portal.
 				'docLink' => 'https://smashballoon.com/doc/creating-a-tripadvisor-api-key/?utm_campaign=' . $campaign . '&utm_source=settings&utm_medium=docs'
 			],
 			[
@@ -327,7 +330,127 @@ class Util
 			]);
 		}
 
+		// Unshift, not push. The customizer renders pluginNotices[0] and nothing
+		// else — PluginNotices.js declares setCurrentNoticeIndex and never calls
+		// it — so a third notice is invisible whenever an earlier one fires. Both
+		// notices above gate on `sbr_apikeys_limit`, which is currently never
+		// populated (SMASH-1901 D3), so appending happened to work; the moment
+		// that bug is fixed it would have silently suppressed this one on exactly
+		// the sites hitting source limits. This has a hard external deadline and
+		// they do not, so it goes first rather than depending on a bug staying
+		// broken.
+		$tripadvisor_sunset = self::get_tripadvisor_sunset_notice();
+		if ($tripadvisor_sunset !== null) {
+			array_unshift($notices, $tripadvisor_sunset);
+		}
+
 		return $notices;
+	}
+
+	/**
+	 * Timestamp TripAdvisor deprecates every legacy Content API key.
+	 *
+	 * Verbatim from docs.terra.tripadvisor.com/docs/faq.md: "The legacy Content
+	 * API will be sunset and API keys deprecated on August 31, 2026."
+	 */
+	const TRIPADVISOR_CONTENT_API_SUNSET = '2026-08-31T23:59:59+00:00';
+
+	/**
+	 * Warn only the sites that have to act (SMASH-1835).
+	 *
+	 * A site running its OWN legacy TripAdvisor key loses it on the sunset date,
+	 * and only the site owner can replace it. A keyless site needs no notice: it
+	 * rides the relay's shared credential and moves platforms without any action
+	 * here, so nagging it would be noise about something it cannot fix.
+	 *
+	 * @return array|null Notice in the get_plugin_notices() shape, or null.
+	 */
+	public static function get_tripadvisor_sunset_notice()
+	{
+		$stored_keys = get_option('sbr_apikeys', []);
+		$key = is_array($stored_keys) && isset($stored_keys['tripadvisor']) && is_string($stored_keys['tripadvisor'])
+			? trim($stored_keys['tripadvisor'])
+			: '';
+
+		// No key of their own, or already a Terra key — nothing to do.
+		if ($key === '' || self::is_tripadvisor_terra_key($key)) {
+			return null;
+		}
+
+		// A dying key only matters if something is actually using it.
+		if (empty(SBR_Sources::sources_by_providers(['tripadvisor']))) {
+			return null;
+		}
+
+		$sunset = strtotime(self::TRIPADVISOR_CONTENT_API_SUNSET);
+		$has_passed = $sunset !== false && time() > $sunset;
+
+		// The const is the only place the date lives. It used to be hardcoded in
+		// the copy as well, so moving the const would have left the heading
+		// quoting the old date while the branch flipped. Interpolating also keeps
+		// a date change from invalidating every translation of these strings, and
+		// renders in the site's own format.
+		// get_option() is mixed, and a site can store an empty date_format.
+		// 'F j, Y' is WP's own default and renders the date the copy used to
+		// hardcode.
+		$date_format = get_option('date_format');
+		$date_format = is_string($date_format) && $date_format !== '' ? $date_format : 'F j, Y';
+
+		$sunset_date = $sunset === false
+			? substr(self::TRIPADVISOR_CONTENT_API_SUNSET, 0, 10)
+			: date_i18n($date_format, $sunset);
+
+		$heading = $has_passed
+			? __('Your TripAdvisor API key has stopped working', 'reviews-feed')
+			/* translators: %s: date TripAdvisor retires the legacy Content API. */
+			: sprintf(__('Your TripAdvisor API key stops working on %s', 'reviews-feed'), $sunset_date);
+
+		// Two ways out, and the cheaper one is listed first on purpose: removing
+		// the key falls back to the connection built into the plugin and needs
+		// no account anywhere. No doc link here on purpose: the notice's job is
+		// the two remedies, and the key doc is one click away on the page the
+		// button lands on.
+		$description = $has_passed
+			/* translators: %s: date TripAdvisor retired the legacy Content API. */
+			? sprintf(__('TripAdvisor retired the API this key belongs to on %s. Remove the key on the Settings page to switch back to the connection built into the plugin, or replace it with a key from TripAdvisor\'s new Terra platform.', 'reviews-feed'), $sunset_date)
+			: __('TripAdvisor is retiring the API this key belongs to. Before then, either remove the key on the Settings page to switch back to the connection built into the plugin, or replace it with a key from TripAdvisor\'s new Terra platform.', 'reviews-feed');
+
+		return [
+			// 'error' for both states, not 'warning': the renderer puts this
+			// straight onto data-type (PluginNotices.js:25) and sb-common.css
+			// only styles [data-type=error], so anything else renders unstyled.
+			'type' => 'error',
+			'heading' => $heading,
+			'description' => $description,
+			'actions' => [
+				[
+					'type' => 'primary',
+					'text' => __('Manage API Keys', 'reviews-feed'),
+					// Anchored: the API keys section sits ~1700px down a ~3200px page, so
+					// landing at the top left the remedy off screen. The customizer scrolls
+					// to this id once the section renders (SettingsPage.js).
+					'link' => admin_url('admin.php?page=sbr-settings') . '#sbr-settings-apikeys',
+				],
+			],
+		];
+	}
+
+	/**
+	 * Terra issues UUIDs; legacy Content API keys are 32 hex characters. The two
+	 * sets cannot overlap, which is what lets the relay route per key — mirror of
+	 * TripAdvisor::looksLikeTerraKey() in sb-relay.
+	 *
+	 * @param string $key
+	 *
+	 * @return bool
+	 */
+	public static function is_tripadvisor_terra_key($key)
+	{
+		if (!is_string($key)) {
+			return false;
+		}
+
+		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1;
 	}
 
 	/**
@@ -681,8 +804,9 @@ class Util
 		$output .= isset($sbr_settings['optimize_images']) && $sbr_settings['optimize_images'] === true ? 'Enabled' : 'Disabled';
 		$output .= '</br>';
 		$output .= 'Usage Tracking: ';
-		$output .= isset($sbr_settings['usagetracking']) && $sbr_settings['usagetracking'] === true ? 'Enabled' : 'Disabled';
+		$output .= \SmashBalloon\Reviews\Common\UsageTracking\Config::is_enabled() ? 'Enabled' : 'Disabled';
 		$output .= '</br>';
+		$output .= self::get_usage_tracking_debug_info();
 		$output .= 'Enqueue in Head: ';
 		$output .= isset($sbr_settings['enqueue_js_in_header']) && $sbr_settings['enqueue_js_in_header'] === true ? 'Enabled' : 'Disabled';
 		$output .= '</br>';
@@ -693,6 +817,38 @@ class Util
 		$output .= isset($sbr_settings['feed_issue_reports']) && $sbr_settings['feed_issue_reports'] === true ? 'Enabled' : 'Disabled';
 		$output .= '</br>';
 		$output .= '</br>';
+		return $output;
+	}
+
+	/**
+	 * Usage-tracking send-state lines for the System Info page, so support
+	 * can tell "never registered" from "registered but sends fail" from
+	 * "cron not firing" at a glance.
+	 *
+	 * @return string
+	 */
+	private static function get_usage_tracking_debug_info()
+	{
+		$state = get_option(\SmashBalloon\Reviews\Common\UsageTracking\Config::OPTION_TRACKING, array());
+		$state = is_array($state) ? $state : array();
+		$next  = wp_next_scheduled(\SmashBalloon\Reviews\Common\UsageTracking\Config::CRON_HOOK);
+		$token = get_option(\SmashBalloon\Reviews\Common\UsageTracking\Config::OPTION_SITE_TOKEN, '');
+
+		$output  = 'Usage Tracking Registered: ';
+		$output .= (is_string($token) && '' !== $token) ? 'Yes' : 'No';
+		$output .= '</br>';
+		$output .= 'Usage Tracking Last Sent: ';
+		$output .= ! empty($state['last_send']) ? gmdate('Y-m-d H:i:s', (int) $state['last_send']) . ' UTC' : 'Never';
+		$output .= '</br>';
+		$output .= 'Usage Tracking Last Attempt: ';
+		$output .= ! empty($state['last_attempt'])
+			? gmdate('Y-m-d H:i:s', (int) $state['last_attempt']) . ' UTC (status ' . (isset($state['last_status']) ? (int) $state['last_status'] : 0) . ', ' . (isset($state['consecutive_failures']) ? (int) $state['consecutive_failures'] : 0) . ' consecutive failures)'
+			: 'Never';
+		$output .= '</br>';
+		$output .= 'Usage Tracking Next Scheduled: ';
+		$output .= $next ? gmdate('Y-m-d H:i:s', (int) $next) . ' UTC' : 'Not scheduled';
+		$output .= '</br>';
+
 		return $output;
 	}
 

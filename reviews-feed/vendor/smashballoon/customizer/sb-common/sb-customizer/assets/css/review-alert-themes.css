@@ -320,6 +320,9 @@
     box-shadow: var(--sbr-popup-shadow);
     padding: 4px;
     overflow: hidden;
+    /* Explicit containing block for the absolutely-positioned close button —
+       it otherwise relies on the backdrop-filter below to establish one. */
+    position: relative;
     /* Note: Avoid "transition: all" here - it animates width changes during
        expand/collapse state switches, causing a left-shift glitch */
     transition: background-color var(--sbr-popup-transition), box-shadow var(--sbr-popup-transition);
@@ -348,14 +351,19 @@
 
 .sbr-review-alert__close {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    /* Inset far enough to clear the card's 12px rounded corner — at 8px the
+       button straddles the edge and the accent border shows behind it. */
+    top: 12px;
+    right: 12px;
     width: 24px;
     height: 24px;
     padding: 0;
     border: none;
     border-radius: 9999px;
     background-color: transparent;
+    /* Themes that style every <button> (Kadence et al. ship an offset shadow)
+       otherwise draw it around this one too. */
+    box-shadow: none;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -363,6 +371,14 @@
     opacity: 0;
     transition: opacity 200ms, background-color 200ms, transform 200ms;
     z-index: 10;
+}
+
+/* Hit area larger than the 24px glyph, so a slightly-off tap still lands. */
+.sbr-review-alert__close::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: inherit;
 }
 
 .sbr-review-alert__close svg {
@@ -376,6 +392,14 @@
 .sbr-review-alert:focus-within .sbr-review-alert__close,
 .sbr-review-alert__close:focus {
     opacity: 1;
+}
+
+/* Touch has no hover, so the reveal above never fires and visitors see no way
+   to dismiss the popup. Show it outright. SMASH-1820. */
+@media (hover: none), (pointer: coarse) {
+    .sbr-review-alert__close {
+        opacity: 1;
+    }
 }
 
 .sbr-review-alert__close:hover {
@@ -420,7 +444,9 @@
 .sbr-review-alert__date {
     position: absolute;
     top: 20px;
-    right: 20px;
+    /* Clears the close button, which reaches 32px in from the card's right
+       edge (12px inset on .__inner + 24px wide, less .__inner's 4px padding). */
+    right: 40px;
     font-weight: 600;
     font-size: 14px;
     line-height: 20px;
@@ -1295,9 +1321,10 @@
     font-size: 12px;
 }
 
-/* Compact mode - card becomes flex row to align date inline */
+/* Compact mode - card becomes flex row to align date inline. Right padding
+   keeps that inline date clear of the close button. SMASH-1820. */
 .sbr-review-alert--compact .sbr-review-alert__card {
-    padding: 12px;
+    padding: 12px 40px 12px 12px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -2277,7 +2304,8 @@
     .sbr-review-alert__date {
         font-size: 12px;
         top: 12px;
-        right: 12px;
+        /* Same close-button clearance as the default layout. SMASH-1820. */
+        right: 40px;
     }
 
     .sbr-review-alert__stars {

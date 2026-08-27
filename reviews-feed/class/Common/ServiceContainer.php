@@ -36,6 +36,7 @@ use SmashBalloon\Reviews\Common\Integrations\Elementor\SBR_Elementor_Base;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Service;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Frontend;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_ReviewAlert_Builder;
+use SmashBalloon\Reviews\Common\UsageTracking\SmashUsageTracking;
 
 class ServiceContainer extends ServiceProvider
 {
@@ -85,6 +86,7 @@ class ServiceContainer extends ServiceProvider
 		SBR_ReviewAlert_Builder::class,
 		// SMASH-1756 — schema.org rich-snippet output (AIOSEO handshake + JSON-LD fallback)
 		SBR_Schema_Service::class,
+		SmashUsageTracking::class,
 	];
 
 	public function register(): void

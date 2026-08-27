@@ -31,6 +31,10 @@ if (!defined('SBR_REST_DOMAIN')) {
 	define('SBR_REST_DOMAIN', 'SBR/v1');
 }
 
+if (!defined('SBR_SMASH_USAGE_TRACKING_API_URL')) {
+	define('SBR_SMASH_USAGE_TRACKING_API_URL', 'https://usage.smashballoon.com/api');
+}
+
 // Common Library Assets URL
 if (!defined('SB_COMMON_ASSETS')) {
 	define('SB_COMMON_ASSETS', plugin_dir_url(__FILE__) . 'vendor/smashballoon/customizer/sb-common/');
@@ -147,6 +151,16 @@ $customizerContainer = \Smashballoon\Customizer\V2\Container::getInstance();
 $customizerContainer->set(\Smashballoon\Customizer\V2\Config\Proxy::class, new \SmashBalloon\Reviews\Common\Builder\Config\Proxy());
 $serviceContainerClass = SmashBalloon\Reviews\Common\Util::sbr_is_pro() ? \SmashBalloon\Reviews\Pro\ServiceContainer::class : \SmashBalloon\Reviews\Common\ServiceContainer::class;
 $commonServiceContainer = \SmashBalloon\Reviews\Common\Container::get_instance()->get($serviceContainerClass)->register();
+
+$sbr_main_plugin_file = defined('SBR_PRO') && SBR_PRO
+	? SBR_PLUGIN_DIR . 'sb-reviews-pro.php'
+	: SBR_PLUGIN_DIR . 'sb-reviews.php';
+register_deactivation_hook(
+	$sbr_main_plugin_file,
+	function () {
+		wp_clear_scheduled_hook(\SmashBalloon\Reviews\Common\UsageTracking\Config::CRON_HOOK);
+	}
+);
 
 // Initialize the deactivation feedback survey.
 if (class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Feedback\FeedbackManager')) {

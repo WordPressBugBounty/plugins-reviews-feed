@@ -47,6 +47,7 @@
 			this.isAnimating = false;
 			this.isDismissed = this.checkDismissed();
 			this.collapsedContent = null; // Store collapsed content for restoration
+			this.closePressStarted = false; // Press began on the close control (see handlePopupClick)
 			this.animationTimeouts = []; // Track animation timeouts for cleanup
 			this.cycleTimeouts = []; // Track cycling timeouts for cleanup
 			this.initialDelayTimeout = null; // Track initial delay timeout for cleanup
@@ -63,6 +64,8 @@
 			this.handleKeydown = this.handleKeydown.bind(this);
 			this.cycleReview = this.cycleReview.bind(this);
 			this.handlePopupClick = this.handlePopupClick.bind(this);
+			this.handlePopupPointerDown = this.handlePopupPointerDown.bind(this);
+			this.handlePopupPointerCancel = this.handlePopupPointerCancel.bind(this);
 			this.handleExpandKeydown = this.handleExpandKeydown.bind(this);
 			this.handleCloseExpanded = this.handleCloseExpanded.bind(this);
 			this.handleScroll = this.handleScroll.bind(this);
@@ -282,6 +285,8 @@
 			const inner = this.popup.querySelector('.sbr-review-alert__inner');
 			if (inner) {
 				inner.addEventListener('click', this.handlePopupClick);
+				inner.addEventListener('pointerdown', this.handlePopupPointerDown);
+				inner.addEventListener('pointercancel', this.handlePopupPointerCancel);
 			}
 
 			// Keyboard expand (Enter/Space when focused)
@@ -313,6 +318,8 @@
 			const inner = this.popup.querySelector('.sbr-review-alert__inner');
 			if (inner) {
 				inner.removeEventListener('click', this.handlePopupClick);
+				inner.removeEventListener('pointerdown', this.handlePopupPointerDown);
+				inner.removeEventListener('pointercancel', this.handlePopupPointerCancel);
 			}
 			this.popup.removeEventListener('keydown', this.handleExpandKeydown);
 
@@ -339,6 +346,10 @@
 		 */
 		handleClose(event) {
 			event.preventDefault();
+			// The expand handler is bound to the ancestor .__inner; without this it
+			// also runs and re-opens the review we were asked to dismiss.
+			event.stopPropagation();
+			this.closePressStarted = false;
 			this.dismiss();
 		}
 
@@ -360,11 +371,43 @@
 		}
 
 		/**
+		 * Record whether a press began on the close control.
+		 *
+		 * @param {PointerEvent} event Pointer event
+		 */
+		handlePopupPointerDown(event) {
+			this.closePressStarted = !!event.target.closest('.sbr-review-alert__close');
+		}
+
+		/**
+		 * Clear the press origin when a gesture is cancelled and no click follows.
+		 */
+		handlePopupPointerCancel() {
+			this.closePressStarted = false;
+		}
+
+		/**
 		 * Handle click on popup to expand
 		 *
 		 * @param {Event} event Click event
 		 */
 		handlePopupClick(event) {
+			// Read and clear, so a press origin can never outlive the click it
+			// belongs to — a keyboard-activated link inside .__inner fires a click
+			// with no pointerdown ahead of it to reset the flag.
+			const pressBeganOnClose = this.closePressStarted;
+			this.closePressStarted = false;
+
+			// A press that began on the close control dismisses: when press and
+			// release land on different elements the click targets .__inner, not
+			// the button, which used to expand the review. SMASH-1820.
+			if (pressBeganOnClose || event.target.closest('.sbr-review-alert__close')) {
+				event.preventDefault();
+				event.stopPropagation();
+				this.dismiss();
+				return;
+			}
+
 			// Don't expand if already expanded or animating
 			if (this.isExpanded || this.isAnimating) return;
 
@@ -391,6 +434,11 @@
 		 */
 		handleExpandKeydown(event) {
 			if (this.isExpanded || this.isAnimating) return;
+
+			// Enter/Space on the focused close button must dismiss, not expand.
+			// This listener is on the popup root, so it would otherwise swallow the
+			// button's own activation via preventDefault(). SMASH-1820.
+			if (event.target.closest('.sbr-review-alert__close')) return;
 
 			if (event.key === 'Enter' || event.key === ' ') {
 				event.preventDefault();
@@ -658,6 +706,8 @@
 					const inner = this.popup.querySelector('.sbr-review-alert__inner');
 					if (inner) {
 						inner.addEventListener('click', this.handlePopupClick);
+						inner.addEventListener('pointerdown', this.handlePopupPointerDown);
+						inner.addEventListener('pointercancel', this.handlePopupPointerCancel);
 					}
 
 					// Re-attach close button listener (cloneNode doesn't copy event listeners)

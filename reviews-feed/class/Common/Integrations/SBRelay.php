@@ -113,6 +113,10 @@ class SBRelay
 			'auth/license',
 			'sources/trustpilot',
 			'reviews/trustpilot',
+			// SMASH-1835: one request can now cost up to three upstream hops
+			// (legacy -> Terra -> RapidAPI), so WP's 5s default cuts the chain off.
+			'sources/tripadvisor',
+			'reviews/tripadvisor',
 			'sources/wordpress.org',
 			'reviews/wordpress.org',
 			'sources/yelp',

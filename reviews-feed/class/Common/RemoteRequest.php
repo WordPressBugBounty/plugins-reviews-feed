@@ -187,7 +187,10 @@ class RemoteRequest
 		$args = [];
 
 		if ($this->provider === 'wordpress.org') {
-			$wordpressorg_args = SBR_Feed_Saver_Manager::get_place_id_wordpressorg($this->args['info']['url']);
+			// `info` is empty on a source row that never completed a fetch, so the
+			// url can be absent. Reading it blind raised "Undefined array key".
+			$info = isset($this->args['info']) && is_array($this->args['info']) ? $this->args['info'] : [];
+			$wordpressorg_args = SBR_Feed_Saver_Manager::get_place_id_wordpressorg($info['url'] ?? null);
 			$args['type'] = $wordpressorg_args['type'];
 			$args['slug'] = $wordpressorg_args['slug'];
 		}

@@ -275,7 +275,9 @@ function sbr_plugin_settings_defaults()
 	return [
 		'localization' => '',
 		'optimize_images' => true,
-		'usagetracking' => true,
+		// Must match UsageTracking\Config::is_enabled()'s absent-key fallback, or the
+		// Advanced toggle renders ON for Free and any settings save persists consent.
+		'usagetracking' => Util::sbr_is_pro(),
 		'enqueue_js_in_header' => false,
 		'admin_error_notices' => true,
 		'feed_issue_reports' => true,

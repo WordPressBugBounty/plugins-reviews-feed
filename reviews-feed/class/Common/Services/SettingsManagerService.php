@@ -54,7 +54,26 @@ class SettingsManagerService extends ServiceProvider
 		$current_settings = $this->get_settings();
 		$updated_settings = array_merge($current_settings, $settings);
 
-		return update_option($this->settings_options, $updated_settings);
+		// Legacy interim key; consent now lives in the 'usagetracking' key.
+		unset($updated_settings['smash_usage_tracking']);
+
+		$result = update_option($this->settings_options, $updated_settings);
+
+		// Schedule/unschedule the usage tracking cron based on consent.
+		if (array_key_exists('usagetracking', $updated_settings)) {
+			$scheduler = new \SmashBalloon\Reviews\Common\UsageTracking\Core\Scheduler();
+			if (! empty($updated_settings['usagetracking'])) {
+				$scheduler->schedule();
+			} else {
+				$scheduler->unschedule();
+				// Opting out must not be weaker than uninstalling: drop the
+				// already-collected data and the site token, or they would be
+				// retained indefinitely and transmitted after a later re-opt-in.
+				\SmashBalloon\Reviews\Common\UsageTracking\SmashUsageTracking::purge_stored_data();
+			}
+		}
+
+		return $result;
 	}
 
 	public function get_settings(): array
