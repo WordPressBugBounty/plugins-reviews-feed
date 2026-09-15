@@ -335,9 +335,10 @@ class SBR_Schema_Service extends ServiceProvider
 	 * @param  array $header_data Per-source aggregate (Feed::get_header_data()).
 	 * @param  array $posts       Review list (Feed::get_posts()).
 	 * @param  array $sources     Hydrated sources (for the entity-type decision).
-	 * @param  bool  $is_pro      Whether the Pro build is active. Booking's native
-	 *                            0-10 score renders only in the Pro header template,
-	 *                            so it's only emitted as schema on Pro (match visible).
+	 * @param  bool  $is_pro      Whether the Pro build is active. Gates the whole
+	 *                            aggregateRating: the feed header is where a visitor
+	 *                            reads it and only the Pro header renders one. Also
+	 *                            picks Booking's 0-10 scale over the 5-star average.
 	 * @return array<int,array>
 	 */
 	public function map_feed_to_schema(array $header_data, array $posts, array $sources, bool $is_pro = true): array
@@ -368,11 +369,10 @@ class SBR_Schema_Service extends ServiceProvider
 
 		// AGGREGATE scale must match the visible header. A Booking-ONLY feed shows
 		// Booking's native 0-10 score (info.review_score, count-weighted) via
-		// FeedDisplay::get_booking_header_rating() — so bestRating 10, not 5. That
-		// header renders only in the Pro template, so the 0-10 aggregate is emitted
-		// only on Pro (Lite/downgraded shows no Booking rating). Everything else
-		// (incl. mixed feeds, where the header falls back to a 5-star average) uses
-		// the 5-star weighted average.
+		// FeedDisplay::get_booking_header_rating() — so bestRating 10, not 5.
+		// Everything else (incl. mixed feeds, where the header falls back to a
+		// 5-star average) uses the 5-star weighted average. Either way the header
+		// only renders on Pro, which is what the $is_pro gate below is for.
 		$booking = FeedDisplay::get_booking_header_rating($header_data);
 		if (! empty($booking['is_booking_only']) && $is_pro && (float) $booking['score'] > 0) {
 			$rating_value = (float) $booking['score'];
@@ -385,7 +385,14 @@ class SBR_Schema_Service extends ServiceProvider
 		// rating that Google would reject.
 		$best_rating = max($best_rating, (int) ceil($rating_value), 1);
 
-		if ($rating_value > 0 && is_numeric($count) && (int) $count > 0) {
+		// SMASH-1825: the aggregate is Pro-only, both scales. Lite's header renders
+		// no rating (templates/frontend/lite/header.php, and the Pro one is excluded
+		// from the Free zip at build/reviews-feed/filter:31), and the customizer
+		// upsells the section as "Upgrade to Pro to display average rating"
+		// (Util::upsell_modal_content() 'averageRatingModal'). Per-review nodes are
+		// deliberately NOT gated — star cards render on any tier — so a Free page
+		// still emits Review markup and keeps its rich result.
+		if ($is_pro && $rating_value > 0 && is_numeric($count) && (int) $count > 0) {
 			$node['aggregateRating'] = [
 				'@type'       => 'AggregateRating',
 				'ratingValue' => (string) $rating_value,

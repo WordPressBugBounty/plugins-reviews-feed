@@ -525,6 +525,100 @@ class Smash1756SchemaServiceTest extends TestCase
 		$this->assertSame([], $nodes);
 	}
 
+	public function test_map_5star_aggregate_is_pro_only_on_lite(): void
+	{
+		// SMASH-1825. The sibling Booking test above passes for the wrong reason —
+		// booking_header() sets no info.rating, so $avg is 0 and the aggregate was
+		// never reached. This is the case that was actually broken: a star provider
+		// on Lite, where info.rating IS set, so the 5-star aggregate was emitted for
+		// a rating no Lite surface shows (templates/frontend/lite/header.php renders
+		// none, and the Pro header is excluded from the Free zip).
+		//
+		// The Review node must SURVIVE: star cards render on any tier, so the page
+		// keeps a truthful review snippet. That half is what makes the release
+		// notes' "Available on all plans" still hold.
+		$nodes = $this->service->map_feed_to_schema(
+			$this->header(4.5, 10),
+			[$this->review('Jane', 5, 'Great service')],
+			[['provider' => 'google']],
+			false
+		);
+
+		$this->assertCount(1, $nodes, 'the node itself must still be emitted on Lite');
+		$this->assertArrayNotHasKey(
+			'aggregateRating',
+			$nodes[0],
+			'Lite shows no header rating, so the markup must not assert one'
+		);
+		$this->assertCount(1, $nodes[0]['review'], 'per-review markup is not tier-gated');
+		$this->assertSame('5', $nodes[0]['review'][0]['reviewRating']['ratingValue']);
+	}
+
+	public function test_map_5star_aggregate_still_emitted_on_pro(): void
+	{
+		// The other side of the same gate, so a mutation that drops the aggregate
+		// for EVERY tier cannot pass by satisfying the Lite test alone.
+		$node = $this->service->map_feed_to_schema(
+			$this->header(4.5, 10),
+			[$this->review('Jane', 5, 'Great service')],
+			[['provider' => 'google']],
+			true
+		)[0];
+
+		$this->assertSame('4.5', $node['aggregateRating']['ratingValue']);
+		$this->assertSame('10', $node['aggregateRating']['reviewCount']);
+	}
+
+	public function test_map_on_lite_emits_nothing_when_no_review_is_ratable(): void
+	{
+		// The consequence worth pinning: gating the aggregate can remove the whole
+		// node. Booking cards are the only reviews that resolve to no rating, and
+		// they only do so on Lite (substituted_slot_rating()). With a header that
+		// carries a 5-star average but no native review_score — so is_booking_only
+		// is false and the 5-star branch is taken — a Lite page now emits nothing.
+		// Before SMASH-1825 it published a 4.5 aggregate with no surface behind it.
+		//
+		// NOT written with `rating => 0` on a star review: Parser::get_rating()
+		// floors an empty rating to 1 (class/Common/Parser.php:86), so a star card
+		// always carries a rating and that input cannot reach this path.
+		$this->assertSame(
+			[],
+			$this->service->map_feed_to_schema(
+				$this->header(4.5, 10),
+				[$this->booking_review('Max', 9.0, 'Great')],
+				[['provider' => 'booking']],
+				false
+			)
+		);
+	}
+
+	public function test_the_only_caller_passes_the_live_tier_to_the_mapper(): void
+	{
+		// The gate lives in map_feed_to_schema(), but it only protects a real site if
+		// the CALLER hands it the live tier. Hardcoding `true` at the call site leaves
+		// every behavioural test above green while Lite is mismatched again — measured:
+		// that mutation SURVIVED the whole suite (.claude/qa/mutations/
+		// smash-1825-lite-aggregate-gate.json). build_all_nodes() is private and needs
+		// WordPress, so the route cannot be exercised; the call itself is asserted
+		// instead. A source-text assertion is the weaker kind, and it is used here
+		// because the alternative is no assertion at all.
+		$root = dirname(__DIR__, 2);
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local class file on disk, not a remote URL
+		$src = (string) file_get_contents($root . '/class/Common/SBR_Schema_Service.php');
+
+		$this->assertMatchesRegularExpression(
+			'/\$is_pro\s*=\s*Util::sbr_is_pro\(\)/',
+			$src,
+			'build_all_nodes() must read the live tier, not assume one'
+		);
+		$this->assertStringContainsString(
+			'$this->map_feed_to_schema($header, $posts, $sources, $is_pro)',
+			$src,
+			'the mapper must receive the live tier — a literal here re-opens SMASH-1825 on Lite'
+		);
+	}
+
 	public function test_map_mixed_feed_keeps_each_review_on_its_own_scale(): void
 	{
 		// Mixed feed: header is not booking-only → 5-star aggregate. Each card keeps

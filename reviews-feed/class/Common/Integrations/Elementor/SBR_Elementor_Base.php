@@ -46,6 +46,7 @@ class SBR_Elementor_Base {
 
 		add_action('elementor/widgets/register', array( $this, 'register_widgets' ));
 		add_action('elementor/frontend/after_register_scripts', array( $this, 'enqueue_frontend_assets' ));
+		add_action('elementor/preview/enqueue_styles', array( $this, 'enqueue_badge_styles_for_preview' ));
 		add_action('elementor/elements/categories_registered', array( $this, 'add_smashballoon_categories' ));
 
 		add_action(
@@ -81,6 +82,23 @@ class SBR_Elementor_Base {
 		wp_localize_script('sbr_scripts', 'sbrElementorData', $data);
 
 		SB_Feed_Blocks_Registry::instance()->enqueue_elementor_assets();
+	}
+
+	/**
+	 * Badge styles for the Elementor editor preview.
+	 *
+	 * A badge placed through Elementor's Shortcode element enqueues its styles
+	 * while the shortcode runs, which on the front end still reaches the footer.
+	 * The preview iframe drops it, so the author was shown an unstyled badge —
+	 * a 6475px-tall star — over a front end that was correct all along. Preview
+	 * only: on the front end the render-time enqueue already works, and loading
+	 * this on every Elementor page would be payload nobody asked for.
+	 *
+	 * @return void
+	 */
+	public function enqueue_badge_styles_for_preview()
+	{
+		sbr_trust_badge_enqueue_styles();
 	}
 
 	public function add_smashballoon_categories($elements_manager)

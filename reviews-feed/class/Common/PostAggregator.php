@@ -93,17 +93,17 @@ class PostAggregator {
 		$posts_list_result = [];
 		$encryption = new Data_Encryption();
 		foreach ($posts_list as $postKey => $post) {
-			$post = is_array($post) ? $post : json_decode($encryption->maybe_decrypt($post), true);
+			if (!is_array($post)) {
+				$post = is_string($post) ? json_decode($encryption->maybe_decrypt($post), true) : null;
+			}
+			// A cached entry that does not decode to an array is not a review. The
+			// `$post['post_content'] = …` write below is a string-offset write on
+			// anything else, which is a TypeError on PHP 8 (SMASH-2024).
+			if (!is_array($post)) {
+				continue;
+			}
 			if ($type === 'db') {
-				$post['post_content'] = $post['provider'] === 'facebook' ? $encryption->maybe_decrypt($post['post_content']) : $post['post_content'];
-				$post['json_data'] = $post['provider'] === 'facebook' ? $encryption->maybe_decrypt($post['json_data']) : $post['json_data'];
-				$post_json =  isset($post['json_data']) ? json_decode($post['json_data'], true) : null;
-				if (!empty($post_json)) {
-					$post_json['source'] = ['id' => $post['provider_id'], 'url' => $post_json['url'] ?? ''];
-					if (intval($post['images_done']) === 0) {
-						self::cache_review_images($post, $post_json);
-					}
-				}
+				list($post, $post_json) = self::decode_db_row($post, $encryption);
 			} else {
 				$post_json = $post;
 			}
@@ -133,6 +133,62 @@ class PostAggregator {
 			}
 		}
 		return $posts_list_result;
+	}
+
+	/**
+	 * Decrypt (Facebook) and decode one `wp_sbr_reviews_posts` row for the dedup pass.
+	 *
+	 * @param  array<string,mixed> $post       Row as returned by wpdb (ARRAY_A).
+	 * @param  Data_Encryption     $encryption
+	 * @return array{0:array<string,mixed>,1:array|null} The row with decrypted
+	 *         columns, and its decoded review — null when json_data is not one.
+	 */
+	private static function decode_db_row(array $post, Data_Encryption $encryption)
+	{
+		$post['post_content'] = $post['post_content'] ?? '';
+		$post['json_data']    = $post['json_data'] ?? '';
+		if (($post['provider'] ?? '') === 'facebook') {
+			$post['post_content'] = $encryption->maybe_decrypt($post['post_content']);
+			$post['json_data']    = $encryption->maybe_decrypt($post['json_data']);
+		}
+		$post_json = self::decode_review_json($post['json_data']);
+		if (!empty($post_json)) {
+			$post_json['source'] = ['id' => $post['provider_id'] ?? '', 'url' => $post_json['url'] ?? ''];
+			if (intval($post['images_done'] ?? 0) === 0) {
+				self::cache_review_images($post, $post_json);
+			}
+		}
+
+		return [$post, $post_json];
+	}
+
+	/**
+	 * Decode a stored `json_data` column into a review array, or null.
+	 *
+	 * `json_decode()` hands back whatever the column's top-level JSON value is.
+	 * A review is an object, so anything else — a JSON string literal from a
+	 * double-encoded write, a number, a boolean, invalid JSON — is not one. Every
+	 * caller used `!empty()` / `!== null` as its gate, which a non-empty string
+	 * passes, and the very next line wrote `$post_json['source'] = …` onto it:
+	 * on PHP 8 that is `TypeError: Cannot access offset of type string on string`
+	 * (SMASH-2024, reported from PostAggregator.php:102 on a Google source).
+	 *
+	 * An already-decoded array is passed through so callers can hand in either.
+	 *
+	 * @param  mixed $json_data Raw column value, or an already-decoded review.
+	 * @return array|null       Decoded review, or null when it is not one.
+	 */
+	public static function decode_review_json($json_data)
+	{
+		if (is_array($json_data)) {
+			return $json_data;
+		}
+		if (!is_string($json_data) || $json_data === '') {
+			return null;
+		}
+		$decoded = json_decode($json_data, true);
+
+		return is_array($decoded) ? $decoded : null;
 	}
 
 	public static function cache_review_images($post, $post_json)
@@ -180,7 +236,9 @@ class PostAggregator {
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		foreach ($results as $post) {
-			$post_json =  isset($post['json_data']) ? json_decode($post['json_data'], true) : null;
+			// Non-array json_data (SMASH-2024) decodes to null here, so the row is
+			// neither keyed nor deleted — same as a row that never decoded at all.
+			$post_json = self::decode_review_json($post['json_data'] ?? null);
 			if ($post_json !== null) {
 				// SMASH-1587: scalar 'provider' in old json_data would fatal the reads below on PHP 8.
 				$post_json = Util::normalize_review_shape($post_json);
@@ -235,7 +293,13 @@ class PostAggregator {
 		$normalized_set = array();
 		foreach ($results as $result) {
 			if (! empty($result['json_data'])) {
-				$post = json_decode($result['json_data'], true);
+				$post = self::decode_review_json($result['json_data']);
+				// A row whose json_data is not a review object has nothing to
+				// render; skip it rather than hand a scalar to the readers
+				// downstream (SMASH-2024).
+				if ($post === null) {
+					continue;
+				}
 				if (! empty($post)) {
 					// SMASH-1587/WPSA-63160: PHP 7-era json_data can hold scalar
 					// provider/reviewer/source/media shapes. This is the render-path

@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.11.0
+Stable tag: 2.12.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,13 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.12.0 =
+* Fix: Plugin security hardening.
+* New: Trust Badges, a Plus feature. The new screen shows what a badge looks like and what it can do; building and placing one needs a Plus licence.
+* Maintenance: behind-the-scenes improvements and compatibility updates.
+* Fix: Creating or previewing a feed no longer breaks the page. If a single cached review had been saved in a damaged form, the whole feed stopped loading — on some sites as a critical error screen. That one review is now skipped and the rest of the feed shows as usual.
+* Fix: Duplicating or importing a review collection no longer fails for the same reason. One damaged review used to stop the entire copy; it is now skipped and every other review comes across. And a file that is not a collection export now tells you so instead of failing quietly.
+
 = 2.11.0 =
 * New: Optional usage tracking, off by default. The free plugin has never sent anything and still will not unless you switch it on under Settings → Advanced. With it on, we get a weekly report about your plugin settings and site details like your WordPress and PHP versions. Never access tokens, email addresses or anything about your users. Switching it back off deletes what was collected on your site.
 * Improvement: Tested and supported on WordPress 7.1.

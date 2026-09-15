@@ -24,6 +24,9 @@ class SBRelay
 {
 	use UrlNormalization;
 
+	/** Recursion cap for the value sanitisers. PHP caps request nesting at 64 and JSON at 512. */
+	private const MAX_SANITISE_DEPTH = 32;
+
 	public const BASE_URL = SBR_RELAY_BASE_URL;
 
 	/**
@@ -348,7 +351,7 @@ class SBRelay
 		// envelope so add-source + the feed surface something the user gets.
 		if (is_wp_error($response)) {
 			$msg = __("Couldn't reach the reviews server. Please check your connection and try again in a moment.", 'reviews-feed');
-			SBR_Error_Handler::log_error(['id' => 'relayUnreachable', 'endpoint' => $url, 'apiMessage' => $response->get_error_message()]);
+			SBR_Error_Handler::log_error($this->sanitize_error_payload(['id' => 'relayUnreachable', 'endpoint' => $url, 'apiMessage' => $response->get_error_message()]));
 			return ['id' => 'relayUnreachable', 'success' => false, 'message' => $msg, 'apiMessage' => $msg];
 		}
 
@@ -361,7 +364,7 @@ class SBRelay
 		// array $body and flows to the normal error branch below.
 		if (!is_array($body) && ($status >= 400 || 0 === $status)) {
 			$msg = sprintf(__('The reviews server returned an error (HTTP %d). Please try again shortly.', 'reviews-feed'), $status);
-			SBR_Error_Handler::log_error(['id' => 'relayServerError', 'endpoint' => $url, 'apiMessage' => $msg]);
+			SBR_Error_Handler::log_error($this->sanitize_error_payload(['id' => 'relayServerError', 'endpoint' => $url, 'apiMessage' => $msg]));
 			return ['id' => 'relayServerError', 'success' => false, 'message' => $msg, 'apiMessage' => $msg];
 		}
 
@@ -371,19 +374,74 @@ class SBRelay
 			(false === $body['success'] && !empty($body['data']['id']))
 		) {
 			// Defensive: a malformed/proxy-truncated error response may lack
-			// the `data` key entirely. Initialize it before mutating so we
-			// don't trigger an "Undefined index" notice and feed `null`
-			// into the error handler.
-			if (!isset($body['data']) || !is_array($body['data'])) {
-				$body['data'] = [];
-			}
-			$body['data']['endpoint'] = $url;
-			SBR_Error_Handler::log_error($body['data']);
-			$this->check_token_validity($body['data']);
-			return !empty($body['data']) ? $body['data'] : $body;
+			// the `data` key entirely, so default to [] rather than mutating
+			// a missing offset and feeding `null` into the error handler.
+			$error_data = isset($body['data']) && is_array($body['data']) ? $body['data'] : [];
+			$error_data['endpoint'] = $url;
+
+			// Sanitised once, then used everywhere. The returned copy reaches
+			// `wp_send_json()` (BaseProvider::getAllReviews) and lands in
+			// `SbUtils.ajaxPost`, which raises `data.message` through
+			// `Notice.js` — a dangerouslySetInnerHTML sink. Only the logged copy
+			// was stripped before, so the browser got the raw relay body.
+			// `check_token_validity()` matches `id === 'invalidToken'`, which tag
+			// stripping cannot change.
+			$error_data = $this->sanitize_error_payload($error_data);
+			SBR_Error_Handler::log_error($error_data);
+			$this->check_token_validity($error_data);
+
+			// The `endpoint` key above means this is never empty, so the old
+			// `!empty(...) ? ... : $body` fallback could not be reached.
+			return $error_data;
 		}
 
 		return $body !== null ? $body : [];
+	}
+
+	/**
+	 * Make a relay error envelope safe to persist.
+	 *
+	 * SMASH-2031: the relay echoes request parameters back inside its error
+	 * data (`app/Traits/CanSendSourcesResponse.php:30` returns the caller's raw
+	 * place_id), and `sbr_errors` is read by more than one consumer — the
+	 * Support page renders it as HTML. Strip markup out of every string *value*
+	 * on the way in so no consumer has to be the only thing standing between a
+	 * relay response and an admin's browser. Keys are left alone — the relay's
+	 * error keys are fixed in its code, and the Support-page sink hex-encodes
+	 * keys as well as values.
+	 *
+	 * Non-strings pass through untouched: `code` stays an int and `success`
+	 * stays a bool, which the Support page prints as-is.
+	 *
+	 * wp_strip_all_tags() rather than sanitize_text_field(), which also deletes
+	 * every `%XX` sequence — that turned the stored `endpoint` into
+	 * `website_url=httpssb-reviews-plugin.ddev.site` and cost support the one
+	 * field they read. Tag removal is what matters here, and a `<` that
+	 * survives without its `>` cannot open a tag; the Support-page sink encodes
+	 * it regardless.
+	 *
+	 * @param array $data Relay error data.
+	 *
+	 * @return array
+	 */
+	private function sanitize_error_payload(array $data, int $depth = 0): array
+	{
+		// Bounded: the envelope comes from a remote service. json_decode() has
+		// already refused anything past depth 512 by the time this runs, so 32 is
+		// well inside what can arrive.
+		if ($depth >= self::MAX_SANITISE_DEPTH) {
+			return array();
+		}
+
+		foreach ($data as $key => $value) {
+			if (is_array($value)) {
+				$data[$key] = $this->sanitize_error_payload($value, $depth + 1);
+			} elseif (is_string($value)) {
+				$data[$key] = wp_strip_all_tags($value);
+			}
+		}
+
+		return $data;
 	}
 
 	/**

@@ -1,0 +1,425 @@
+/*!
+ * Smash Balloon design tokens — VENDORED, do not hand-edit.
+ *
+ * Source : @smashballoons/tokens@1.0.0  (npm, MIT)
+ *          published 2026-06-09T09:42:26.586Z — the registry's own timestamp,
+ *          re-checkable with `npm view @smashballoons/tokens time --json`.
+ *          Asserted alongside the token counts by DesignTokenParityTest.
+ * Synced : 2026-08-12  — byte-identical to the copy in the design rock repo
+ * Refresh: .claude/bin/sync-design-tokens
+ *
+ * 223 unique custom properties under a `--sb-` prefix, 321 declarations. The extra
+ * 98 are overrides of tokens already declared above: 85 oklch() restatements for
+ * wide-gamut browsers, 8 in the prefers-reduced-motion block and 5 color-mix().
+ * Colour primitives + semantic roles, the Tailwind spacing / radius / shadow
+ * scales, type, borders, rings, z-index and motion.
+ *
+ * Registered as `sbr_design_tokens` (sbr-functions.php:493, :566) and a hard
+ * dependency of the saved-badge styles. `sbr-badges.css` still reads none of
+ * these tokens — it carries its own hand-tuned values, and mapping it onto the
+ * layer is a separate job.
+ *
+ * `--sb-color-peach-600` is #ed4944 — byte-identical to the plugin's own brand
+ * red (`class/sbr-functions.php:148`, headerAvReviewIconColor).
+ */
+:root {
+  /* ---------- Color primitives ---------- */
+  /* white */
+  --sb-color-white: #fff;
+
+  /* black */
+  --sb-color-black: #000;
+
+  /* gray */
+  --sb-color-gray-50: #f9fafb;
+  --sb-color-gray-100: #f3f4f6;
+  --sb-color-gray-200: #e5e7eb;
+  --sb-color-gray-300: #d1d5dc;
+  --sb-color-gray-400: #99a1af;
+  --sb-color-gray-500: #6a7282;
+  --sb-color-gray-600: #4a5565;
+  --sb-color-gray-700: #364153;
+  --sb-color-gray-800: #1e2939;
+  --sb-color-gray-900: #101828;
+  --sb-color-gray-950: #030712;
+
+  /* red */
+  --sb-color-red-50: #fef2f2;
+  --sb-color-red-100: #ffe2e2;
+  --sb-color-red-200: #ffc9c9;
+  --sb-color-red-300: #ffa2a2;
+  --sb-color-red-400: #ff6467;
+  --sb-color-red-500: #fb2c36;
+  --sb-color-red-600: #e7000b;
+  --sb-color-red-700: #c10007;
+  --sb-color-red-800: #9f0712;
+  --sb-color-red-900: #82181a;
+  --sb-color-red-950: #460809;
+
+  /* yellow */
+  --sb-color-yellow-50: #fefce8;
+  --sb-color-yellow-100: #fef9c2;
+  --sb-color-yellow-200: #fff085;
+  --sb-color-yellow-300: #ffdf20;
+  --sb-color-yellow-400: #fdc700;
+  --sb-color-yellow-500: #f0b100;
+  --sb-color-yellow-600: #d08700;
+  --sb-color-yellow-700: #a65f00;
+  --sb-color-yellow-800: #894b00;
+  --sb-color-yellow-900: #733e0a;
+  --sb-color-yellow-950: #432004;
+
+  /* emerald */
+  --sb-color-emerald-50: #ecfdf5;
+  --sb-color-emerald-100: #d0fae5;
+  --sb-color-emerald-200: #a4f4cf;
+  --sb-color-emerald-300: #5ee9b5;
+  --sb-color-emerald-400: #00d492;
+  --sb-color-emerald-500: #00bc7d;
+  --sb-color-emerald-600: #009966;
+  --sb-color-emerald-700: #007a55;
+  --sb-color-emerald-800: #006045;
+  --sb-color-emerald-900: #004f3b;
+  --sb-color-emerald-950: #002c22;
+
+  /* cyan */
+  --sb-color-cyan-50: #ecfeff;
+  --sb-color-cyan-100: #cefafe;
+  --sb-color-cyan-200: #a2f4fd;
+  --sb-color-cyan-300: #53eafd;
+  --sb-color-cyan-400: #00d3f2;
+  --sb-color-cyan-500: #00b8db;
+  --sb-color-cyan-600: #0092b8;
+  --sb-color-cyan-700: #007595;
+  --sb-color-cyan-800: #005f78;
+  --sb-color-cyan-900: #104e64;
+  --sb-color-cyan-950: #053345;
+
+  /* ---------- Brand colors ---------- */
+  /* wp-blue */
+  --sb-color-wp-blue-50: #e2f5ff;
+  --sb-color-wp-blue-100: #bfe8ff;
+  --sb-color-wp-blue-200: #b5e5ff;
+  --sb-color-wp-blue-300: #86d0f9;
+  --sb-color-wp-blue-400: #43a6db;
+  --sb-color-wp-blue-500: #0068a0;
+  --sb-color-wp-blue-600: #005b8c;
+  --sb-color-wp-blue-700: #004d77;
+  --sb-color-wp-blue-800: #004063;
+  --sb-color-wp-blue-900: #00334e;
+
+  /* wp-light-blue */
+  --sb-color-wp-light-blue-50: #f7fdff;
+  --sb-color-wp-light-blue-100: #d6f4ff;
+  --sb-color-wp-light-blue-200: #94e3ff;
+  --sb-color-wp-light-blue-300: #52d1ff;
+  --sb-color-wp-light-blue-400: #2fc5fb;
+  --sb-color-wp-light-blue-500: #0096cc;
+  --sb-color-wp-light-blue-600: #007ca8;
+  --sb-color-wp-light-blue-700: #006285;
+  --sb-color-wp-light-blue-800: #004761;
+  --sb-color-wp-light-blue-900: #002d3d;
+
+  /* peach */
+  --sb-color-peach-50: #fcf0ef;
+  --sb-color-peach-100: #ffe1e0;
+  --sb-color-peach-200: #ffcac7;
+  --sb-color-peach-300: #fca7a1;
+  --sb-color-peach-400: #f7756d;
+  --sb-color-peach-500: #fe544f;
+  --sb-color-peach-600: #ed4944;
+  --sb-color-peach-700: #cc3f3a;
+  --sb-color-peach-800: #790b1e;
+  --sb-color-peach-900: #3d0016;
+
+  /* ---------- Spacing ---------- */
+  --sb-space-0: 0;
+  --sb-space-px: 1px;
+  --sb-space-0-5: 0.125rem;
+  --sb-space-1: 0.25rem;
+  --sb-space-1-5: 0.375rem;
+  --sb-space-2: 0.5rem;
+  --sb-space-2-5: 0.625rem;
+  --sb-space-3: 0.75rem;
+  --sb-space-3-5: 0.875rem;
+  --sb-space-4: 1rem;
+  --sb-space-5: 1.25rem;
+  --sb-space-6: 1.5rem;
+  --sb-space-7: 1.75rem;
+  --sb-space-8: 2rem;
+  --sb-space-9: 2.25rem;
+  --sb-space-10: 2.5rem;
+  --sb-space-11: 2.75rem;
+  --sb-space-12: 3rem;
+  --sb-space-14: 3.5rem;
+  --sb-space-16: 4rem;
+  --sb-space-20: 5rem;
+  --sb-space-24: 6rem;
+  --sb-space-28: 7rem;
+  --sb-space-32: 8rem;
+  --sb-space-36: 9rem;
+  --sb-space-40: 10rem;
+  --sb-space-44: 11rem;
+  --sb-space-48: 12rem;
+  --sb-space-52: 13rem;
+  --sb-space-56: 14rem;
+  --sb-space-60: 15rem;
+  --sb-space-64: 16rem;
+  --sb-space-72: 18rem;
+  --sb-space-80: 20rem;
+  --sb-space-96: 24rem;
+
+  /* ---------- Border radius ---------- */
+  --sb-radius-none: 0;
+  --sb-radius-sm: 0.125rem;
+  --sb-radius-base: 0.25rem;
+  --sb-radius-md: 0.375rem;
+  --sb-radius-lg: 0.5rem;
+  --sb-radius-xl: 0.75rem;
+  --sb-radius-2xl: 1rem;
+  --sb-radius-3xl: 1.5rem;
+  --sb-radius-full: 9999px;
+
+  /* ---------- Shadow ---------- */
+  --sb-shadow-none: 0 0 #0000;
+  --sb-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --sb-shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --sb-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --sb-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --sb-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --sb-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --sb-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* ---------- Font family ---------- */
+  --sb-font-sans: InterVariable, Inter, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --sb-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* ---------- Font size ---------- */
+  --sb-font-size-2xs: 0.75rem;
+  --sb-font-size-xs: 0.8125rem;
+  --sb-font-size-sm: 0.875rem;
+  --sb-font-size-base: 1rem;
+  --sb-font-size-lg: 1.125rem;
+  --sb-font-size-xl: 1.25rem;
+  --sb-font-size-2xl: 1.5rem;
+  --sb-font-size-3xl: 1.875rem;
+  --sb-font-size-4xl: 2.25rem;
+  --sb-font-size-5xl: 3rem;
+  --sb-font-size-6xl: 3.75rem;
+  --sb-font-size-7xl: 4.5rem;
+  --sb-font-size-8xl: 6rem;
+  --sb-font-size-9xl: 8rem;
+
+  /* ---------- Font weight ---------- */
+  --sb-font-weight-normal: 400;
+  --sb-font-weight-medium: 500;
+  --sb-font-weight-semibold: 600;
+  --sb-font-weight-bold: 700;
+
+  /* ---------- Line height ---------- */
+  --sb-line-height-none: 1;
+  --sb-line-height-tight: 1.25;
+  --sb-line-height-snug: 1.375;
+  --sb-line-height-normal: 1.5;
+  --sb-line-height-relaxed: 1.625;
+  --sb-line-height-loose: 2;
+
+  /* ---------- Border width ---------- */
+  --sb-border-width-0: 0px;
+  --sb-border-width-1: 1px;
+  --sb-border-width-2: 2px;
+  --sb-border-width-4: 4px;
+  --sb-border-width-8: 8px;
+
+  /* ---------- Ring width ---------- */
+  --sb-ring-width-0: 0px;
+  --sb-ring-width-1: 1px;
+  --sb-ring-width-2: 2px;
+  --sb-ring-width-4: 4px;
+  --sb-ring-width-8: 8px;
+
+  /* ---------- Z-index ---------- */
+  --sb-z-0: 0;
+  --sb-z-10: 10;
+  --sb-z-20: 20;
+  --sb-z-30: 30;
+  --sb-z-40: 40;
+  --sb-z-50: 50;
+
+  /* ---------- Transition duration ---------- */
+  --sb-duration-75: 75ms;
+  --sb-duration-100: 100ms;
+  --sb-duration-150: 150ms;
+  --sb-duration-200: 200ms;
+  --sb-duration-300: 300ms;
+  --sb-duration-500: 500ms;
+  --sb-duration-700: 700ms;
+  --sb-duration-1000: 1000ms;
+
+  /* ---------- Easing ---------- */
+  --sb-ease-linear: linear;
+  --sb-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --sb-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --sb-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------- Opacity ---------- */
+  --sb-opacity-disabled: 0.5;
+
+  /* ---------- Semantic: bg ---------- */
+  --sb-color-bg-canvas: var(--sb-color-gray-100);
+  --sb-color-bg-surface: var(--sb-color-white);
+
+  /* ---------- Semantic: fg ---------- */
+  --sb-color-fg-default: var(--sb-color-gray-900);
+  --sb-color-fg-muted: var(--sb-color-gray-700);
+  --sb-color-fg-subtle: var(--sb-color-gray-600);
+  --sb-color-fg-inverted: var(--sb-color-white);
+
+  /* ---------- Semantic: button ---------- */
+  --sb-color-button-primary: var(--sb-color-wp-blue-500);
+  --sb-color-button-primary-hover: var(--sb-color-wp-blue-600);
+  --sb-color-button-secondary: var(--sb-color-gray-50);
+  --sb-color-button-secondary-hover: var(--sb-color-gray-100);
+  --sb-color-button-danger: var(--sb-color-red-700);
+  --sb-color-button-danger-hover: var(--sb-color-red-800);
+
+  /* ---------- Semantic: link ---------- */
+  --sb-color-link-default: var(--sb-color-wp-blue-500);
+  --sb-color-link-hover: var(--sb-color-wp-blue-600);
+
+  /* ---------- Semantic: overlay ---------- */
+  --sb-color-overlay-backdrop: rgb(0 0 0 / 0.4);
+
+  /* ---------- Semantic: feedback ---------- */
+  --sb-color-feedback-success-fg: var(--sb-color-emerald-800);
+  --sb-color-feedback-success-fg-muted: rgb(0 96 69 / 0.9);
+  --sb-color-feedback-success-bg: var(--sb-color-emerald-50);
+  --sb-color-feedback-warning-fg: var(--sb-color-yellow-800);
+  --sb-color-feedback-warning-fg-muted: rgb(137 75 0 / 0.9);
+  --sb-color-feedback-warning-bg: var(--sb-color-yellow-50);
+  --sb-color-feedback-error-fg: var(--sb-color-red-800);
+  --sb-color-feedback-error-fg-muted: rgb(159 7 18 / 0.9);
+  --sb-color-feedback-error-bg: var(--sb-color-red-50);
+
+  /* ---------- Semantic: border ---------- */
+  --sb-color-border-subtle: var(--sb-color-gray-200);
+  --sb-color-border-default: var(--sb-color-gray-300);
+  --sb-color-border-interactive: rgb(0 0 0 / 0.25);
+  --sb-color-border-strong: var(--sb-color-gray-500);
+
+  /* ---------- Semantic: focus ---------- */
+  --sb-color-focus-ring: var(--sb-color-wp-light-blue-600);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sb-duration-75: 0.01ms;
+    --sb-duration-100: 0.01ms;
+    --sb-duration-150: 0.01ms;
+    --sb-duration-200: 0.01ms;
+    --sb-duration-300: 0.01ms;
+    --sb-duration-500: 0.01ms;
+    --sb-duration-700: 0.01ms;
+    --sb-duration-1000: 0.01ms;
+  }
+}
+
+@supports (color: oklch(50% 0.1 200)) {
+  :root {
+    --sb-color-gray-50: oklch(98.5% 0.002 247.839);
+    --sb-color-gray-100: oklch(96.7% 0.003 264.542);
+    --sb-color-gray-200: oklch(92.8% 0.006 264.531);
+    --sb-color-gray-300: oklch(87.2% 0.01 258.338);
+    --sb-color-gray-400: oklch(70.7% 0.022 261.325);
+    --sb-color-gray-500: oklch(55.1% 0.027 264.364);
+    --sb-color-gray-600: oklch(44.6% 0.03 256.802);
+    --sb-color-gray-700: oklch(37.3% 0.034 259.733);
+    --sb-color-gray-800: oklch(27.8% 0.033 256.848);
+    --sb-color-gray-900: oklch(21% 0.034 264.665);
+    --sb-color-gray-950: oklch(13% 0.028 261.692);
+    --sb-color-red-50: oklch(97.1% 0.013 17.38);
+    --sb-color-red-100: oklch(93.6% 0.032 17.717);
+    --sb-color-red-200: oklch(88.5% 0.062 18.334);
+    --sb-color-red-300: oklch(80.8% 0.114 19.571);
+    --sb-color-red-400: oklch(70.4% 0.191 22.216);
+    --sb-color-red-500: oklch(63.7% 0.237 25.331);
+    --sb-color-red-600: oklch(57.7% 0.245 27.325);
+    --sb-color-red-700: oklch(50.5% 0.213 27.518);
+    --sb-color-red-800: oklch(44.4% 0.177 26.899);
+    --sb-color-red-900: oklch(39.6% 0.141 25.723);
+    --sb-color-red-950: oklch(25.8% 0.092 26.042);
+    --sb-color-yellow-50: oklch(98.7% 0.026 102.212);
+    --sb-color-yellow-100: oklch(97.3% 0.071 103.193);
+    --sb-color-yellow-200: oklch(94.5% 0.129 101.54);
+    --sb-color-yellow-300: oklch(90.5% 0.182 98.111);
+    --sb-color-yellow-400: oklch(85.2% 0.199 91.936);
+    --sb-color-yellow-500: oklch(79.5% 0.184 86.047);
+    --sb-color-yellow-600: oklch(68.1% 0.162 75.834);
+    --sb-color-yellow-700: oklch(55.4% 0.135 66.442);
+    --sb-color-yellow-800: oklch(47.6% 0.114 61.907);
+    --sb-color-yellow-900: oklch(42.1% 0.095 57.708);
+    --sb-color-yellow-950: oklch(28.6% 0.066 53.813);
+    --sb-color-emerald-50: oklch(97.9% 0.021 166.113);
+    --sb-color-emerald-100: oklch(95% 0.052 163.051);
+    --sb-color-emerald-200: oklch(90.5% 0.093 164.15);
+    --sb-color-emerald-300: oklch(84.5% 0.143 164.978);
+    --sb-color-emerald-400: oklch(76.5% 0.177 163.223);
+    --sb-color-emerald-500: oklch(69.6% 0.17 162.48);
+    --sb-color-emerald-600: oklch(59.6% 0.145 163.225);
+    --sb-color-emerald-700: oklch(50.8% 0.118 165.612);
+    --sb-color-emerald-800: oklch(43.2% 0.095 166.913);
+    --sb-color-emerald-900: oklch(37.8% 0.077 168.94);
+    --sb-color-emerald-950: oklch(26.2% 0.051 172.552);
+    --sb-color-cyan-50: oklch(98.4% 0.019 200.873);
+    --sb-color-cyan-100: oklch(95.6% 0.045 203.388);
+    --sb-color-cyan-200: oklch(91.7% 0.08 205.041);
+    --sb-color-cyan-300: oklch(86.5% 0.127 207.078);
+    --sb-color-cyan-400: oklch(78.9% 0.154 211.53);
+    --sb-color-cyan-500: oklch(71.5% 0.143 215.221);
+    --sb-color-cyan-600: oklch(60.9% 0.126 221.723);
+    --sb-color-cyan-700: oklch(52% 0.105 223.128);
+    --sb-color-cyan-800: oklch(45% 0.085 224.283);
+    --sb-color-cyan-900: oklch(39.8% 0.07 227.392);
+    --sb-color-cyan-950: oklch(30.2% 0.056 229.695);
+    --sb-color-wp-blue-50: oklch(95.9122% 0.024163 230.425597);
+    --sb-color-wp-blue-100: oklch(90.9324% 0.053028 232.695631);
+    --sb-color-wp-blue-200: oklch(89.6914% 0.061104 231.975677);
+    --sb-color-wp-blue-300: oklch(82.4066% 0.093623 233.800444);
+    --sb-color-wp-blue-400: oklch(68.9643% 0.119763 235.798289);
+    --sb-color-wp-blue-500: oklch(49.6585% 0.119465 242.730878);
+    --sb-color-wp-blue-600: oklch(45.1808% 0.107815 242.300128);
+    --sb-color-wp-blue-700: oklch(40.265% 0.095578 242.015096);
+    --sb-color-wp-blue-800: oklch(35.5296% 0.083227 241.285168);
+    --sb-color-wp-blue-900: oklch(30.5651% 0.069151 239.258755);
+    --sb-color-wp-light-blue-50: oklch(99.0113% 0.006898 219.558623);
+    --sb-color-wp-light-blue-100: oklch(94.8861% 0.034657 221.877806);
+    --sb-color-wp-light-blue-200: oklch(87.4482% 0.086495 222.43243);
+    --sb-color-wp-light-blue-300: oklch(80.8686% 0.127557 225.865132);
+    --sb-color-wp-light-blue-400: oklch(77.1631% 0.140602 228.304363);
+    --sb-color-wp-light-blue-500: oklch(63.3296% 0.130913 233.055749);
+    --sb-color-wp-light-blue-600: oklch(55.0867% 0.112652 232.197098);
+    --sb-color-wp-light-blue-700: oklch(46.5769% 0.094631 231.66236);
+    --sb-color-wp-light-blue-800: oklch(37.3232% 0.075318 231.093757);
+    --sb-color-wp-light-blue-900: oklch(27.7478% 0.054089 227.951777);
+    --sb-color-peach-50: oklch(96.4257% 0.013058 23.193134);
+    --sb-color-peach-100: oklch(93.4071% 0.033223 20.048125);
+    --sb-color-peach-200: oklch(88.4717% 0.06068 22.12899);
+    --sb-color-peach-300: oklch(81.0135% 0.101598 23.981172);
+    --sb-color-peach-400: oklch(71.4015% 0.161054 25.508581);
+    --sb-color-peach-500: oklch(67.8685% 0.207019 25.994061);
+    --sb-color-peach-600: oklch(63.8368% 0.201515 26.390181);
+    --sb-color-peach-700: oklch(57.1913% 0.178586 26.514875);
+    --sb-color-peach-800: oklch(37.0531% 0.140315 20.166964);
+    --sb-color-peach-900: oklch(23.109% 0.092682 6.476263);
+  }
+}
+
+@supports (color: color-mix(in srgb, red, transparent)) {
+  :root {
+    --sb-color-overlay-backdrop: color-mix(in srgb, var(--sb-color-black) 40%, transparent);
+    --sb-color-feedback-success-fg-muted: color-mix(in srgb, var(--sb-color-emerald-800) 90%, transparent);
+    --sb-color-feedback-warning-fg-muted: color-mix(in srgb, var(--sb-color-yellow-800) 90%, transparent);
+    --sb-color-feedback-error-fg-muted: color-mix(in srgb, var(--sb-color-red-800) 90%, transparent);
+    --sb-color-border-interactive: color-mix(in srgb, var(--sb-color-black) 25%, transparent);
+  }
+}

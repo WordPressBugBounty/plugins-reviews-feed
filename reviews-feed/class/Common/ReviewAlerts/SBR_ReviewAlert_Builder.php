@@ -78,8 +78,11 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 	 */
 	public function init_menu(): void
 	{
+		// "PRO+" because the gate above is sbr_is_pro_plus(): a Pro Basic customer
+		// seeing "PRO" on a feature they already pay for reads as a mislabel.
+		// Matches the Trust Badges pill, which is gated the same way.
 		if (!Util::sbr_is_pro_plus()) {
-			$menu_title = __('Review Alerts', 'reviews-feed') . '<span class="sb-men-pro">PRO</span>';
+			$menu_title = __('Review Alerts', 'reviews-feed') . '<span class="sb-men-pro">PRO+</span>';
 		} else {
 			$menu_title = __('Review Alerts', 'reviews-feed');
 		}
@@ -147,7 +150,7 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 				'sb-customizer-style',
 				SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css',
 				[],
-				false
+				Util::asset_version('vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/css/main.css')
 			);
 			return;
 		}
@@ -188,10 +191,11 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 				'sb-customizer-style',
 				SB_CUSTOMIZER_ASSETS . '/build/static/css/main.css',
 				[],
-				// Version by the plugin version so a rebuilt customizer bundle busts
-				// the browser cache on a plugin release (was `false` → WP core version,
-				// which never changed on a plugin update). SMASH-782.
-				defined('SBRVER') ? SBRVER : false
+				// By the FILE, not the plugin version: SBRVER only changes on a release,
+				// so two QA builds of one version share a cache key for thirty days.
+				// Measured serving a stale bundle on 2026-09-09. SMASH-782 set this to
+				// SBRVER from `false`; this is the next step of the same fix.
+				Util::asset_version('vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/css/main.css')
 			);
 		}
 
@@ -199,7 +203,7 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 			'sb-customizer-app',
 			$js_file,
 			['wp-i18n', 'jquery'],
-			defined('SBRVER') ? SBRVER : false,
+			Util::asset_version('vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js'),
 			true
 		);
 

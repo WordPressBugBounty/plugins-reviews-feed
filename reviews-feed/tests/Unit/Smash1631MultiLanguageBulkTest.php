@@ -20,19 +20,26 @@ use SmashBalloon\Reviews\Pro\Helpers\SBR_WPML;
  */
 class Smash1631MultiLanguageBulkTest extends TestCase
 {
+	/** @var mixed */
+	private $previous_wpdb;
+
 	protected function setUp(): void
 	{
 		parent::setUp();
-		global $wp_options_mock, $wp_filter_mock;
+		global $wp_options_mock, $wp_filter_mock, $wpdb;
+		$this->previous_wpdb = $wpdb;
 		$wp_options_mock = [];
 		$wp_filter_mock = [];
 	}
 
 	protected function tearDown(): void
 	{
-		global $wp_filter_mock, $sitepress;
+		global $wp_filter_mock, $sitepress, $wpdb;
 		$wp_filter_mock = [];
 		$sitepress = null;
+		// One test below swaps $wpdb for an anonymous double; $wpdb is
+		// process-wide, so it has to go back or it leaks into the rest of the run.
+		$wpdb = $this->previous_wpdb;
 		parent::tearDown();
 	}
 

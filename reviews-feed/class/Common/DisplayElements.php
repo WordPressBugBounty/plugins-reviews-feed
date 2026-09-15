@@ -570,6 +570,134 @@ class DisplayElements {
 	}
 
 	/**
+	 * A provider slug as it appears in an ASSET name and a CSS class.
+	 *
+	 * The data slug keeps its dot — `wordpress.org` is what provider_label() matches
+	 * Util::get_providers() on. Files and CSS cannot: the shipped artwork is
+	 * `wordpressorg-mono.svg` / `-lockup.svg`, and `.sbr-tb-lockup-wordpress.org`
+	 * parses as two classes, so the height rule would never match.
+	 *
+	 * @param string $provider Provider slug, dotted or not.
+	 *
+	 * @return string Slug safe for a file name and a class name.
+	 */
+	public static function provider_asset_slug($provider)
+	{
+		return str_replace('.', '', sanitize_file_name((string) $provider));
+	}
+
+	/**
+	 * Cache of icon files already read this request, keyed by relative path.
+	 *
+	 * @var array<string, string>
+	 */
+	private static $icon_file_cache = array();
+
+	/**
+	 * An icon file's contents, read at most once per request.
+	 *
+	 * Caches the FILE, never a getter's return value: get_provider_mono_icon()
+	 * rewrites mask ids per call so two badges on one page do not collide, and
+	 * caching its output would hand out the same ids again — the exact bug its
+	 * uniquifying step exists to prevent.
+	 *
+	 * @param string $relative Path under the plugin directory.
+	 *
+	 * @return string Contents, or '' when the file is missing or unreadable.
+	 */
+	private static function read_icon_file($relative)
+	{
+		if (isset(self::$icon_file_cache[$relative])) {
+			return self::$icon_file_cache[$relative];
+		}
+
+		$path = SBR_PLUGIN_DIR . $relative;
+
+		if (! file_exists($path) || ! is_readable($path)) {
+			self::$icon_file_cache[$relative] = '';
+
+			return '';
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a bundled local SVG.
+		$svg = file_get_contents($path);
+
+		$contents = is_string($svg) ? $svg : '';
+
+		self::$icon_file_cache[$relative] = $contents;
+
+		// The local, not the cache slot just written: re-reading the offset is
+		// what the analyser cannot prove, and it is the same value.
+		return $contents;
+	}
+
+	/**
+	 * Make every element id in an inlined SVG unique to this render.
+	 *
+	 * These files are echoed inline, so two marks for one provider on a page — or
+	 * a badge plus the block editor's preview of it — emit every id twice, and a
+	 * duplicate id resolves to the first occurrence. Identical today, wrong the
+	 * moment one copy's artwork is edited, and invalid markup regardless.
+	 *
+	 * Prefix-agnostic on purpose. The first version rewrote only `sbr-mono-`
+	 * (masks) and then only `fl-` (lockups), and the review found a third family
+	 * it therefore missed: the provider icons carry exporter ids
+	 * (`clip0_5673_10737`, `pattern0_5673_10731`, `Layer_x0020_1`, `Page-1`) in
+	 * eight of the fifteen files, six of them REFERENCED by `url(#…)` — which is
+	 * how the embedded bitmaps in the AliExpress and Formidable marks are drawn.
+	 * Matching the id syntax instead of a naming convention cannot miss the next
+	 * family.
+	 *
+	 * References are rewritten with the definitions, so a clip-path or pattern
+	 * still resolves inside its own copy.
+	 *
+	 * @param string $svg  SVG markup.
+	 * @param string $kind Counter to advance, so two families do not collide.
+	 *
+	 * @return string
+	 */
+	protected static function uniquify_ids($svg, $kind)
+	{
+		if ($svg === '' || strpos($svg, 'id="') === false) {
+			return $svg;
+		}
+
+		if (! isset(self::$inline_svg_counts[ $kind ])) {
+			self::$inline_svg_counts[ $kind ] = 0;
+		}
+
+		$suffix = '-sbr' . $kind . ( ++self::$inline_svg_counts[ $kind ] );
+
+		preg_match_all('/id="([^"]+)"/', $svg, $matches);
+
+		foreach (array_unique($matches[1]) as $id) {
+			// Every reference form, not only the ones the committed files use:
+			// two of them write url(#x) and xlink:href="#x" (which the plain
+			// href match reaches as a substring), and a quoted url('#x') from a
+			// future export would otherwise be left pointing at the old id.
+			$svg = str_replace(
+				array(
+					'id="' . $id . '"',
+					'url(#' . $id . ')',
+					"url('#" . $id . "')",
+					'url("#' . $id . '")',
+					'href="#' . $id . '"',
+				),
+				array(
+					'id="' . $id . $suffix . '"',
+					'url(#' . $id . $suffix . ')',
+					"url('#" . $id . $suffix . "')",
+					'url("#' . $id . $suffix . '")',
+					'href="#' . $id . $suffix . '"',
+				),
+				$svg
+			);
+		}
+
+		return $svg;
+	}
+
+	/**
 	 * Get provider icon as inline SVG
 	 *
 	 * Reads the provider SVG file and returns its content for inline rendering.
@@ -581,29 +709,189 @@ class DisplayElements {
 	 */
 	public static function get_provider_icon($provider)
 	{
-		// Sanitize provider name to prevent path traversal
-		$provider = sanitize_file_name($provider);
+		// Sanitize provider name to prevent path traversal, and fold the dot the
+		// asset names do not carry.
+		$provider = self::provider_asset_slug($provider);
 
-		// Build path to provider icon SVG
-		$icon_path = SBR_PLUGIN_DIR . 'assets/icons/' . $provider . '-provider.svg';
+		$svg_content = self::read_icon_file('assets/icons/' . $provider . '-provider.svg');
 
-		// Check if file exists and is readable
-		if (! file_exists($icon_path) || ! is_readable($icon_path)) {
-			// Fallback to google icon if provider icon not found
-			$icon_path = SBR_PLUGIN_DIR . 'assets/icons/google-provider.svg';
-			if (! file_exists($icon_path) || ! is_readable($icon_path)) {
-				return '';
-			}
+		// Fallback to the google mark when the provider has no artwork. Kept as a
+		// second read rather than folded into read_icon_file(): the fallback is
+		// this getter's policy, and the mono and lockup getters deliberately
+		// return '' instead of substituting someone else's brand.
+		if ($svg_content === '') {
+			$svg_content = self::read_icon_file('assets/icons/google-provider.svg');
 		}
 
-		// Read SVG content
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading local SVG file
-		$svg_content = file_get_contents($icon_path);
+		return self::uniquify_ids($svg_content, 'icon');
+	}
 
-		if (false === $svg_content) {
+	/**
+	 * Whether a provider has a mark of its own.
+	 *
+	 * get_provider_icon() falls back to the Google mark for an unknown provider,
+	 * which is the right call inside the feed — a review row needs an icon and a
+	 * generic one beats a hole. On a badge it is not: the logo row is a claim
+	 * about which platforms the rating comes from, so drawing Google for a
+	 * provider that has no mark would state something untrue. Callers that make
+	 * a claim ask this first; callers that just need a glyph do not.
+	 *
+	 * @since 2.10.0
+	 *
+	 * @param string $provider Provider slug, e.g. 'google', 'yelp'.
+	 *
+	 * @return bool
+	 */
+	public static function has_provider_icon($provider)
+	{
+		$provider = self::provider_asset_slug($provider);
+
+		if ($provider === '') {
+			return false;
+		}
+
+		$icon_path = SBR_PLUGIN_DIR . 'assets/icons/' . $provider . '-provider.svg';
+
+		return file_exists($icon_path) && is_readable($icon_path);
+	}
+
+	/**
+	 * The single-ink version of a provider's mark.
+	 *
+	 * Recolouring the brand mark does not work, and the reason is structural: a
+	 * mark like Facebook or Booking.com is a coloured plate with a lighter glyph
+	 * knocked out of it. Flatten every shape to one ink and the glyph merges
+	 * into the plate — a solid blob where the logo was. Measured on our own
+	 * fifteen: six carry a plate, and CSS cannot tell figure from ground.
+	 *
+	 * So mono is its own artwork: one silhouette per provider, or — where the
+	 * knock-out is the whole point — a `<mask>` that keeps it as a hole. The
+	 * design reached the same conclusion and ships masks for exactly the two
+	 * marks that broke here, which is the strongest evidence the split is real
+	 * rather than a workaround.
+	 *
+	 * Eleven providers have one. The rest keep the CSS recolour, which is a
+	 * worse result but only for marks with no plate to ruin.
+	 *
+	 * @since 2.10.0
+	 *
+	 * @param string $provider Provider slug, e.g. 'google', 'yelp'.
+	 *
+	 * @return string Inline SVG markup, or '' when there is no mono variant.
+	 */
+	public static function get_provider_mono_icon($provider)
+	{
+		$provider = self::provider_asset_slug($provider);
+
+		if ($provider === '') {
 			return '';
 		}
 
-		return $svg_content;
+		$svg = self::read_icon_file('assets/icons/' . $provider . '-mono.svg');
+
+		if ($svg === '') {
+			return '';
+		}
+
+		// Two of these carry a <mask id>. Two badges on one page would emit the
+		// same id twice, and a duplicate id resolves to the first occurrence —
+		// identical here, so it renders correctly today and would stop the moment
+		// the artwork is edited on one of them.
+		//
+		// Through the shared rewriter rather than a prefix match on `sbr-mono-`:
+		// that gate silently skipped any mono mark whose ids were not named to
+		// our convention, which is the one case nobody would notice.
+		return self::uniquify_ids($svg, 'mono');
+	}
+
+	/**
+	 * Whether a provider has single-ink artwork of its own.
+	 *
+	 * @since 2.10.0
+	 *
+	 * @param string $provider Provider slug.
+	 *
+	 * @return bool
+	 */
+	public static function has_provider_mono_icon($provider)
+	{
+		$provider = self::provider_asset_slug($provider);
+
+		if ($provider === '') {
+			return false;
+		}
+
+		$path = SBR_PLUGIN_DIR . 'assets/icons/' . $provider . '-mono.svg';
+
+		return file_exists($path) && is_readable($path);
+	}
+
+	/**
+	 * Renders per inline-SVG family this request, so ids stay unique.
+	 *
+	 * @var array<string, int>
+	 */
+	protected static $inline_svg_counts = array();
+
+	/**
+	 * The full lockup — mark plus wordmark — for a provider.
+	 *
+	 * A badge that speaks for exactly ONE platform can name it properly instead
+	 * of showing a bare mark; that is the design's "Full logo" layout. Deliberately
+	 * NOT a fallback to the mark and NOT a fallback to Google: an absent lockup is
+	 * answered by has_provider_lockup() at the call site, which then draws the
+	 * mark. Returning something here would make "did we have artwork" unanswerable.
+	 *
+	 * Eleven of the fifteen providers have one. The rest (Formidable, WPForms,
+	 * Zomato) have no supplied lockup, so they keep the mark — which is why the
+	 * caller has to ask first.
+	 *
+	 * @since 2.10.0
+	 *
+	 * @param string $provider Provider slug, e.g. 'google', 'yelp'.
+	 *
+	 * @return string Inline SVG markup, or '' when there is no lockup.
+	 */
+	public static function get_provider_lockup($provider)
+	{
+		$provider = self::provider_asset_slug($provider);
+
+		if ($provider === '') {
+			return '';
+		}
+
+		$svg = self::read_icon_file('assets/icons/' . $provider . '-lockup.svg');
+
+		// Same problem the mono icons have, from a different source: these files
+		// keep their exporter ids. Measured across the set — edd-lockup REFERENCES
+		// its clip-path id, and booking (29), yelp (7) and aliexpress (1) carry ids
+		// nothing points at. Two badges for the same provider on one page, or a
+		// badge plus the block editor's preview of it, emit each id twice, and a
+		// duplicate id resolves to the first occurrence — identical today, wrong
+		// the moment one copy's artwork is edited. The unreferenced ones are just
+		// invalid markup, which is reason enough on a public page.
+		return self::uniquify_ids($svg, 'lockup');
+	}
+
+	/**
+	 * Whether a provider has a full lockup of its own.
+	 *
+	 * @since 2.10.0
+	 *
+	 * @param string $provider Provider slug, e.g. 'google', 'yelp'.
+	 *
+	 * @return bool
+	 */
+	public static function has_provider_lockup($provider)
+	{
+		$provider = self::provider_asset_slug($provider);
+
+		if ($provider === '') {
+			return false;
+		}
+
+		$lockup_path = SBR_PLUGIN_DIR . 'assets/icons/' . $provider . '-lockup.svg';
+
+		return file_exists($lockup_path) && is_readable($lockup_path);
 	}
 }

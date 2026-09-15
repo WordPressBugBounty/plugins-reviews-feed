@@ -25,11 +25,29 @@ use SmashBalloon\Reviews\Tests\Unit\Doubles\FeedCacheWpdbDouble;
  */
 class FeedCacheUpdateServiceTest extends TestCase
 {
+	/** @var mixed */
+	private $previous_wpdb;
+
 	protected function setUp(): void
 	{
 		parent::setUp();
 		global $wpdb;
+		$this->previous_wpdb = $wpdb;
 		$wpdb = new FeedCacheWpdbDouble();
+	}
+
+	/**
+	 * $wpdb is process-wide, so leaving the double installed handed it to every
+	 * test that ran afterwards — which showed up as "Undefined array key" in
+	 * Smash782ExternalRefreshCronTest under `--order-by=random`, and nowhere in
+	 * default order. Same save-and-restore the other double-installing tests use.
+	 */
+	protected function tearDown(): void
+	{
+		global $wpdb;
+		$wpdb = $this->previous_wpdb;
+
+		parent::tearDown();
 	}
 
 	/** GROUP BY feed_id is present and on `feed_id` (not `cache_type`). */

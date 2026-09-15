@@ -708,11 +708,16 @@ class Util
 
 		$output = '## SITE/SERVER INFO: ##' . "</br>";
 		$output .= 'Plugin Version:' . self::get_whitespace(11) . SBR_MENU_SLUG . "</br>";
-		$output .= 'Site URL:' . self::get_whitespace(17) . site_url() . "</br>";
-		$output .= 'Home URL:' . self::get_whitespace(17) . home_url() . "</br>";
-		$output .= 'WordPress Version:' . self::get_whitespace(8) . get_bloginfo('version') . "</br>";
+		$output .= 'Site URL:' . self::get_whitespace(17) . self::support_info_text(site_url()) . "</br>";
+		$output .= 'Home URL:' . self::get_whitespace(17) . self::support_info_text(home_url()) . "</br>";
+		$output .= 'WordPress Version:' . self::get_whitespace(8) . self::support_info_text(get_bloginfo('version')) . "</br>";
 		$output .= 'PHP Version:' . self::get_whitespace(14) . PHP_VERSION . "</br>";
-		$output .= 'Web Server Info:' . self::get_whitespace(10) . esc_html($_SERVER['SERVER_SOFTWARE']) . "</br>";
+		// Not always set — CLI and some FPM/SAPI setups omit it — so an unguarded
+		// read is an "Undefined array key" warning printed into the Support page.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reading server metadata for the support panel, not form data.
+		$server_software = isset($_SERVER['SERVER_SOFTWARE']) ? wp_unslash($_SERVER['SERVER_SOFTWARE']) : '';
+
+		$output .= 'Web Server Info:' . self::get_whitespace(10) . self::support_info_text($server_software) . "</br>";
 		$output .= 'PHP allow_url_fopen:' . self::get_whitespace(6) . $allow_url_fopen . "</br>";
 		$output .= 'PHP cURL:' . self::get_whitespace(17) . $php_curl . "</br>";
 		$output .= 'JSON:' . self::get_whitespace(21) . $php_json_decode . "</br>";
@@ -737,7 +742,7 @@ class Util
 
 		foreach ($plugins as $plugin_path => $plugin) {
 			if (in_array($plugin_path, $active_plugins)) {
-				$output .= $plugin['Name'] . ': ' . $plugin['Version'] . "</br>";
+				$output .= self::support_info_text($plugin['Name']) . ': ' . self::support_info_text($plugin['Version']) . "</br>";
 			}
 		}
 
@@ -769,7 +774,7 @@ class Util
 		if (Util::sbr_is_pro()) {
 			$output .= 'License key: ';
 			if (isset($sbr_settings['license_key'])) {
-				$output .= esc_html($sbr_settings['license_key']);
+				$output .= self::support_info_text($sbr_settings['license_key']);
 			} else {
 				$output .= ' Not added';
 			}
@@ -777,14 +782,14 @@ class Util
 			$output .= '</br>';
 			$output .= 'License Tier: ';
 			if (isset($statuses['license_tier'])) {
-				$output .= esc_html($statuses['license_tier']);
+				$output .= self::support_info_text($statuses['license_tier']);
 			} else {
 				$output .= ' Not Set';
 			}
 			$output .= '</br>';
 			$output .= 'License status: ';
 			if (isset($sbr_settings['license_status'])) {
-				$output .= $sbr_settings['license_status'];
+				$output .= self::support_info_text($sbr_settings['license_status']);
 			} else {
 				$output .= ' Inactive';
 			}
@@ -798,7 +803,7 @@ class Util
 
 		$output .= '</br>';
 		$output .= 'GDPR: ';
-		$output .= isset($sbr_settings['gdpr']) ? $sbr_settings['gdpr'] : ' Not setup';
+		$output .= isset($sbr_settings['gdpr']) ? self::support_info_text($sbr_settings['gdpr']) : ' Not setup';
 		$output .= '</br>';
 		$output .= 'Optimize Images: ';
 		$output .= isset($sbr_settings['optimize_images']) && $sbr_settings['optimize_images'] === true ? 'Enabled' : 'Disabled';
@@ -864,7 +869,11 @@ class Util
 		$output = '## SOURCES: ## </br>';
 		$source_list = SBR_Sources::get_sources_list();
 		foreach ($source_list as $feed) {
-			$output .= $feed['name'] . ' ( ' . strtoupper($feed['provider']) . ' => ' . $feed['account_id'] . ' )';
+			// SMASH-2031: this whole string is rendered raw by the Support page.
+			// The name arrives from the provider and is entity-decoded before
+			// storage (SBR_Feed_Saver_Manager.php:993), so a crafted business or
+			// plugin name would otherwise reach that sink as live markup.
+			$output .= self::support_info_text($feed['name']) . ' ( ' . self::support_info_text(strtoupper($feed['provider'])) . ' => ' . self::support_info_text($feed['account_id']) . ' )';
 			$output .= '</br>';
 		}
 		$output .= '</br>';
@@ -883,9 +892,18 @@ class Util
 	{
 		$output = '## API KEYS: ## </br>';
 		$api_keys = get_option('sbr_apikeys', []);
+		// get_option() returns whatever is stored, so a corrupted row could be
+		// a scalar here and the foreach below would fatal on PHP 8 — same
+		// coercion SBR_Error_Handler::get_errors() does for SMASH-1544.
+		if (! is_array($api_keys)) {
+			$api_keys = [];
+		}
 
 		foreach ($api_keys as $id => $api) {
-			$output .= ucfirst($id) . ' => ' . $api;
+			// sbr_apikeys holds strings today but is a free-form option; a
+			// non-scalar used to concatenate as "Array" plus a PHP notice.
+			$value = is_scalar($api) ? (string) $api : wp_json_encode($api);
+			$output .= self::support_info_text(ucfirst((string) $id)) . ' => ' . self::support_info_text(is_string($value) ? $value : '');
 			$output .= '</br>';
 		}
 		$output .= '</br>';
@@ -913,13 +931,13 @@ class Util
 			if ($i >= 25) {
 				break;
 			}
-			$output .= $feed['feed_name'];
+			$output .= self::support_info_text($feed['feed_name']);
 			if (isset($feed['settings'])) {
 				$output .= '</br>';
 				if (!empty($feed['sourcesList'])) {
 					foreach ($feed['sourcesList'] as $id => $source) {
-						$output .= esc_html($source['name']);
-						$output .= ' (' . esc_html(ucfirst($source['name'])) . ' => ' . esc_html($source['account_id']) . ')';
+						$output .= self::support_info_text($source['name']);
+						$output .= ' (' . self::support_info_text(ucfirst($source['name'])) . ' => ' . self::support_info_text($source['account_id']) . ')';
 						$output .= '</br>';
 					}
 				}
@@ -928,7 +946,7 @@ class Util
 			if (isset($feed['location_summary']) && count($feed['location_summary']) > 0) {
 				$first_feed = $feed['location_summary'][0];
 				if (!empty($first_feed['link'])) {
-					$output .= esc_html($first_feed['link']) . '?sb_debug';
+					$output .= self::support_info_text($first_feed['link']) . '?sb_debug';
 					$output .= '</br>';
 				}
 			}
@@ -966,7 +984,7 @@ class Util
 				$output .= '## FEEDS POSTS TABLE ##</br>';
 				foreach ($last_result as $column) {
 					foreach ($column as $key => $value) {
-						$output .= esc_html($key) . ': ' . esc_html($value) . '</br>';
+						$output .= self::support_info_text($key) . ': ' . self::support_info_text($value) . '</br>';
 					}
 				}
 			} else {
@@ -984,7 +1002,7 @@ class Util
 				$output .= '</br>';
 				foreach ($last_result as $column) {
 					foreach ($column as $key => $value) {
-						$output .= esc_html($key) . ': ' . esc_html($value) . '</br>';
+						$output .= self::support_info_text($key) . ': ' . self::support_info_text($value) . '</br>';
 					}
 				}
 			} else {
@@ -1887,6 +1905,96 @@ class Util
 	}
 
 	/**
+	 * Decode/strip passes support_info_text() will make before giving up.
+	 *
+	 * Legitimate input needs two or three. The cap exists because the pass count
+	 * is otherwise the caller's nesting depth.
+	 */
+	private const SUPPORT_TEXT_MAX_PASSES = 12;
+
+	/**
+	 * Make a value safe for the Support-page info blob.
+	 *
+	 * SMASH-2031: this blob reaches the page through wp_localize_script(),
+	 * which html_entity_decode()s every scalar it is given
+	 * (wp-includes/class-wp-scripts.php:661), and the customizer then renders
+	 * it with dangerouslySetInnerHTML. esc_html() is therefore undone in
+	 * transit — the same decode-re-arms-the-payload chain as SMASH-1795, one
+	 * layer up.
+	 *
+	 * Both operations have to run to a JOINT fixed point, and the order is why.
+	 * Two ways a single pass leaks:
+	 *
+	 *   - Decode once and a doubly-encoded value is still half-encoded:
+	 *     `&amp;lt;img …&amp;gt;` becomes `&lt;img …&gt;`, which holds no tag to
+	 *     strip, and the transport's decode finishes the job. Hence the decode
+	 *     loop.
+	 *   - Strip last and stripping can *synthesise* the entity it was meant to
+	 *     remove: `&amp;<x>lt;img …` is already a decode fixed point (`&amp;`
+	 *     followed by `<x>lt;` is not an entity), so the loop is a no-op, and
+	 *     then deleting `<x>` joins the halves into `&lt;img …`. Hence looping
+	 *     the strip too. Six shapes did this, including numeric and hex forms
+	 *     and an HTML comment as the filler.
+	 *
+	 * Looping until the whole step stops changing leaves a value that is a
+	 * fixed point of BOTH: no entity left to decode and no tag left to strip.
+	 * The transport then has one decode to spend and nothing to spend it on.
+	 * It terminates because neither operation ever lengthens the string.
+	 *
+	 * Storage really does hold values encoded this deeply — SinglePostCache
+	 * writes `post_content` and `json_data` unsanitised and
+	 * get_posts_table_info() dumps the newest row verbatim, so a publicly
+	 * submitted review reaches here.
+	 *
+	 * @param mixed $value Value destined for the info blob.
+	 *
+	 * @return string
+	 */
+	private static function support_info_text($value): string
+	{
+		if (! is_scalar($value)) {
+			return '';
+		}
+
+		$value = (string) $value;
+		$previous = null;
+		$passes = 0;
+
+		// Capped. Both loops run to a fixed point, and they do terminate — every
+		// pass either shortens the string or leaves it alone — but the number of
+		// passes is the caller's nesting depth and each pass re-scans the whole
+		// string. Stored review content reaches here (see above), so a long value
+		// of deeply layered entities costs O(length x depth) on an admin page
+		// render. Nothing legitimate needs more than a couple of passes: an
+		// entity-encoded tag is decode, strip, decode.
+		while ($value !== $previous && $passes < self::SUPPORT_TEXT_MAX_PASSES) {
+			$previous = $value;
+			$passes++;
+
+			$decoded = null;
+			$decodes = 0;
+
+			while ($value !== $decoded && $decodes < self::SUPPORT_TEXT_MAX_PASSES) {
+				$decoded = $value;
+				$decodes++;
+				$value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
+			}
+
+			$value = wp_strip_all_tags($value);
+		}
+
+		// Still changing at the cap means the value was built to keep changing.
+		// Returning '' rather than a partially decoded string: this is support
+		// diagnostics, a value like that is not diagnostic, and an empty string
+		// cannot carry anything to a sink whatever the sink does with it.
+		if ($value !== $previous) {
+			return '';
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Get Feeds Settings
 	 *
 	 * @since 1.0
@@ -1899,7 +2007,17 @@ class Util
 		$errors = SBR_Error_Handler::get_errors();
 		$errors = array_reverse($errors);
 		foreach ($errors as $error) {
-			$output .= json_encode($error);
+			// SMASH-2031: the Support page renders this string through
+			// dangerouslySetInnerHTML, so an entry poisoned before this fix
+			// must still come out inert. The JSON_HEX_* flags escape `<`, `>`
+			// and `&` in every key and value at any depth, leaving only JSON's
+			// own structural quotes — inert in this text-node context, and
+			// readable when the Copy button puts it on a support ticket.
+			$encoded = wp_json_encode(
+				$error,
+				JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+			);
+			$output .= false === $encoded ? '' : $encoded;
 			$output .= '</br></br>';
 		}
 		$output .= '</br>';
@@ -1954,7 +2072,54 @@ class Util
 		}
 		$up     = strtoupper($cc);
 		$offset = 0x1F1E6 - ord('A');
+		// phpcs:ignore PHPCompatibility.FunctionUse.NewFunctions.mb_chrFound -- guarded by the function_exists('mb_chr') check above; the sniff cannot see it
 		return mb_chr(ord($up[0]) + $offset, 'UTF-8') . mb_chr(ord($up[1]) + $offset, 'UTF-8');
 	}
 
+
+	/**
+	 * A cache-busting version for a bundled asset, derived from the FILE.
+	 *
+	 * `SBRVER` alone does not do this, despite comments in two builders saying it
+	 * busts the cache "on a rebuilt bundle". It busts on a VERSION change. Two QA
+	 * builds of the same version produce byte-different bundles behind an identical
+	 * `?ver=` — and the customizer bundle ships `Cache-Control: max-age=2592000`,
+	 * so the stale copy is held for thirty days.
+	 *
+	 * Measured on an InstaQA box 2026-09-09: after swapping in a rebuilt plugin the
+	 * edge answered `cf-cache-status: HIT`, `age: 3008`, with the previous bundle —
+	 * new PHP against old JS, which crashes the app and shows a blank screen nobody
+	 * can reproduce locally.
+	 *
+	 * mtime, not a content hash: it changes whenever the file is replaced, costs one
+	 * stat, and needs no build step to maintain.
+	 *
+	 * @param string $relative Path under the plugin directory.
+	 *
+	 * @return string|false
+	 */
+	public static function asset_version($relative)
+	{
+		$version = defined('SBRVER') ? SBRVER : false;
+
+		if (! defined('SBR_PLUGIN_DIR')) {
+			return $version;
+		}
+
+		$path = SBR_PLUGIN_DIR . ltrim((string) $relative, '/');
+
+		// A missing or unreadable asset is not a reason to fail the enqueue — fall
+		// back to the plugin version, which is what shipped before this existed.
+		if (! is_readable($path)) {
+			return $version;
+		}
+
+		$mtime = filemtime($path);
+
+		if ($mtime === false) {
+			return $version;
+		}
+
+		return (is_string($version) && $version !== '' ? $version : '0') . '.' . $mtime;
+	}
 }

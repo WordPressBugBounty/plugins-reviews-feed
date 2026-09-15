@@ -111,6 +111,16 @@ class FeedDisplay {
 			if (empty($item)) {
 				return ! empty($settings['showHeader']);
 			}
+			// SMASH-2084: the header rating is Pro-only, and this class is the FREE
+			// display — Pro\FeedDisplay overrides should_show() outright, so this
+			// branch never runs there. `averagereview` is in the DEFAULT headerContent
+			// for every template (sbr-functions.php:104), so on Free the setting read
+			// as on while templates/frontend/lite/header.php had no markup for it.
+			// Answered here rather than by editing the defaults, so a feed saved before
+			// this release keeps its stored settings and renders exactly as it did.
+			if ($item === 'averagereview') {
+				return false;
+			}
 			if (in_array($item, (array) $settings['headerContent'], true)) {
 				return true;
 			}

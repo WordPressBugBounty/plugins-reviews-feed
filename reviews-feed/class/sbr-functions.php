@@ -470,6 +470,144 @@ function sbr_scripts_enqueue($enqueue = false)
 }
 add_action('wp_enqueue_scripts', 'sbr_scripts_enqueue', 2);
 
+/**
+ * Register the badge stylesheet (SBR-163).
+ *
+ * Separate from sbr_styles because a badge can render on pages that carry no
+ * feed at all — a footer, a sidebar, a checkout — and those pages should not
+ * have to load the full feed stylesheet to show one badge.
+ *
+ * @return void
+ */
+function sbr_badge_register_styles()
+{
+	$min = ! empty($_GET['sb_debug']) ? '' : '.min'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only debug switch, mirrors sbr_scripts_enqueue()
+
+	// Util::asset_version(), not SBRVER: SBRVER changes on a RELEASE, and two
+	// builds of the same version produce byte-different sheets behind an identical
+	// `?ver=`. Measured on an InstaQA box — the edge answered `cf-cache-status:
+	// HIT`, `age: 3008` with the previous file. That is not hypothetical for these
+	// three: the badge logo row gained `flex-wrap` in this branch, and a cached
+	// copy of the old sheet overflows the badge instead of wrapping it.
+	wp_register_style(
+		'sbr_badges',
+		trailingslashit(SBR_PLUGIN_URL) . 'assets/css/sbr-badges' . $min . '.css',
+		array(),
+		Util::asset_version('assets/css/sbr-badges' . $min . '.css')
+	);
+
+	// The saved-badge styles (chip / card / medal) read ~35 design tokens, so
+	// the token sheet is a hard dependency rather than a convention — without it
+	// every colour and space falls back to the browser's initial value.
+	wp_register_style(
+		'sbr_design_tokens',
+		trailingslashit(SBR_PLUGIN_URL) . 'assets/css/design-tokens/sb-tokens.css',
+		array(),
+		Util::asset_version('assets/css/design-tokens/sb-tokens.css')
+	);
+
+	// Depends on sbr_badges too: the star row is the shared partial, and its
+	// rules live in that sheet.
+	wp_register_style(
+		'sbr_trust_badge',
+		trailingslashit(SBR_PLUGIN_URL) . 'assets/css/sbr-trust-badge' . $min . '.css',
+		array( 'sbr_design_tokens', 'sbr_badges' ),
+		Util::asset_version('assets/css/sbr-trust-badge' . $min . '.css')
+	);
+}
+add_action('wp_enqueue_scripts', 'sbr_badge_register_styles', 2);
+
+/**
+ * Enqueue the badge stylesheet on demand (SBR-163).
+ *
+ * Called by each badge rail only once a badge has actually produced markup, so
+ * a page never carries the CSS for a badge it did not render.
+ *
+ * @return void
+ */
+function sbr_badge_enqueue_styles()
+{
+	if (! wp_style_is('sbr_badges', 'registered')) {
+		sbr_badge_register_styles();
+	}
+
+	wp_enqueue_style('sbr_badges');
+}
+
+/**
+ * Make the design tokens available to every admin screen that mounts the shared
+ * customizer (SBR-163).
+ *
+ * The embed modal — and anything else ported from the design rock — is written
+ * entirely in `var(--sb-*)`. Those resolve to nothing without the token sheet,
+ * so the modal rendered completely unstyled on the feed customizer: the rules
+ * were present in main.css and every value in them was empty. The badge screens
+ * looked right only because they pull the tokens in as a dependency of the
+ * badge stylesheet.
+ *
+ * Hooked rather than added to `sb-customizer-style`'s dependency list because
+ * that handle is registered in five separate builders inside the shared
+ * `smashballoon/customizer` package, which other plugins also ship — they do
+ * not carry this token file, and making it a hard dependency there would fail
+ * for them. Keying off "was the customizer enqueued" keeps the fix on our side
+ * and covers every screen, including ones added later.
+ *
+ * It DOES therefore land on already-released screens — the feed customizer and
+ * the popup editor — which is worth stating because it looks like a BC risk.
+ * Measured before shipping: the token file declares 223 `--sb-*` properties,
+ * and across every stylesheet that shipped before it (the customizer package's
+ * own CSS and this plugin's admin sheets) exactly ZERO of those names are
+ * declared or read. Nothing that already renders resolves a `var(--sb-*)` whose
+ * value this changes; the sheet only adds names that were previously undefined.
+ * If that stops being true, the two files have started to overlap and this
+ * needs revisiting.
+ *
+ * @return void
+ */
+function sbr_admin_enqueue_design_tokens()
+{
+	if (! wp_style_is('sb-customizer-style', 'enqueued') && ! wp_script_is('sb-customizer-app', 'enqueued')) {
+		return;
+	}
+
+	if (! wp_style_is('sbr_design_tokens', 'registered')) {
+		// The SAME versioning as sbr_badge_register_styles(). Whichever function
+		// registers the handle first wins it for the whole request, so a bare
+		// SBRVER here put every admin-only page load back on release-versioning
+		// and reintroduced the staleness the other registration exists to avoid.
+		wp_register_style(
+			'sbr_design_tokens',
+			trailingslashit(SBR_PLUGIN_URL) . 'assets/css/design-tokens/sb-tokens.css',
+			array(),
+			Util::asset_version('assets/css/design-tokens/sb-tokens.css')
+		);
+	}
+
+	wp_enqueue_style('sbr_design_tokens');
+}
+// Priority 20: the builders enqueue the customizer on the default 10, so this
+// has to run after them to see it.
+add_action('admin_enqueue_scripts', 'sbr_admin_enqueue_design_tokens', 20);
+
+/**
+ * Enqueue the saved-badge stylesheet on demand (SBR-163).
+ *
+ * Its own entry point rather than a flag on the one above: the placement
+ * shapes vastly outnumber saved badges on a typical site, and they have no use
+ * for either the token sheet or the chip/card/medal rules.
+ *
+ * @return void
+ */
+function sbr_trust_badge_enqueue_styles()
+{
+	if (! wp_style_is('sbr_trust_badge', 'registered')) {
+		sbr_badge_register_styles();
+	}
+
+	// Dependencies pull in sbr_design_tokens and sbr_badges.
+	wp_enqueue_style('sbr_trust_badge');
+}
+
 function sbr_esc_html_with_br($text)
 {
 	return str_replace(array( '&lt;br /&gt;', '&lt;br&gt;' ), '<br>', esc_html(nl2br($text)));

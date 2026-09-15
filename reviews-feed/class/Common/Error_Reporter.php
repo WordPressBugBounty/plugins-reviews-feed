@@ -69,7 +69,6 @@ class Error_Reporter extends ServiceProvider
 
 	public function register()
 	{
-		add_action('sbr_feed_issue_email', [$this, 'maybe_trigger_report_email_send']);
 		add_action('wp_ajax_sbr_dismiss_critical_notice', [$this, 'dismiss_critical_notice']);
 		add_action('wp_footer', [$this, 'critical_error_notice'], 300);
 	}
@@ -341,23 +340,6 @@ class Error_Reporter extends ServiceProvider
 		return in_array($error_code, $critical_codes, true) && strpos($details['error']['message'], 'user has not authorized application') !== false;
 	}
 
-	public function maybe_trigger_report_email_send()
-	{
-		if (!$this->are_critical_errors()) {
-			return;
-		}
-		/** TODO: Match real option */
-		$options = get_option('sbr_settings', array());
-		if (! is_array($options)) {
-			$options = array();
-		}
-
-		if (isset($options['enable_email_report']) && empty($options['enable_email_report'])) {
-			return;
-		}
-		$this->send_report_email();
-	}
-
 	/**
 	 * Whether or not there was a platform data clearing error
 	 *
@@ -459,59 +441,6 @@ class Error_Reporter extends ServiceProvider
 			$error_message_return['admin_message'] = wp_json_encode($response);
 		}
 		return $error_message_return;
-	}
-
-
-	/**
-	 * Send Email Repport
-	 *
-	 *
-	 * @since X.X.X
-	 */
-	public function send_report_email()
-	{
-		$options = get_option('sbr_settings', array());
-		if (! is_array($options)) {
-			$options = array();
-		}
-
-		$to_string = ! empty($options['email_notification_addresses']) ? str_replace(' ', '', $options['email_notification_addresses']) : get_option('admin_email', '');
-
-		$to_array_raw = explode(',', $to_string);
-		$to_array = array();
-
-		foreach ($to_array_raw as $email) {
-			if (is_email($email)) {
-				$to_array[] = $email;
-			}
-		}
-
-		if (empty($to_array)) {
-			return false;
-		}
-
-		$headers = array('Content-Type: text/html; charset=utf-8');
-
-		$header_image = SBR_PLUGIN_URL . '/assets/images/balloon-120.png';
-
-		$title = __('Reviews Feed Report for ' . home_url());
-		$link = admin_url('admin.php?page=sbr-settings');
-		//&tab=customize-advanced
-		$footer_link = admin_url('admin.php?page=sbr-style&tab=misc&flag=emails');
-		$bold = __('There\'s an Issue with a Reviews Feed on Your Website', 'reviews-feed');
-		$details = '<p>' . __('A Custom Reviews Feed on your website is currently unable to connect to Facebook to retrieve new posts. Don\'t worry, your feed is still being displayed using a cached version, but is no longer able to display new posts.', 'reviews-feed') . '</p>';
-		$details .= '<p>' . sprintf(__('This is caused by an issue with your Facebook account connecting to the Facebook API. For information on the exact issue and directions on how to resolve it, please visit the %sCustom Facebook Feed settings page%s on your website.', 'reviews-feed'), '<a href="' . esc_url($link) . '">', '</a>') . '</p>';
-		$message_content = '<h6 style="padding:0;word-wrap:normal;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;font-weight:bold;line-height:130%;font-size: 16px;color:#444444;text-align:inherit;margin:0 0 20px 0;Margin:0 0 20px 0;">' . $bold . '</h6>' . $details;
-
-		$educator = new SBR_Education();
-		$dyk_message = $educator->dyk_display();
-
-		ob_start();
-		include_once SBR_PLUGIN_URL . '/templates/email.php';
-		$email_body = ob_get_contents();
-		ob_get_clean();
-		$sent = wp_mail($to_array, $title, $email_body, $headers);
-		return $sent;
 	}
 
 

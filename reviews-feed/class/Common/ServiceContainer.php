@@ -3,6 +3,8 @@
 namespace SmashBalloon\Reviews\Common;
 
 use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Recommended_Blocks;
+use SmashBalloon\Reviews\Common\Badges\SBR_Badge_Service;
+use SmashBalloon\Reviews\Common\Badges\SBR_Trust_Badge_Builder;
 use SmashBalloon\Reviews\Common\Admin\MenuService;
 use SmashBalloon\Reviews\Common\Admin\SBR_Admin_Notice;
 use SmashBalloon\Reviews\Common\Admin\SBR_Collections_Builder;
@@ -87,6 +89,10 @@ class ServiceContainer extends ServiceProvider
 		// SMASH-1756 — schema.org rich-snippet output (AIOSEO handshake + JSON-LD fallback)
 		SBR_Schema_Service::class,
 		SmashUsageTracking::class,
+		// SBR-163 — Widgets & Badges: [reviews-badge] shortcode, sbr/trust-badge block
+		// and the first native WP_Widget. Purely additive; registers new rails only.
+		SBR_Badge_Service::class,
+		SBR_Trust_Badge_Builder::class,
 	];
 
 	public function register(): void

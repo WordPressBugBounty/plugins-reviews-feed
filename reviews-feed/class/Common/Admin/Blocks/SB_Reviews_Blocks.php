@@ -179,6 +179,34 @@ class SB_Reviews_Blocks extends ServiceProvider
 	}
 
 	/**
+	 * The block's shortcode settings for a `sbr_wizard` arg.
+	 *
+	 * Any scalar is read as the feed id it names, so `1` preselects feed 1 and `7`
+	 * preselects feed 7. A value naming no feed answers `feed="0"` rather than '',
+	 * because get_feed_html() treats an empty setting as "no feed named" and
+	 * substitutes the site's first one — a malformed arg would preview an
+	 * unrelated feed.
+	 *
+	 * @param mixed $arg Raw `sbr_wizard` value, unslashed by the caller.
+	 *
+	 * @return string `feed="N"`.
+	 */
+	public static function wizard_shortcode_settings($arg)
+	{
+		// Answered before the cast, which would raise "Array to string conversion".
+		// Same '' WP's own _sanitize_text_fields() gives for an array
+		// (wp-includes/formatting.php:5634), so the same feed="0".
+		if (! is_scalar($arg)) {
+			return 'feed="0"';
+		}
+
+		// DEPARTURE from the inline version this replaced: it emitted feed="-5" for
+		// `-5`. Clamping is deliberate — a negative names no feed — and absint()
+		// is wrong here because it folds the sign onto real feed 5.
+		return 'feed="' . max(0, (int) sanitize_text_field((string) $arg)) . '"';
+	}
+
+	/**
 	 * Load Reviews Feed Gutenberg block scripts.
 	 *
 	 * @since 2.1
@@ -216,8 +244,14 @@ class SB_Reviews_Blocks extends ServiceProvider
 			'selectFeedLabel'     => esc_html__('Select a Feed', 'reviews-feed'),
 		);
 
-		if (!empty($_GET['sbr_wizard'])) {
-			$shortcodeSettings = 'feed="' . (int) sanitize_text_field(wp_unslash($_GET['sbr_wizard'])) . '"';
+		// One read, one ignore: the annotation used to sit on the call and left the
+		// `!empty($_GET[...])` test above it reporting the sniff anyway. Read-only —
+		// wizard_shortcode_settings() writes nothing and returns feed="<int>".
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only preselect, validated in the helper.
+		$sbr_wizard_arg = isset($_GET['sbr_wizard']) ? wp_unslash($_GET['sbr_wizard']) : null;
+
+		if (! empty($sbr_wizard_arg)) {
+			$shortcodeSettings = self::wizard_shortcode_settings($sbr_wizard_arg);
 		}
 
 		wp_localize_script(

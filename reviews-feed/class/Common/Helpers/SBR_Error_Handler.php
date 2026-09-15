@@ -11,6 +11,9 @@ namespace SmashBalloon\Reviews\Common\Helpers;
  */
 class SBR_Error_Handler
 {
+	/** Recursion cap for the value sanitiser. PHP caps request nesting at 64 and JSON at 512. */
+	private const MAX_SANITISE_DEPTH = 32;
+
 	/**
 	 * Errors Options
 	 *
@@ -67,6 +70,12 @@ class SBR_Error_Handler
 			: $errors;
 
 		$updated_errors = self::truncate_errors($updated_errors);
+
+		// SMASH-2031: this is the only function that writes the option, so it
+		// is where the guarantee belongs — log_error() is not the only caller.
+		if (is_array($updated_errors)) {
+			$updated_errors = self::sanitize_error_values($updated_errors);
+		}
 
 		return update_option(self::$errors_opt, $updated_errors);
 	}
@@ -135,6 +144,54 @@ class SBR_Error_Handler
 		}
 
 		self::update_errors($current_errors, 'no_merge');
+	}
+
+	/**
+	 * Strip markup out of anything on its way into the `sbr_errors` option.
+	 *
+	 * SMASH-2031: the option is rendered by the Support page, so it is the trust
+	 * boundary. Applied in update_errors() alone, because that is the only
+	 * function that writes the option and every log_error() call reaches it —
+	 * one guard that no writer can skip, rather than one per caller.
+	 *
+	 * wp_strip_all_tags() rather than sanitize_text_field(), which also deletes
+	 * every `%XX` sequence and would corrupt the logged endpoint URL.
+	 *
+	 * Non-strings pass through untouched so the Support page still gets an int
+	 * `code` and a bool `success` to print. check_error() itself compares only
+	 * `type`, `id` and `provider`, all strings.
+	 *
+	 * @param array<mixed> $error Error entry.
+	 *
+	 * @return array<mixed>
+	 */
+	private static function sanitize_error_values(array $error, int $depth = 0): array
+	{
+		// Bounded like its twins in SBRelay and BaseProvider: the entries come from
+		// a remote envelope, and json_decode() has already refused anything past
+		// depth 512, so 32 is inside what can reach here.
+		if ($depth >= self::MAX_SANITISE_DEPTH) {
+			return array();
+		}
+
+		foreach ($error as $key => $value) {
+			if (is_array($value)) {
+				$error[$key] = self::sanitize_error_values($value, $depth + 1);
+			} elseif (is_string($value)) {
+				$error[$key] = wp_strip_all_tags($value);
+			} elseif (is_object($value)) {
+				// An object fell through untouched, and `sbr_errors` is rendered as
+				// HTML by the Support page (SMASH-2031) — so a __toString carrying
+				// markup reached that sink with the strip skipped. Objects are also
+				// not readable there, so the class name is the useful thing to keep:
+				// diagnostic, and it cannot carry a payload.
+				$error[$key] = method_exists($value, '__toString')
+					? wp_strip_all_tags((string) $value)
+					: '[' . wp_strip_all_tags(get_class($value)) . ']';
+			}
+		}
+
+		return $error;
 	}
 
 	/**

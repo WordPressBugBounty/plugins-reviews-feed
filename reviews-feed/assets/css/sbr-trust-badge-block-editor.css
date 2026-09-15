@@ -1,0 +1,55 @@
+/**
+ * Trust Badge block — editor-only rules (SBR-163).
+ *
+ * Separate sheet rather than extra rules in sbr-trust-badge.css, because none of
+ * this describes a badge: it styles the inspector panel and the editor canvas,
+ * neither of which exists on the front end. Loading it there would ship dead
+ * bytes on every page that carries a badge.
+ *
+ * Loaded as the block's `editor_style`, with the badge sheet as a dependency, so
+ * the design tokens below are already defined.
+ */
+
+/* The design's `.sb-actions`: stacked, full-width, 8px apart. Side by side,
+   "Manage All Badges" wraps to two lines in the 280px inspector. */
+.sbr-tbb-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sb-space-2, 8px);
+	margin-top: var(--sb-space-3, 12px);
+}
+
+.sbr-tbb-actions .components-button {
+	justify-content: center;
+	width: 100%;
+}
+
+/* The box-with-arrow that marks a control leaving for another tab. Sized to the
+   design's 14px and given its own left gap, since it trails the label. */
+.sbr-tbb-ext {
+	width: 14px;
+	height: 14px;
+	margin-left: var(--sb-space-1, 4px);
+	fill: currentcolor;
+	flex: none;
+}
+
+/* Placeholder actions sit in a column too, so the select is not squeezed beside
+   the link. */
+.wp-block-sbr-trust-badge .components-placeholder__fieldset {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--sb-space-2, 8px);
+}
+
+.wp-block-sbr-trust-badge .components-placeholder__fieldset .components-base-control {
+	width: 100%;
+	margin-bottom: 0;
+}
+
+/* The deleted-badge notice belongs to the block, not the document: without this
+   it inherits the editor's paragraph rhythm and floats away from the
+   placeholder it explains. */
+.wp-block-sbr-trust-badge .components-notice {
+	margin: 0 0 var(--sb-space-2, 8px);
+}

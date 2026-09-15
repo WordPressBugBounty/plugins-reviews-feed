@@ -2284,7 +2284,15 @@ class SBR_Feed_Saver_Manager
 			$collection_reviews = PostAggregator::get_source_all_posts($collection_id);
 
 			foreach ($collection_reviews as $s_review) {
-				$review_json = json_decode($s_review['json_data'], true);
+				// SMASH-2028: this reads the same table as SMASH-2024, so the same
+				// non-review row arrives here. normalize_review_shape() returns a
+				// non-array untouched, so it reached the reads below as a scalar —
+				// "Cannot access offset of type string on string" on PHP 8. Skip
+				// the row instead of copying it.
+				$review_json = PostAggregator::decode_review_json($s_review['json_data'] ?? null);
+				if ($review_json === null) {
+					continue;
+				}
 				// SMASH-1587: old json_data may store 'provider' as a scalar slug;
 				// the $review_json['provider']['name'] read below fatals on PHP 8 without this.
 				$review_json = Util::normalize_review_shape($review_json);
@@ -2434,10 +2442,14 @@ class SBR_Feed_Saver_Manager
 			SBR_Sources::update_or_insert($collection_info);
 
 			foreach ($collection_json['reviewsList'] as $single_review) {
-				unset($single_review['id']);
-				$single_review = json_decode($single_review['json_data'], true);
+				$single_review = self::imported_collection_review($single_review);
+				if ($single_review === null) {
+					continue;
+				}
 				if (!empty($single_review)) {
-					$review_store = Util::parse_single_review($single_review, $collection_json['account_id'], $single_review['review_id']);
+					// An imported review need not carry a review_id; '' is what the
+					// undefined-key read resolved to before, minus the notice.
+					$review_store = Util::parse_single_review($single_review, $collection_json['account_id'], $single_review['review_id'] ?? '');
 					$review_store['json_data'] = $review_store;
 
 					$single_post_cache = new \SmashBalloon\Reviews\Pro\SinglePostCache($review_store, new \SmashBalloon\Reviews\Pro\MediaFinder($review_store['source']));
@@ -2473,8 +2485,10 @@ class SBR_Feed_Saver_Manager
 			$collection_json = self::parse_collection_json();
 			$collection_id = sanitize_text_field($_POST['collection_id']);
 			foreach ($collection_json['reviewsList'] as $single_review) {
-				unset($single_review['id']);
-				$single_review = json_decode($single_review['json_data'], true);
+				$single_review = self::imported_collection_review($single_review);
+				if ($single_review === null) {
+					continue;
+				}
 				if (!empty($single_review)) {
 					$single_review['review_id'] = $collection_id . time() . wp_rand();
 					$single_review['retimeview_id'] = time();
@@ -2512,6 +2526,31 @@ class SBR_Feed_Saver_Manager
 		wp_die();
 	}
 
+
+	/**
+	 * One entry of an imported collection file to its review array, or null.
+	 *
+	 * The entry is file content, so it need not be an array at all. It used to
+	 * start with `unset($entry['id'])`, which on a string is
+	 * `Error: Cannot unset string offsets` — thrown before `json_data` was even
+	 * read. That unset was also dead: the very next line overwrote the variable
+	 * with the decoded column, so removing it changes nothing for a valid entry
+	 * and removes the only thing it could do to an invalid one.
+	 *
+	 * The column itself then goes through the same gate as every other reader,
+	 * so a non-review decodes to null and the caller skips it (SMASH-2028).
+	 *
+	 * @param  mixed $entry Raw entry from the uploaded `reviewsList`.
+	 * @return array<string,mixed>|null Decoded review, or null when it is not one.
+	 */
+	public static function imported_collection_review($entry)
+	{
+		if (!is_array($entry)) {
+			return null;
+		}
+
+		return PostAggregator::decode_review_json($entry['json_data'] ?? null);
+	}
 
 	/**
 	 * Parse Collections JSON file
@@ -2553,7 +2592,10 @@ class SBR_Feed_Saver_Manager
 		}
 		$collection_json = json_decode($imported_file, true);
 
-		if (empty($collection_json['reviewsList'])) {
+		// A non-empty scalar `reviewsList` passes empty() and then both import
+		// loops foreach over a string (SMASH-2028). Same message as a file with
+		// no reviewsList at all — from the caller's side it is the same problem.
+		if (empty($collection_json['reviewsList']) || !is_array($collection_json['reviewsList'])) {
 			wp_send_json_error(
 				[
 					"message" => __("Something went wrong. This doesn't look like a collections import file.", "reviews-feed")

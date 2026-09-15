@@ -168,11 +168,40 @@ class SBR_Feed_Saver{
 	{
 		$this->sanitize_and_sort_data();
 
-		if ($this->exists_in_database()) {
-			return $this->update();
-		} else {
-			return $this->insert();
+		$saved = $this->exists_in_database() ? $this->update() : $this->insert();
+
+		if ($saved) {
+			/**
+			 * Fires after a feed's settings are written.
+			 *
+			 * Placed here rather than in the AJAX handler because this is the one
+			 * method every save path goes through — the builder, the importer and
+			 * the duplicate action all land on it. A listener on the AJAX route
+			 * alone would miss the other two.
+			 *
+			 * Badges derive their rating and their platform-logo row from a feed
+			 * and cache the result for a TTL, so a source added or removed here
+			 * has to invalidate that or the badge keeps reporting the old set.
+			 *
+			 * @since 2.10.0
+			 *
+			 * The union is wide because get_feed_id() is: declared `bool|int`
+			 * since 2.0, it returns the string 'legacy' for a legacy feed and
+			 * false when there is no insert id. In practice a listener sees an
+			 * int or 'legacy' — false only happens when nothing was saved, and
+			 * this fires inside `if ($saved)`.
+			 *
+			 * 'legacy' reaching a listener that expects an id is harmless here:
+			 * badges resolve their feed out of SBR_FEEDS_TABLE, which legacy
+			 * feeds are not in, so a legacy save cannot change any badge's
+			 * numbers and the cache it would clear does not exist.
+			 *
+			 * @param int|string|bool $feed_id The feed that was saved.
+			 */
+			do_action('sbr_after_feed_saved', $this->get_feed_id());
 		}
+
+		return $saved;
 	}
 
 	/**

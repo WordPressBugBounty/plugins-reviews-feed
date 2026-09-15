@@ -33,14 +33,20 @@ final class Smash1583HeaderParityTest extends TestCase
 		return (string) file_get_contents($path);
 	}
 
-	/** Body of api_request(), so the skip-path assertions are scoped to it. */
+	/**
+	 * Body of api_request(), so the skip-path assertions are scoped to it.
+	 *
+	 * Bounded by the method's closing brace rather than a 4000-byte window: the
+	 * window failed for the wrong reason once the method grew past it, and could
+	 * match code that merely followed it.
+	 */
 	private static function apiRequestBody(): string
 	{
-		$src = self::feedSource();
-		$start = strpos($src, 'function api_request');
-		self::assertNotFalse($start, 'api_request() must exist');
+		$body = \SbrPhpSource::method_body(self::feedSource(), 'api_request');
 
-		return substr($src, $start, 4000);
+		self::assertNotSame('', $body, 'api_request() must exist');
+
+		return $body;
 	}
 
 	public function test_helper_exists(): void

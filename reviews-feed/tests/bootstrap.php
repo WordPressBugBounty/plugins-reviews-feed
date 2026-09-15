@@ -16,13 +16,36 @@ if (!defined('SBR_RELAY_BASE_URL')) {
 	define('SBR_RELAY_BASE_URL', 'https://relay.smashballoon.com/api/v1.0/');
 }
 
+// REST namespace — mirrors the runtime define (plugin bootstrap.php) so tests
+// exercising the provider REST routes resolve the constant instead of erroring.
+if (!defined('SBR_REST_DOMAIN')) {
+	define('SBR_REST_DOMAIN', 'SBR/v1');
+}
+
+// Unprefixed posts-table name — Common\Customizer\DB reads it as a bare
+// constant, so it has to exist globally. Mirrors plugin bootstrap.php:114 and
+// phpstan-ci-bootstrap.php:39.
+if (!defined('POSTS_TABLE_NAME')) {
+	define('POSTS_TABLE_NAME', 'sbr_reviews_posts');
+}
+
 // Plugin constants required when tests `require` the full sbr-functions.php.
 if (!defined('SBR_PLUGIN_BASENAME')) {
 	define('SBR_PLUGIN_BASENAME', 'reviews-feed-pro/sb-reviews-pro.php');
 }
+// The real plugin root, so Util::get_feature_flags() reads the config file that
+// ships rather than a stand-in — provider availability is decided there.
+if (!defined('SBR_PLUGIN_DIR')) {
+	define('SBR_PLUGIN_DIR', dirname(__DIR__) . '/');
+}
 if (!defined('SBR_PLUGIN_URL')) {
 	define('SBR_PLUGIN_URL', 'https://example.test/wp-content/plugins/reviews-feed-pro/');
 }
+
+// SB_CUSTOMIZER_ASSETS is deliberately NOT defined here. Sbr163BundleScreenProbeTest
+// defines it per-process to prove bundle_path() follows the constant the enqueue
+// uses — another Smash Balloon plugin can own it — and a constant cannot be
+// undeclared, so pre-defining it here made that test resolve our own copy and fail.
 if (!defined('SBRVER')) {
 	define('SBRVER', '2.5.0-test');
 }
@@ -67,11 +90,42 @@ if (!defined('SBR_SMASH_USAGE_TRACKING_API_URL')) {
 	define('SBR_SMASH_USAGE_TRACKING_API_URL', 'https://usage.smashballoon.com/api');
 }
 
+/**
+ * Remove `%XX` octets the way core does — in a loop, re-scanning after each pass.
+ *
+ * A single global preg_replace diverges once a removal makes two fragments
+ * adjacent: `%2%411` leaves `%21` in one pass, where core
+ * (wp-includes/formatting.php `_sanitize_text_fields()`) removes `%41`, re-scans,
+ * finds the `%21` that formed, and returns ''. These shims exist because a loose
+ * one hid the SMASH-2031 endpoint corruption, so the fidelity is the point.
+ *
+ * @param string $value Raw value.
+ *
+ * @return string
+ */
+if (!function_exists('sbr_test_strip_percent_octets')) {
+	function sbr_test_strip_percent_octets(string $value): string
+	{
+		while (preg_match('/%[a-f0-9]{2}/i', $value, $match)) {
+			$value = str_replace($match[0], '', $value);
+		}
+
+		return $value;
+	}
+}
+
 // Mock WordPress functions used in tested code
 if (!function_exists('sanitize_text_field')) {
+	// Faithful on the parts that bite: WP's _sanitize_text_fields() also
+	// removes every `%XX` sequence and collapses line breaks. The loose
+	// trim(strip_tags()) shim hid a real bug in SMASH-2031, where this
+	// function silently rewrote the percent-encoded URL stored in sbr_errors.
 	function sanitize_text_field($str)
 	{
-		return trim(strip_tags($str));
+		$str = strip_tags((string) $str);
+		$str = preg_replace('/[\r\n\t ]+/', ' ', $str);
+		$str = sbr_test_strip_percent_octets((string) $str);
+		return trim($str);
 	}
 }
 
@@ -81,8 +135,13 @@ if (!function_exists('sanitize_text_field')) {
 if (!function_exists('sanitize_textarea_field')) {
 	function sanitize_textarea_field($str)
 	{
-		// Like sanitize_text_field but newline-preserving.
-		return trim(strip_tags((string) $str));
+		// Newline-preserving, but the `%XX` strip is NOT: core reaches it via
+		// _sanitize_text_fields($str, true), and that loop (formatting.php:5661)
+		// sits outside the $keep_newlines branch. Same infidelity as the
+		// sibling shim above, which hid the SMASH-2031 endpoint corruption.
+		$str = strip_tags((string) $str);
+		$str = sbr_test_strip_percent_octets((string) $str);
+		return trim($str);
 	}
 }
 
@@ -98,6 +157,48 @@ if (!function_exists('sanitize_key')) {
 // them pass in a full run and fatal in isolation. They belong here.
 if (!function_exists('esc_html')) {
 	function esc_html($text)
+	{
+		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+	}
+}
+
+// Templates call the translating escapers, not just the plain ones. These were
+// missing here and defined in one unrelated test file instead, so any template
+// test passed only while that file happened to load in the same run — and
+// fatalled the moment it was run on its own.
+if (!function_exists('esc_html__')) {
+	function esc_html__($text, $domain = 'default')
+	{
+		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+	}
+}
+
+if (!function_exists('esc_html_e')) {
+	function esc_html_e($text, $domain = 'default')
+	{
+		echo esc_html($text);
+	}
+}
+
+if (!function_exists('esc_url')) {
+	/**
+	 * Delegates to the faithful esc_url_raw stub below, then encodes for an
+	 * attribute — which is what WordPress's esc_url() does and what a test
+	 * asserting "this link is safe" needs it to do.
+	 *
+	 * filter_var(FILTER_SANITIZE_URL) was the first attempt and is not that: it
+	 * strips neither javascript: nor data:, and encodes no quotes, so a test
+	 * naming those exact attacks would have passed against a shim that lets
+	 * them through.
+	 */
+	function esc_url($url)
+	{
+		return htmlspecialchars(esc_url_raw($url), ENT_QUOTES, 'UTF-8');
+	}
+}
+
+if (!function_exists('esc_attr__')) {
+	function esc_attr__($text, $domain = 'default')
 	{
 		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
 	}
@@ -238,6 +339,13 @@ if (!function_exists('absint')) {
 	}
 }
 
+if (!function_exists('get_avatar_url')) {
+	function get_avatar_url($id_or_email, $args = [])
+	{
+		return 'https://example.com/avatar/' . md5((string) (is_scalar($id_or_email) ? $id_or_email : ''));
+	}
+}
+
 if (!function_exists('get_option')) {
 	function get_option($option, $default = false)
 	{
@@ -267,6 +375,23 @@ if (!function_exists('current_user_can')) {
 		return $GLOBALS['sbr_test_user_can'] ?? false;
 	}
 }
+
+if (!function_exists('get_rest_url')) {
+	function get_rest_url($blog_id = null, $path = '/', $scheme = 'rest')
+	{
+		return 'https://example.test/wp-json/' . ltrim($path, '/');
+	}
+}
+
+if (!function_exists('is_user_logged_in')) {
+	// Controllable via $GLOBALS['sbr_test_user_logged_in'].
+	function is_user_logged_in()
+	{
+		return $GLOBALS['sbr_test_user_logged_in'] ?? false;
+	}
+}
+
+require_once __DIR__ . '/stubs/class-wp-error.php';
 
 if (!function_exists('current_action')) {
 	// Controllable via $GLOBALS['sbr_test_current_action'].
@@ -442,9 +567,6 @@ if (!function_exists('do_action')) {
 // Transient stubs for silent-reactivation rate-limit + notice-payload tests.
 // Stored in a dedicated global ($wp_transients_mock) so tests can manipulate
 // them independently from $wp_options_mock.
-if (!defined('HOUR_IN_SECONDS')) {
-	define('HOUR_IN_SECONDS', 3600);
-}
 if (!defined('DAY_IN_SECONDS')) {
 	define('DAY_IN_SECONDS', 86400);
 }
@@ -466,6 +588,9 @@ if (!defined('ARRAY_N')) {
 }
 if (!defined('OBJECT')) {
 	define('OBJECT', 'OBJECT');
+}
+if (!defined('OBJECT_K')) {
+	define('OBJECT_K', 'OBJECT_K');
 }
 if (!function_exists('get_transient')) {
 	function get_transient($key)
@@ -567,6 +692,13 @@ if (!function_exists('wp_remote_post')) {
 		// attempted (e.g. the usage-tracking failure backoff must NOT reach
 		// the network).
 		$GLOBALS['sbr_test_http_posts'][] = ['url' => $url, 'args' => $args];
+
+		global $wp_http_error_mock;
+
+		if ($wp_http_error_mock instanceof \WP_Error) {
+			return $wp_http_error_mock;
+		}
+
 		return [];
 	}
 }
@@ -581,19 +713,36 @@ if (!function_exists('wp_remote_retrieve_response_code')) {
 if (!function_exists('wp_remote_get')) {
 	function wp_remote_get($url, $args = [])
 	{
+		// Mockable failure, so the `is_wp_error()` branch in callers is reachable —
+		// with the old always-false shim it never was.
+		global $wp_http_error_mock;
+
+		if ($wp_http_error_mock instanceof \WP_Error) {
+			return $wp_http_error_mock;
+		}
+
 		return [];
 	}
 }
 if (!function_exists('is_wp_error')) {
 	function is_wp_error($thing)
 	{
-		return false;
+		// `return false` was the whole shim, which made 49 production branches
+		// unreachable from this suite — every `if (is_wp_error($x))` took the
+		// success path even when handed a WP_Error, so an error path could not be
+		// asserted and a regression that started returning WP_Error where data was
+		// expected would still go green. Same contract as core's.
+		return $thing instanceof \WP_Error;
 	}
 }
 if (!function_exists('wp_remote_retrieve_body')) {
 	function wp_remote_retrieve_body($response)
 	{
-		return '';
+		// Mockable, so a test can drive a real relay envelope through
+		// SBRelay::call(). Defaults to '' — the behaviour before the hook.
+		global $wp_http_body_mock;
+
+		return $wp_http_body_mock ?? '';
 	}
 }
 
@@ -604,6 +753,74 @@ if (!function_exists('wp_rand')) {
 	function wp_rand($min = 0, $max = 0)
 	{
 		return $min;
+	}
+}
+
+// The two request terminators, so an AJAX handler can be driven end to end
+// (SMASH-2028 collection import/duplicate tests). Real WP exits; these throw a
+// dedicated exception the test catches, which is what makes the handler's
+// *early returns* observable instead of ending the process.
+if (!class_exists('SBR_Test_Halt')) {
+	class SBR_Test_Halt extends \RuntimeException
+	{
+		/** @var mixed */
+		public $payload;
+
+		/** @var int|null HTTP status, when the caller passed one (SMASH-2031). */
+		public $status;
+
+		/**
+		 * @param mixed    $payload
+		 * @param int|null $status
+		 */
+		public function __construct($kind, $payload = null, $status = null)
+		{
+			parent::__construct($kind);
+			$this->payload = $payload;
+			$this->status = $status;
+		}
+	}
+}
+
+if (!function_exists('wp_die')) {
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- EscapeOutput reads this declaration as a wp_die() call and wants its args escaped; nothing is output, the shim only throws.
+	function wp_die($message = '', $title = '', $args = [])
+	{
+		// Real wp_die() reads its HTTP status from $args['response'], and also
+		// accepts a bare integer $args as shorthand for that code — both forms
+		// exist in core call paths. Dropping $args left SBR_Test_Halt::$status
+		// null for every wp_die(), so a test could not assert the status a caller
+		// passed.
+		if (is_array($args) && isset($args['response'])) {
+			$status = (int) $args['response'];
+		} elseif (is_int($args) || (is_string($args) && ctype_digit($args))) {
+			$status = (int) $args;
+		} else {
+			$status = null;
+		}
+
+		throw new \SBR_Test_Halt('wp_die', $message, $status);
+	}
+}
+
+if (!function_exists('wp_send_json_error')) {
+	function wp_send_json_error($data = null, $status_code = null, $options = 0)
+	{
+		throw new \SBR_Test_Halt('wp_send_json_error', $data, $status_code);
+	}
+}
+
+if (!function_exists('wp_send_json')) {
+	function wp_send_json($data, $status_code = null, $options = 0)
+	{
+		throw new \SBR_Test_Halt('wp_send_json', $data, $status_code);
+	}
+}
+
+if (!function_exists('wp_send_json_success')) {
+	function wp_send_json_success($data = null, $status_code = null, $options = 0)
+	{
+		throw new \SBR_Test_Halt('wp_send_json_success', $data, $status_code);
 	}
 }
 
@@ -671,3 +888,153 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 if (!function_exists('sbr_plugin_settings_defaults')) {
 	require_once dirname(__DIR__) . '/class/sbr-functions.php';
 }
+
+if (!function_exists('_n')) {
+	function _n($single, $plural, $number, $domain = null)
+	{
+		return ((int) $number === 1) ? $single : $plural;
+	}
+}
+
+if (!function_exists('number_format_i18n')) {
+	function number_format_i18n($number, $decimals = 0)
+	{
+		return number_format((float) $number, (int) $decimals);
+	}
+}
+
+// WP_Widget double lives in its own file (PSR1); see Doubles/WP_Widget.php.
+require_once __DIR__ . '/Doubles/WP_Widget.php';
+
+if (!function_exists('sanitize_hex_color')) {
+	// Mirrors WP's regex exactly: 3 or 6 hex digits, '#' required, null on
+	// anything else. A looser shim would let the parity test pass on input the
+	// real function discards.
+	function sanitize_hex_color($color)
+	{
+		if ('' === $color) {
+			return '';
+		}
+
+		return preg_match('|^#([A-Fa-f0-9]{3}){1,2}$|', $color) ? $color : null;
+	}
+}
+
+// Posts and post meta, for the badge store. Same in-memory shape as
+// $wp_options_mock above.
+//
+// The RETURN semantics are the point, not the storage: update_metadata() answers
+// false when the stored value already equals the new one, and delete_metadata()
+// answers false when there was no row. SBR_Trust_Badge_Store's email-embed methods
+// exist to not mistake either for a failure, so a looser shim would let them pass
+// on behaviour real WP does not have.
+if (! function_exists('get_post')) {
+	function get_post($id = 0)
+	{
+		global $wp_posts_mock;
+
+		return isset($wp_posts_mock[ (int) $id ]) ? $wp_posts_mock[ (int) $id ] : null;
+	}
+}
+
+if (! function_exists('get_post_meta')) {
+	function get_post_meta($id, $key = '', $single = false)
+	{
+		global $wp_postmeta_mock;
+
+		$value = isset($wp_postmeta_mock[ (int) $id ][ $key ])
+			? $wp_postmeta_mock[ (int) $id ][ $key ]
+			: null;
+
+		if ($single) {
+			return $value === null ? '' : $value;
+		}
+
+		return $value === null ? array() : array( $value );
+	}
+}
+
+if (! function_exists('update_post_meta')) {
+	function update_post_meta($id, $key, $value, $prev_value = '')
+	{
+		global $wp_postmeta_mock, $wp_postmeta_fail_writes;
+
+		if (! is_array($wp_postmeta_mock)) {
+			$wp_postmeta_mock = array();
+		}
+
+		$id = (int) $id;
+
+		// Set by a test that needs a genuine write FAILURE — false with the old value
+		// left in place — which is the case a state-reporting return must not mistake
+		// for the idempotent one.
+		if (! empty($wp_postmeta_fail_writes)) {
+			return false;
+		}
+
+		if (isset($wp_postmeta_mock[ $id ][ $key ]) && $wp_postmeta_mock[ $id ][ $key ] === $value) {
+			return false;
+		}
+
+		$wp_postmeta_mock[ $id ][ $key ] = $value;
+
+		return true;
+	}
+}
+
+if (! function_exists('delete_post_meta')) {
+	function delete_post_meta($id, $key, $value = '')
+	{
+		global $wp_postmeta_mock;
+
+		$id = (int) $id;
+
+		if (! isset($wp_postmeta_mock[ $id ][ $key ])) {
+			return false;
+		}
+
+		unset($wp_postmeta_mock[ $id ][ $key ]);
+
+		return true;
+	}
+}
+
+// The deterministic core of WP's sanitize_file_name() (wp-includes/formatting.php),
+// which is what a provider slug meets on its way to a file path: the special-char
+// list, `.{2,}` collapsed to one dot, whitespace to dashes, then a trim of `.-_`.
+//
+// Left out: remove_accents() and the mime-type branch that renames a dotless name.
+// Neither can fire for a provider slug, and shimming them would be guessing at
+// behaviour these tests do not exercise.
+if (! function_exists('sanitize_file_name')) {
+	function sanitize_file_name($filename)
+	{
+		$special_chars = array(
+			'?', '[', ']', '/', '\\', '=', '<', '>', ':', ';', ',', "'", '"', '&', '$',
+			'#', '*', '(', ')', '|', '~', '`', '!', '{', '}', '%', '+', chr(0),
+		);
+
+		$filename = str_replace($special_chars, '', (string) $filename);
+		$filename = str_replace(array( '%20', '+' ), '-', $filename);
+		$filename = (string) preg_replace('/\.{2,}/', '.', $filename);
+		$filename = (string) preg_replace('/[\r\n\t -]+/', '-', $filename);
+
+		return trim($filename, '.-_');
+	}
+}
+
+// The recording WP_Query double is a GLOBAL class, so it cannot live in this file
+// (PSR1: one class per file) and cannot be namespaced like tests/Unit/Doubles — the
+// badge store resolves it at the root.
+require_once __DIR__ . '/Doubles/WP_Query.php';
+
+// Tokenising source reader for the guards that assert on a method's source
+// because it has no runtime seam yet (SMASH-2074). Its own tests live in
+// tests/Unit/PhpSourceExtractionTest.php.
+require_once __DIR__ . '/Support/PhpSource.php';
+
+// Badge-image doubles: a host with Imagick installed and unable to draw SVG is
+// the only place mark_for()'s fallback matters, and no test machine can be one.
+// One class per file, per phpcs.
+require_once __DIR__ . '/Doubles/BadgeImageWithBlindImagick.php';
+require_once __DIR__ . '/Doubles/BadgeImageWithNoRasteriser.php';
