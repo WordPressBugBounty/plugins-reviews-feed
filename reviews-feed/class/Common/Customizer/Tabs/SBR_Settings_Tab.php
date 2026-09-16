@@ -350,7 +350,7 @@ class SBR_Settings_Tab extends SB_Sidebar_Tab {
 						'layout'        => 'third',
 						'strongheading' => false,
 						'stacked'       => true,
-						'heading'       => __('Maxiumum', 'reviews-feed'),
+						'heading'       => __('Maximum', 'reviews-feed'),
 						'trailingText'  => __('characters', 'reviews-feed'),
 						'placeholder'  => __('Unset', 'reviews-feed'),
 					],
@@ -397,7 +397,7 @@ class SBR_Settings_Tab extends SB_Sidebar_Tab {
 					[
 						'value' => 'allow',
 						'label' => __('Allow List', 'reviews-feed'),
-						'description' => __('Hides post by default so you can select the ones you want to show', 'reviews-feed')
+						'description' => __('Hides posts by default so you can select the ones you want to show', 'reviews-feed')
 					],
 					[
 						'value' => 'block',
@@ -436,7 +436,7 @@ class SBR_Settings_Tab extends SB_Sidebar_Tab {
 						'value' => 'allow',
 						'label' => __('Allow List', 'reviews-feed'),
 						'upsellModal' => 'moderationModal',
-						'description' => __('Hides post by default so you can select the ones you want to show', 'reviews-feed')
+						'description' => __('Hides posts by default so you can select the ones you want to show', 'reviews-feed')
 					],
 					[
 						'value' => 'block',

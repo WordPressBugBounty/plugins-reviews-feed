@@ -278,7 +278,13 @@ class FeedDisplay {
 	{
 		$provider = $this->parser->get_provider_name($post) ;
 		if (! empty($provider)) {
-			return trailingslashit(SBR_PLUGIN_URL) . 'assets/icons/' . $provider . '-provider.svg';
+			// Through provider_asset_slug() like every other icon-path caller:
+			// the data slug keeps its dot ('wordpress.org', WordpressOrg::$name)
+			// but the shipped file is wordpressorg-provider.svg, so the raw slug
+			// asked for a name that has never existed (SMASH-2106).
+			$slug = DisplayElements::provider_asset_slug($provider);
+
+			return trailingslashit(SBR_PLUGIN_URL) . 'assets/icons/' . $slug . '-provider.svg';
 		}
 	}
 

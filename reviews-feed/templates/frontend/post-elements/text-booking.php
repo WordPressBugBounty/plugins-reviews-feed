@@ -59,15 +59,18 @@ $render_prosncons = function (string $text, string $uid) use ($prosncons_limit):
 	if ($last_space !== false && $last_space > 0) {
 		$short = function_exists('mb_substr') ? mb_substr($short, 0, $last_space) : substr($short, 0, $last_space);
 	}
-	$id = esc_attr($uid);
+	// Escaped at each SINK below rather than once here: the escape-output sniff
+	// does not follow assignments, so a pre-escaped variable reads as raw output
+	// and this file could only pass by silencing the rule.
+	$id = $uid;
 	// All dynamic parts escaped via esc_attr() / sbr_kses_review_text(); static markup is safe.
 	// a11y (SMASH-1383): the checkbox is the keyboard-operable control — never
 	// `hidden` (display:none is unfocusable); CSS visually hides it while the
 	// label stays the pointer affordance. Name lives on the input; the label's
 	// ellipsis glyph is decorative for AT.
-	echo '<input type="checkbox" id="' . $id . '" class="sbr-readmore-toggle" aria-label="' . esc_attr__('Show the full text', 'reviews-feed') . '" />'
+	echo '<input type="checkbox" id="' . esc_attr($id) . '" class="sbr-readmore-toggle" aria-label="' . esc_attr__('Show the full text', 'reviews-feed') . '" />'
 		. '<span class="sbr-readmore-short">' . sbr_neutralize_shortcodes(sbr_kses_review_text(nl2br($short)))
-		. '<label for="' . $id . '" class="sb-expand sb-readmore-label" aria-hidden="true"><span class="sb-more">&hellip;</span></label></span>'
+		. '<label for="' . esc_attr($id) . '" class="sb-expand sb-readmore-label" aria-hidden="true"><span class="sb-more">&hellip;</span></label></span>'
 		. '<span class="sbr-readmore-full">' . sbr_neutralize_shortcodes(sbr_kses_review_text(nl2br($text))) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 };
 

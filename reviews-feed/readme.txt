@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.12.0
+Stable tag: 2.13.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,13 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.13.0 =
+* New: Reviews Feed now shares your overall rating, your connected review sources, each feed's stats and your latest reviews with the Feed Analytics dashboard, so its Reviews report is fully populated instead of asking you to update this plugin. Nothing is shared unless Feed Analytics asks for it.
+* Improvement: Translations refreshed. The translation template had not been rebuilt in several releases, so hundreds of newer strings could not be translated. They can now, and translations that already existed for them are back in use.
+* Improvement: The PRO and PRO+ labels in the admin menu can now be translated.
+* Fix: Review dates no longer show as a large negative number of "seconds ago" when a source stores the review time as text.
+* Fix: Typos and grammar corrected in a number of settings and help strings.
+
 = 2.12.0 =
 * Fix: Plugin security hardening.
 * New: Trust Badges, a Plus feature. The new screen shows what a badge looks like and what it can do; building and placing one needs a Plus licence.

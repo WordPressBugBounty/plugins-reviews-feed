@@ -458,7 +458,7 @@ class Error_Reporter extends ServiceProvider
 		if (!empty($errors) && (!empty($errors['platform_data_deleted']))) {
 			$notices[] = [
 				'type' => 'error',
-				'heading' => __('All Facebook Data has Been Remove.', 'reviews-feed'),
+				'heading' => __('All Facebook Data has Been Removed.', 'reviews-feed'),
 				'description' => __('An account admin has deauthorized the Smash Balloon app used to power the Facebook Feed plugin. The page was not reconnected within the 7 day limit and all Facebook data was automatically deleted on your website due to Facebook data privacy rules.<br/><br/>Due to API limitations your feeds will not show new reviews until you enter an API key on the settings page.', 'reviews-feed'),
 			];
 		}
@@ -467,7 +467,7 @@ class Error_Reporter extends ServiceProvider
 			$notices[] = [
 				'type' => 'error',
 				'heading' => __('Action Required Within 7 Days:', 'reviews-feed'),
-				'description' => __('Your Facebook Reviews feed has been not viewed in the last 14 days. Due to Facebook data privacy rules, all data for this feed will be deleted in 7 days time. To avoid automated data deletion, simply view the Facebook feed on your website within the next 7 days.', 'reviews-feed'),
+				'description' => __('Your Facebook Reviews feed has not been viewed in the last 14 days. Due to Facebook data privacy rules, all data for this feed will be deleted in 7 days time. To avoid automated data deletion, simply view the Facebook feed on your website within the next 7 days.', 'reviews-feed'),
 			];
 		}
 

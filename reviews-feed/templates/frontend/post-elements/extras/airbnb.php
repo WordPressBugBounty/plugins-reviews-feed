@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Airbnb extras — additive per-provider markup (SMASH-782 Phase 2).
  *

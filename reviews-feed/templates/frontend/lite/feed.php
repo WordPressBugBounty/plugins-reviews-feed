@@ -42,7 +42,9 @@ $misc_atts = $this->misc_atts();
 			include sbr_get_feed_template_part('header', $settings);
 		endif; ?>
 
-		<div class="sb-feed-posts" data-icon-size="small" data-avatar-size="medium"<?php if (($settings['layout'] ?? '') !== 'carousel') : // Owl re-wraps slides, breaking list structure ?> role="list"<?php endif; ?>>
+		<div class="sb-feed-posts" data-icon-size="small" data-avatar-size="medium"<?php if (($settings['layout'] ?? '') !== 'carousel') :
+// Owl re-wraps slides, breaking list structure ?> role="list"<?php
+																				   endif; ?>>
 			<?php $this->posts_loop($posts, $settings); ?>
 		</div>
 

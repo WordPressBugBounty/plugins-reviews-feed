@@ -88,10 +88,24 @@ class Parser {
 
 	public function get_time($post)
 	{
-		if (! empty($post['time'])) {
-			return $post['time'];
+		if (empty($post['time'])) {
+			return 0;
 		}
-		return 0;
+
+		// Callers do arithmetic on this value (FeedDisplay::date() computes
+		// `time() - $timestamp` for the "x ago" label), so it has to come back
+		// as a unix timestamp. Providers and imports don't agree on the format:
+		// some store an integer, others a datetime string like
+		// "2026-07-08 16:57:48". Returning the string raw raised
+		// "A non-numeric value encountered" and coerced the timestamp to 0,
+		// rendering dates such as "-1785840455 seconds ago".
+		if (is_numeric($post['time'])) {
+			return (int) $post['time'];
+		}
+
+		$parsed = strtotime((string) $post['time']);
+
+		return false === $parsed ? 0 : $parsed;
 	}
 
 	public function get_reviewer_name($post)

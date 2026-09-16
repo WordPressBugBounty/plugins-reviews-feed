@@ -53,7 +53,7 @@ class SBR_Education
 			),
 			array(
 				'title' => esc_html__('Use Facebook Reviews to Boost Conversions', 'reviews-feed'),
-				'content' => esc_html__('Reviews for your product or service are the best way to give users the confidence to take action. With the Reviews extension, easily add 5 star reviews and recommendations from Facebook to your website help increase conversions.', 'reviews-feed'),
+				'content' => esc_html__('Reviews for your product or service are the best way to give users the confidence to take action. With the Reviews extension, easily add 5 star reviews and recommendations from Facebook to your website to help increase conversions.', 'reviews-feed'),
 				'more' => 'https://smashballoon.com/extensions/reviews/?utm_campaign=reviews-free&utm_source=about-us&utm_medium=marketing',
 				'item' => 2,
 			),
@@ -65,7 +65,7 @@ class SBR_Education
 			),
 			array(
 				'title' => esc_html__('Automatically Feed Facebook Events to Your Website', 'reviews-feed'),
-				'content' => esc_html__('Save yourself the time and effort of posting events both to Facebook and your website by using the Custom Facebook Feed Pro plugin to automatically feeds events right to your site.', 'reviews-feed'),
+				'content' => esc_html__('Save yourself the time and effort of posting events both to Facebook and your website by using the Custom Facebook Feed Pro plugin to automatically feed events right to your site.', 'reviews-feed'),
 				'more' => 'https://smashballoon.com/custom-facebook-feed/docs/displaying-facebook-events-using-wordpress-plugin/?utm_campaign=reviews-free&utm_source=about-us&utm_medium=marketing',
 				'item' => 4,
 			),
@@ -80,7 +80,7 @@ class SBR_Education
 			),
 			array(
 				'title' => esc_html__('Use Facebook Reviews to Boost Conversions', 'reviews-feed'),
-				'content' => esc_html__('Reviews for your product or service are the best way to give users the confidence to take action. With the Reviews extension, easily add 5 star reviews and recommendations from Facebook to your website help increase conversions.', 'reviews-feed'),
+				'content' => esc_html__('Reviews for your product or service are the best way to give users the confidence to take action. With the Reviews extension, easily add 5 star reviews and recommendations from Facebook to your website to help increase conversions.', 'reviews-feed'),
 				'more' => 'https://smashballoon.com/extensions/reviews/?utm_campaign=reviews-pro&utm_source=about-us&utm_medium=marketing',
 				'item' => 2,
 			),

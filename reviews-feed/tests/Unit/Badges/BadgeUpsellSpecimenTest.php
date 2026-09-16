@@ -126,15 +126,60 @@ class BadgeUpsellSpecimenTest extends TestCase
 		$badges = $this->builder_source();
 
 		$this->assertStringContainsString('! Util::sbr_is_pro_plus()', $badges);
-		$this->assertStringContainsString('<span class="sb-men-pro">PRO+</span>', $badges);
-		$this->assertStringNotContainsString('<span class="sb-men-pro">PRO</span>', $badges);
+		$this->assertStringContainsString("esc_html__('PRO+', 'reviews-feed')", $badges);
 
 		$alerts_path = dirname(__DIR__, 3) . '/class/Common/ReviewAlerts/SBR_ReviewAlert_Builder.php';
 		$this->assertFileIsReadable($alerts_path);
 		$alerts = (string) file_get_contents($alerts_path);
 
 		$this->assertStringContainsString('!Util::sbr_is_pro_plus()', $alerts);
-		$this->assertStringContainsString('<span class="sb-men-pro">PRO+</span>', $alerts);
-		$this->assertStringNotContainsString('<span class="sb-men-pro">PRO</span>', $alerts);
+		$this->assertStringContainsString("esc_html__('PRO+', 'reviews-feed')", $alerts);
+	}
+
+	/**
+	 * No menu pill hard-codes its label.
+	 *
+	 * All three were literals inside the markup string, so a translator could
+	 * render the whole menu item except the pill. Collections keeps "PRO" — it is
+	 * gated on the Pro build, not the Plus tier — and is in here so the next
+	 * person to add a pill has one rule to follow rather than two examples.
+	 *
+	 * @return void
+	 */
+	public function test_no_menu_pill_is_a_hardcoded_literal()
+	{
+		$files = array(
+			'class/Common/Badges/SBR_Trust_Badge_Builder.php',
+			'class/Common/ReviewAlerts/SBR_ReviewAlert_Builder.php',
+			'class/Common/Admin/SBR_Collections_Builder.php',
+		);
+
+		$checked = 0;
+
+		foreach ($files as $relative) {
+			$path = dirname(__DIR__, 3) . '/' . $relative;
+			$this->assertFileIsReadable($path);
+
+			$source = (string) file_get_contents($path);
+
+			// The literal form, which is what shipped: the label sitting inside the
+			// span in the same string.
+			$this->assertDoesNotMatchRegularExpression(
+				'/<span class="sb-men-pro">PRO\+?<\/span>/',
+				$source,
+				"{$relative}: the pill label must go through a translation function"
+			);
+
+			$this->assertMatchesRegularExpression(
+				'/<span class="sb-men-pro">\'\s*\.\s*esc_html__\(/',
+				$source,
+				"{$relative}: the pill must open with an escaped, translatable label"
+			);
+
+			$checked++;
+		}
+
+		// Prove the loop ran, rather than trusting three silent passes.
+		$this->assertSame(count($files), $checked);
 	}
 }

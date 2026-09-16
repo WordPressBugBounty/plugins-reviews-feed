@@ -44,7 +44,7 @@ class SBR_Collections_Builder extends Collections_Builder
 
 	public function init_menu()
 	{
-		$menu_title = __('Collections', 'reviews-feed') . ( !Util::sbr_is_pro() ? '<span class="sb-men-pro">PRO</span>' : '');
+		$menu_title = __('Collections', 'reviews-feed') . ( !Util::sbr_is_pro() ? '<span class="sb-men-pro">' . esc_html__('PRO', 'reviews-feed') . '</span>' : '');
 		$this->menu = [
 			'parent_menu_slug' => "sbr",
 			'page_title'       => "Collections",

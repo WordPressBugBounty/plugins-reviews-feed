@@ -97,7 +97,7 @@ class SBR_Trust_Badge_Builder
 		// telling them it is "PRO+" is simply true, and it matches the "Plus Feature"
 		// the body copy on this screen already uses.
 		if (! Util::sbr_is_pro_plus()) {
-			$title .= '<span class="sb-men-pro">PRO+</span>';
+			$title .= '<span class="sb-men-pro">' . esc_html__('PRO+', 'reviews-feed') . '</span>';
 		}
 
 		$page = add_submenu_page(

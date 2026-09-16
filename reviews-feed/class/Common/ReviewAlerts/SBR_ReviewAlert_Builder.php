@@ -78,11 +78,11 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 	 */
 	public function init_menu(): void
 	{
-		// "PRO+" because the gate above is sbr_is_pro_plus(): a Pro Basic customer
+		// "PRO+" because the gate below is sbr_is_pro_plus(): a Pro Basic customer
 		// seeing "PRO" on a feature they already pay for reads as a mislabel.
 		// Matches the Trust Badges pill, which is gated the same way.
 		if (!Util::sbr_is_pro_plus()) {
-			$menu_title = __('Review Alerts', 'reviews-feed') . '<span class="sb-men-pro">PRO+</span>';
+			$menu_title = __('Review Alerts', 'reviews-feed') . '<span class="sb-men-pro">' . esc_html__('PRO+', 'reviews-feed') . '</span>';
 		} else {
 			$menu_title = __('Review Alerts', 'reviews-feed');
 		}

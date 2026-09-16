@@ -26,7 +26,9 @@ $is_edd_source = $provider_name === 'edd' && ! empty($post['business']['id'] ?? 
 $show_icon = $provider_name !== '' && $provider_name !== 'none'
 	&& (! in_array($provider_name, $no_icon, true) || $is_edd_source);
 ?>
-<div class="sb-post-item-wrap sb-new <?php echo esc_attr($item_classes); ?>"<?php if (($settings['layout'] ?? '') !== 'carousel') : ?> role="listitem"<?php endif; ?>>
+<div class="sb-post-item-wrap sb-new <?php echo esc_attr($item_classes); ?>"<?php if (($settings['layout'] ?? '') !== 'carousel') :
+	?> role="listitem"<?php
+									 endif; ?>>
 	<div class="sb-post-item">
 		<?php if ($show_icon) { ?>
 			<span class="sb-item-provider-icon">

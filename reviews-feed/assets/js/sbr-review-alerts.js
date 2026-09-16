@@ -1039,7 +1039,11 @@
 				return SBRReviewAlert.providerIconCache[providerName];
 			}
 
-			const iconUrl = this.config.pluginUrl + 'assets/icons/' + providerName + '-provider.svg';
+			// Fold the dot: the data slug is 'wordpress.org' but the shipped file
+			// is wordpressorg-provider.svg. PHP does this in
+			// DisplayElements::provider_asset_slug() (SMASH-2106).
+			const assetSlug = String(providerName).replace(/\./g, '');
+			const iconUrl = this.config.pluginUrl + 'assets/icons/' + assetSlug + '-provider.svg';
 
 			try {
 				const response = await fetch(iconUrl);

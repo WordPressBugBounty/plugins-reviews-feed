@@ -79,7 +79,7 @@ class Feed
 			return;
 		}
 		if (empty($this->settings['sources']) && ! $this->is_single_manual_review()) {
-			$this->add_error(sprintf(__('No sources available for this feed.', 'reviews-feed'), $this->feed_id), sprintf(__('Please go to the %sReviews Feed%s settings page add sources for this feed to use.', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
+			$this->add_error(sprintf(__('No sources available for this feed.', 'reviews-feed'), $this->feed_id), sprintf(__('Please go to the %sReviews Feed%s settings page to add sources for this feed to use.', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
 			return;
 		}
 		if (! $this->is_single_manual_review()) {
@@ -529,7 +529,7 @@ class Feed
 		$any_dedup = false;
 
 		foreach ($by_provider as $provider => $provider_sources) {
-			$agg = $this->compute_provider_aggregate($provider, $provider_sources);
+			$agg = self::compute_provider_aggregate($provider, $provider_sources);
 			if ($agg === null) {
 				// No dedup available — sum per-source (correct for independent
 				// businesses: Yelp, Google, Trustpilot, TripAdvisor, WP.org).
@@ -576,7 +576,7 @@ class Feed
 	 * @param array  $sources  Subset of feed sources matching this provider
 	 * @return array{count:int,rating:float}|null
 	 */
-	private function compute_provider_aggregate(string $provider, array $sources)
+	public static function compute_provider_aggregate(string $provider, array $sources)
 	{
 		if ($provider === 'edd') {
 			$download_ids = [];
