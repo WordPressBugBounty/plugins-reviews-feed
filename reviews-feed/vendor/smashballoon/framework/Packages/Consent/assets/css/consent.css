@@ -1,0 +1,489 @@
+/**
+ * SBC Consent — shared modal + onboarding checkbox styles.
+ * Lifted from instagram-feed's Phase 0 builder.css block (~lines 7245–7546),
+ * with the legacy modal/onboarding class prefixes renamed to .sbc-consent-*.
+ */
+
+/* ── Design tokens ───────────────────────────────────────────────── */
+:root {
+    --sbc-color-primary: #0068A0;
+    --sbc-color-primary-hover: #0096CC;
+    --sbc-color-primary-dark: #004F7A;
+    --sbc-color-on-primary: #FFFFFF;
+
+    --sbc-color-surface: #FFFFFF;
+    --sbc-color-surface-muted: #F9F9FA;
+    --sbc-color-surface-hover: #F1F2F5;
+
+    --sbc-color-text: #141B38;
+    --sbc-color-text-muted: #434960;
+    --sbc-color-text-subtle: #696D80;
+
+    --sbc-color-border: #D0D1D7;
+    --sbc-color-border-strong: #9295A6;
+
+    --sbc-color-overlay: rgba(0, 0, 0, 0.6);
+    --sbc-color-focus-ring: rgba(0, 150, 204, 0.2);
+    --sbc-color-checkbox-focus: rgba(0, 104, 160, 0.25);
+}
+
+/* ── Vanilla modal visibility (replaces v-if) ──────────────────── */
+.sbc-consent-reprompt-overlay[data-active="false"] {
+    display: none;
+}
+
+.sbc-consent-reprompt-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--sbc-color-overlay);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.sbc-consent-reprompt-popup {
+    background: var(--sbc-color-surface);
+    border-radius: 8px;
+    padding: 32px 24px 20px;
+    width: 540px;
+    max-width: 100%;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0 24px;
+    box-shadow:
+        0 1.77px 5.12px rgba(0, 0, 0, 0.04),
+        0 4.26px 12.30px rgba(0, 0, 0, 0.06),
+        0 8.01px 23.16px rgba(0, 0, 0, 0.08),
+        0 14.30px 41.32px rgba(0, 0, 0, 0.09),
+        0 26.74px 77.29px rgba(0, 0, 0, 0.11);
+}
+
+.sbc-consent-reprompt-icon {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sbc-consent-reprompt-icon img {
+    width: 56px;
+    height: 56px;
+    display: block;
+    object-fit: contain;
+}
+
+.sbc-consent-reprompt-body {
+    flex: 1 1 0;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.sbc-consent-reprompt-text {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sbc-consent-reprompt-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sbc-consent-reprompt-popup .sbc-consent-reprompt-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+    color: var(--sbc-color-text);
+    letter-spacing: 0;
+}
+
+.sbc-consent-reprompt-popup p {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--sbc-color-text-muted);
+    margin: 0;
+}
+
+.sbc-consent-reprompt-popup .sbc-consent-reprompt-title + p {
+    margin-top: 0;
+}
+
+.sbc-consent-reprompt-popup p + p {
+    margin-top: 12px;
+}
+
+.sbc-consent-reprompt-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+}
+
+.sbc-consent-reprompt-links a {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--sbc-color-primary);
+    text-decoration: none;
+}
+
+.sbc-consent-reprompt-links a:hover {
+    text-decoration: underline;
+}
+
+.sbc-consent-reprompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+.sbc-consent-reprompt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    white-space: nowrap;
+    margin: 0;
+    outline: none;
+}
+
+.sbc-consent-reprompt-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--sbc-color-focus-ring);
+}
+
+.sbc-consent-reprompt-btn:active {
+    transform: scale(0.98);
+}
+
+.sbc-consent-reprompt-btn--cancel {
+    background: var(--sbc-color-surface-muted);
+    color: var(--sbc-color-text);
+    border: 1px solid var(--sbc-color-border);
+    box-shadow:
+        0 1px 1px 0 rgba(0, 0, 0, 0.03),
+        0 2px 5px 0 rgba(60, 66, 87, 0.03),
+        0 -1px 1px 0 rgba(0, 0, 0, 0.08) inset;
+}
+
+.sbc-consent-reprompt-btn--cancel:hover {
+    background: var(--sbc-color-surface-muted);
+    color: var(--sbc-color-text);
+}
+
+.sbc-consent-reprompt-btn--submit {
+    background: var(--sbc-color-primary);
+    color: var(--sbc-color-on-primary);
+    border: none;
+    box-shadow:
+        0 1px 1px 0 rgba(0, 0, 0, 0.05),
+        0 2px 5px 0 rgba(60, 66, 87, 0.08),
+        0 -1px 1px 0 rgba(0, 0, 0, 0.10) inset;
+}
+
+.sbc-consent-reprompt-btn--submit:hover {
+    background: var(--sbc-color-primary-hover);
+    color: var(--sbc-color-on-primary);
+}
+
+.sbc-consent-reprompt-btn--submit svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.sbc-consent-reprompt-btn[disabled],
+.sbc-consent-reprompt-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.sbc-consent-reprompt-btn:disabled:active {
+    transform: none;
+}
+
+/* ── Close button ──────────────────────────────────────────────── */
+.sbc-consent-reprompt-close {
+    position: absolute;
+    top: 13px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.sbc-consent-reprompt-close:hover {
+    background: var(--sbc-color-surface-hover);
+}
+
+.sbc-consent-reprompt-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--sbc-color-focus-ring);
+}
+
+/* ── Modal enter/leave transitions ─────────────────────────────── */
+.sbc-consent-modal-enter-active,
+.sbc-consent-modal-leave-active {
+    transition: opacity 0.2s ease-in-out;
+}
+
+.sbc-consent-modal-enter-active .sbc-consent-reprompt-popup,
+.sbc-consent-modal-leave-active .sbc-consent-reprompt-popup {
+    transition: transform 0.2s ease-out;
+}
+
+.sbc-consent-modal-enter,
+.sbc-consent-modal-leave-to {
+    opacity: 0;
+}
+
+.sbc-consent-modal-enter .sbc-consent-reprompt-popup,
+.sbc-consent-modal-leave-to .sbc-consent-reprompt-popup {
+    transform: scale(0.95);
+}
+
+/* ── Onboarding / Debug-tab checkbox (custom-styled) ───────────── */
+.sbc-consent-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 21px;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+
+.sbc-consent-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+.sbc-consent-checkbox-mark {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--sbc-color-border-strong);
+    border-radius: 1px;
+    background: var(--sbc-color-surface);
+    position: relative;
+    transition: background-color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.sbc-consent-checkbox input[type="checkbox"]:checked + .sbc-consent-checkbox-mark {
+    background: var(--sbc-color-primary);
+    border-color: var(--sbc-color-primary);
+}
+
+.sbc-consent-checkbox input[type="checkbox"]:checked + .sbc-consent-checkbox-mark::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 0;
+    width: 4px;
+    height: 9px;
+    border: solid var(--sbc-color-on-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.sbc-consent-checkbox input[type="checkbox"]:focus-visible + .sbc-consent-checkbox-mark {
+    outline: 2px solid var(--sbc-color-checkbox-focus);
+    outline-offset: 1px;
+}
+
+.sbc-consent-checkbox strong {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--sbc-color-text);
+}
+
+/* ── Onboarding checkbox container ─────────────────────────────── */
+.sbc-consent-onboarding-ctn .sbc-consent-checkbox-desc {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--sbc-color-text-subtle);
+    margin: 2px 0 0 37px;
+}
+
+.sbc-consent-onboarding-ctn .sbc-consent-checkbox-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 12px 0 0 37px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.sbc-consent-onboarding-ctn .sbc-consent-checkbox-links a {
+    color: var(--sbc-color-primary);
+    text-decoration: underline;
+}
+
+.sbc-consent-onboarding-ctn .sbc-consent-checkbox-links a:hover {
+    color: var(--sbc-color-primary-dark);
+}
+
+/* ── Debug-tab consent fragments (injected into native sections) ─── */
+/* Each fragment lives in a section's `.sb-settings-section-input` column,
+   beside the native `.sb-h4` heading — mirroring the Advanced tab's
+   switcher rows: toggle on top, description (+ links) below. */
+.sbc-consent-debug-field {
+    display: block;
+}
+
+/* Toggle switch */
+.sbc-consent-toggle {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin: 0;
+}
+
+.sbc-consent-toggle input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+/* Colors/sizes mirror the Vue settings toggles (Facebook/Twitter/Instagram)
+   so every plugin's consent toggle looks identical: #9e9e9e off, #0096CC on,
+   16px white thumb, faded (opacity .6) when disabled/locked. */
+.sbc-consent-toggle-track {
+    display: inline-block;
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 31px;
+    background: #9e9e9e;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.sbc-consent-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 100px;
+    background: #fff;
+    transition: transform 0.15s ease-in-out;
+}
+
+.sbc-consent-toggle input[type="checkbox"]:checked + .sbc-consent-toggle-track {
+    background: #0096CC;
+}
+
+.sbc-consent-toggle input[type="checkbox"]:checked + .sbc-consent-toggle-track .sbc-consent-toggle-thumb {
+    transform: translateX(16px);
+}
+
+.sbc-consent-toggle input[type="checkbox"]:focus-visible + .sbc-consent-toggle-track {
+    box-shadow: 0 0 0 3px var(--sbc-color-checkbox-focus);
+}
+
+.sbc-consent-toggle input[type="checkbox"]:disabled + .sbc-consent-toggle-track {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.sbc-consent-debug-field .sbc-consent-debug-desc {
+    margin: 10px 0 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--sbc-color-text-muted);
+}
+
+.sbc-consent-debug-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 10px;
+}
+
+.sbc-consent-debug-links a {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--sbc-color-primary);
+    text-decoration: none;
+}
+
+.sbc-consent-debug-links a:hover {
+    color: var(--sbc-color-primary-dark);
+    text-decoration: underline;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .sbc-consent-onboarding-ctn .sbc-consent-checkbox-desc,
+    .sbc-consent-onboarding-ctn .sbc-consent-checkbox-links {
+        margin-left: 16px;
+    }
+}
+
+@media (max-width: 600px) {
+    .sbc-consent-reprompt-popup {
+        padding: 28px 16px 16px;
+        gap: 16px 24px;
+    }
+    .sbc-consent-reprompt-icon {
+        width: 48px;
+        height: 48px;
+    }
+    .sbc-consent-reprompt-body {
+        gap: 24px;
+    }
+    .sbc-consent-reprompt-actions {
+        justify-content: stretch;
+    }
+    .sbc-consent-reprompt-actions .sbc-consent-reprompt-btn {
+        flex: 1 1 0;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .sbc-consent-onboarding-ctn .sbc-consent-checkbox {
+        gap: 12px;
+    }
+    .sbc-consent-onboarding-ctn .sbc-consent-checkbox-desc,
+    .sbc-consent-onboarding-ctn .sbc-consent-checkbox-links {
+        margin-left: 0;
+    }
+}

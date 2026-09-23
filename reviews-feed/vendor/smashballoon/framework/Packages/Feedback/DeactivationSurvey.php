@@ -237,7 +237,10 @@ class DeactivationSurvey
         $details = isset($_POST['details']) ? sanitize_textarea_field($_POST['details']) : '';
         $config = FeedbackManager::get_config($slug);
         if (!$config) {
-            wp_send_json_error('Unknown plugin', 400);
+            // Not a slug this plugin's copy registered. Another active Smash
+            // Balloon plugin's copy of this handler owns it — bail without
+            // ending the request so that handler gets to run.
+            return;
         }
         // Data for the sb-feedback-api REST endpoint.
         // Field mapping: reason_id -> reason, details -> comment.

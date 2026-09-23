@@ -1,0 +1,25 @@
+{
+  "apiVersion": 3,
+  "name": "smashballoon/threads-feed",
+  "title": "Threads Feed",
+  "category": "smashballoon",
+  "icon": "format-status",
+  "description": "Select and display any of your Threads feeds",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "threads-feed",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "feedId": {
+      "type": "string",
+      "default": ""
+    },
+    "preview": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

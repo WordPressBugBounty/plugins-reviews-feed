@@ -1,0 +1,717 @@
+[
+    {
+        "id": "local-sbc-1",
+        "plugin": [
+            "instagram"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Loving Smash Balloon? Leave us a review",
+        "content": "A quick 5-star review on WordPress.org helps other site owners discover Smash Balloon and supports our continued development. It takes less than a minute!",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "Leave a review",
+                "url": "https://wordpress.org/plugins/instagram-feed/#reviews"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-2",
+        "plugin": [
+            "facebook"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Loving Smash Balloon? Leave us a review",
+        "content": "A quick 5-star review on WordPress.org helps other site owners discover Smash Balloon and supports our continued development. It takes less than a minute!",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "Leave a review",
+                "url": "https://wordpress.org/plugins/custom-facebook-feed/#reviews"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-3",
+        "plugin": [
+            "twitter"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Loving Smash Balloon? Leave us a review",
+        "content": "A quick 5-star review on WordPress.org helps other site owners discover Smash Balloon and supports our continued development. It takes less than a minute!",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "Leave a review",
+                "url": "https://wordpress.org/plugins/custom-twitter-feeds/#reviews"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-4",
+        "plugin": [
+            "youtube"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Loving Smash Balloon? Leave us a review",
+        "content": "A quick 5-star review on WordPress.org helps other site owners discover Smash Balloon and supports our continued development. It takes less than a minute!",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "Leave a review",
+                "url": "https://wordpress.org/plugins/feeds-for-youtube/#reviews"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-5",
+        "plugin": [
+            "tiktok"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Loving Smash Balloon? Leave us a review",
+        "content": "A quick 5-star review on WordPress.org helps other site owners discover Smash Balloon and supports our continued development. It takes less than a minute!",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "Leave a review",
+                "url": "https://wordpress.org/plugins/feeds-for-tiktok/#reviews"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-6",
+        "plugin": [
+            "reviews"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Loving Smash Balloon? Leave us a review",
+        "content": "A quick 5-star review on WordPress.org helps other site owners discover Smash Balloon and supports our continued development. It takes less than a minute!",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "Leave a review",
+                "url": "https://wordpress.org/plugins/reviews-feed/#reviews"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-7",
+        "plugin": [
+            "instagram"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=instagram-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-8",
+        "plugin": [
+            "instagram"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=instagram-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-9",
+        "plugin": [
+            "facebook"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=facebook-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-10",
+        "plugin": [
+            "facebook"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=facebook-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-11",
+        "plugin": [
+            "twitter"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=twitter-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-12",
+        "plugin": [
+            "twitter"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=twitter-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-13",
+        "plugin": [
+            "youtube"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=youtube-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-14",
+        "plugin": [
+            "youtube"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=youtube-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-15",
+        "plugin": [
+            "tiktok"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=tiktok-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-16",
+        "plugin": [
+            "tiktok"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=tiktok-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-17",
+        "plugin": [
+            "reviews"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=reviews-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-18",
+        "plugin": [
+            "reviews"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "Your feed stays live, even when social platforms go down",
+        "content": "Smash Balloon's backup caching system stores a copy of your feed data locally inside WordPress. So if your connected platform has an outage, your feed keeps displaying instead of going blank.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/downtime-prevention/?utm_campaign=fallback-notifications&utm_content=backup-caching-tip&utm_source=reviews-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-19",
+        "plugin": [
+            "instagram"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=instagram-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-20",
+        "plugin": [
+            "instagram"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=instagram-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-21",
+        "plugin": [
+            "facebook"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=facebook-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-22",
+        "plugin": [
+            "facebook"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=facebook-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-23",
+        "plugin": [
+            "twitter"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=twitter-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-24",
+        "plugin": [
+            "twitter"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=twitter-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-25",
+        "plugin": [
+            "youtube"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=youtube-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-26",
+        "plugin": [
+            "youtube"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=youtube-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-27",
+        "plugin": [
+            "tiktok"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=tiktok-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-28",
+        "plugin": [
+            "tiktok"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=tiktok-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-29",
+        "plugin": [
+            "reviews"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=reviews-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-30",
+        "plugin": [
+            "reviews"
+        ],
+        "type": [
+            "pro"
+        ],
+        "title": "See your feed changes live before you publish",
+        "content": "Smash Balloon's visual editor lets you adjust layouts, colors, spacing, and post count with a live preview — so you see exactly what your feed will look like before it goes live on your site. No coding, no guessing.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how it works",
+                "url": "https://smashballoon.com/feed-customizer/?utm_campaign=fallback-notifications&utm_content=visual-customizer-tip&utm_source=reviews-pro&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-31",
+        "plugin": [
+            "instagram",
+            "facebook",
+            "twitter",
+            "youtube",
+            "tiktok",
+            "reviews"
+        ],
+        "type": [
+            "free",
+            "pro"
+        ],
+        "title": "Add your feed to any page with a shortcode or block",
+        "content": "You can embed your Smash Balloon feed anywhere on your site using a Gutenberg block or shortcode — pages, posts, sidebars, footers. Add it once and it auto-updates every time you post on social.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See how to embed",
+                "url": "https://smashballoon.com/doc/display-your-feed/"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-32",
+        "plugin": [
+            "instagram"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Get more from your Smash Balloon feed",
+        "content": "Unlock unlimited feeds, advanced layouts, moderation tools, and more with Smash Balloon Pro. Trusted by 1.75 million+ WordPress users, backed by a 14-day money-back guarantee.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See all plans",
+                "url": "https://smashballoon.com/pricing/instagram-feed/?utm_campaign=fallback-notifications&utm_content=see-all-plans-nudge&utm_source=instagram-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-33",
+        "plugin": [
+            "facebook"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Get more from your Smash Balloon feed",
+        "content": "Unlock unlimited feeds, advanced layouts, moderation tools, and more with Smash Balloon Pro. Trusted by 1.75 million+ WordPress users, backed by a 14-day money-back guarantee.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See all plans",
+                "url": "https://smashballoon.com/pricing/facebook-feed/?utm_campaign=fallback-notifications&utm_content=see-all-plans-nudge&utm_source=facebook-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-34",
+        "plugin": [
+            "twitter"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Get more from your Smash Balloon feed",
+        "content": "Unlock unlimited feeds, advanced layouts, moderation tools, and more with Smash Balloon Pro. Trusted by 1.75 million+ WordPress users, backed by a 14-day money-back guarantee.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See all plans",
+                "url": "https://smashballoon.com/pricing/twitter-feed/?utm_campaign=fallback-notifications&utm_content=see-all-plans-nudge&utm_source=twitter-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-35",
+        "plugin": [
+            "youtube"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Get more from your Smash Balloon feed",
+        "content": "Unlock unlimited feeds, advanced layouts, moderation tools, and more with Smash Balloon Pro. Trusted by 1.75 million+ WordPress users, backed by a 14-day money-back guarantee.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See all plans",
+                "url": "https://smashballoon.com/pricing/youtube-feed/?utm_campaign=fallback-notifications&utm_content=see-all-plans-nudge&utm_source=youtube-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-36",
+        "plugin": [
+            "tiktok"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Get more from your Smash Balloon feed",
+        "content": "Unlock unlimited feeds, advanced layouts, moderation tools, and more with Smash Balloon Pro. Trusted by 1.75 million+ WordPress users, backed by a 14-day money-back guarantee.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See all plans",
+                "url": "https://smashballoon.com/pricing/tiktok-feed/?utm_campaign=fallback-notifications&utm_content=see-all-plans-nudge&utm_source=tiktok-free&utm_medium=in-plugin-notification"
+            }
+        }
+    },
+    {
+        "id": "local-sbc-37",
+        "plugin": [
+            "reviews"
+        ],
+        "type": [
+            "free"
+        ],
+        "title": "Get more from your Smash Balloon feed",
+        "content": "Unlock unlimited feeds, advanced layouts, moderation tools, and more with Smash Balloon Pro. Trusted by 1.75 million+ WordPress users, backed by a 14-day money-back guarantee.",
+        "presets": "default",
+        "image": "balloon",
+        "btns": {
+            "primary": {
+                "text": "See all plans",
+                "url": "https://smashballoon.com/pricing/reviews-feed/?utm_campaign=fallback-notifications&utm_content=see-all-plans-nudge&utm_source=reviews-free&utm_medium=in-plugin-notification"
+            }
+        }
+    }
+]

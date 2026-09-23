@@ -315,7 +315,7 @@ class FeedDisplay {
 			$weeks 		= $this->feed->is_init_wpml() ? __('weeks', 'reviews-feed') : $translations['weeks'];
 			$month 		= $this->feed->is_init_wpml() ? __('month', 'reviews-feed') : $translations['month'];
 			$months 	= $this->feed->is_init_wpml() ? __('months', 'reviews-feed') : $translations['months'];
-			$year 		= $this->feed->is_init_wpml() ? __('years', 'reviews-feed') : $translations['years'];
+			$year 		= $this->feed->is_init_wpml() ? __('year', 'reviews-feed') : $translations['year'];
 			$years 		= $this->feed->is_init_wpml() ? __('years', 'reviews-feed') : $translations['years'];
 			$ago 		= $this->feed->is_init_wpml() ? __('ago', 'reviews-feed') : $translations['ago'];
 

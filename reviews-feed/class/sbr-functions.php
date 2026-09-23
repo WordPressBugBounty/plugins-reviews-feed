@@ -297,7 +297,7 @@ function sbr_plugin_settings_defaults()
 			'month' => __('month', 'reviews-feed'),
 			'months' => __('months', 'reviews-feed'),
 			'year' => __('year', 'reviews-feed'),
-			'years' => __('year', 'reviews-feed'),
+			'years' => __('years', 'reviews-feed'),
 			'ago' => __('ago', 'reviews-feed'),
 			'writeReview' => __('Write a Review', 'reviews-feed'),
 			'reviewsHeader' => __('Over %s Reviews', 'reviews-feed'),
@@ -913,6 +913,112 @@ function sbr_text_domain()
 	load_plugin_textdomain('reviews-feed', false, dirname(SBR_PLUGIN_BASENAME) . '/languages');
 }
 add_action('init', 'sbr_text_domain');
+
+/**
+ * Drop the cached feed-location map whenever scanned post content changes.
+ *
+ * The map is cached for 12 hours (SMASH-2103), so edits have to invalidate it
+ * rather than wait it out. Revisions and autosaves carry no new embed the parent
+ * post does not already have.
+ *
+ * Scoped to the post types the scan reads: a row of a type the scan skips cannot
+ * change the map, and flushing on one made a site that writes them in volume —
+ * 4M edd_license_log on the reporting site — re-scan on nearly every page load,
+ * which is the cost SMASH-2103 removed.
+ *
+ * $post comes from the action because get_post_type() returns false on
+ * `deleted_post`: core fires it after the row is gone (wp-includes/post.php:3996).
+ * That argument only exists from WP 5.5 and readme.txt:5 still declares 4.1, so an
+ * unresolvable type flushes rather than returns — on older core the alternative is
+ * that no deletion invalidates at all, which is the staleness this hook exists for.
+ *
+ * @param int          $post_id Post being written or deleted.
+ * @param \WP_Post|null $post    Post object as passed by save_post/deleted_post.
+ */
+function sbr_flush_feed_locations_cache($post_id, $post = null): void
+{
+	if (! sbr_post_write_touches_scanned_content($post_id, $post)) {
+		return;
+	}
+
+	\SmashBalloon\Reviews\Common\Customizer\DB::flush_feed_shortcode_locations();
+}
+add_action('save_post', 'sbr_flush_feed_locations_cache', 10, 2);
+add_action('deleted_post', 'sbr_flush_feed_locations_cache', 10, 2);
+
+/**
+ * Whether a post write can have changed what the placement scans see.
+ *
+ * Shared by the feed-location and badge-placement caches, which read the same
+ * post types. Both are 12-hour maps, so both have the same two ways to be wrong:
+ * not flushing on a write that mattered, and flushing on the millions of rows of
+ * a type neither of them reads. See SMASH-2103 and SMASH-2116.
+ *
+ * $post comes from the action because get_post_type() returns false on
+ * `deleted_post`: core fires it after the row is gone (wp-includes/post.php:3996).
+ * That argument only exists from WP 5.5 and readme.txt:5 still declares 4.1, so an
+ * unresolvable type answers true rather than false — on older core the alternative
+ * is that no deletion invalidates at all.
+ *
+ * @param int           $post_id    Post being written or deleted.
+ * @param \WP_Post|null $post       Post object as passed by save_post/deleted_post.
+ * @param string[]|null $post_types The scan's post types. Defaults to the feed
+ *                                  scan's list; the badge scan passes its own,
+ *                                  because its filter can widen it separately.
+ *
+ * @return bool
+ */
+function sbr_post_write_touches_scanned_content($post_id, $post = null, $post_types = null): bool
+{
+	if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+		return false;
+	}
+
+	$post_type = ( is_object($post) && ! empty($post->post_type) )
+		? (string) $post->post_type
+		: (string) get_post_type($post_id);
+
+	if ($post_type === '') {
+		return true;
+	}
+
+	if (! is_array($post_types)) {
+		$post_types = \SmashBalloon\Reviews\Common\Customizer\DB::scanned_post_types();
+	}
+
+	return in_array($post_type, $post_types, true);
+}
+
+/**
+ * Drop the cached badge-placement map when scanned post content changes.
+ *
+ * Separate hook rather than a second line inside the feed one: the two caches are
+ * invalidated by the same writes today, but they belong to different features and
+ * a future change to one should not silently move the other. See SMASH-2116.
+ *
+ * @param int           $post_id Post being written or deleted.
+ * @param \WP_Post|null $post    Post object as passed by save_post/deleted_post.
+ */
+function sbr_flush_badge_instances_cache($post_id, $post = null): void
+{
+	// Tested against the badge scan's OWN list, not DB::scanned_post_types(): the
+	// `sbr_badge_instance_post_types` filter can widen the scan, and a type that is
+	// scanned but cannot invalidate is 12 hours of stale counts on exactly the type
+	// the site opted into.
+	if (
+		! sbr_post_write_touches_scanned_content(
+			$post_id,
+			$post,
+			\SmashBalloon\Reviews\Common\Badges\SBR_Trust_Badge_Store::instance_scan_post_types()
+		)
+	) {
+		return;
+	}
+
+	\SmashBalloon\Reviews\Common\Badges\SBR_Trust_Badge_Store::flush_instance_scans();
+}
+add_action('save_post', 'sbr_flush_badge_instances_cache', 10, 2);
+add_action('deleted_post', 'sbr_flush_badge_instances_cache', 10, 2);
 
 function sbr_get_current_time()
 {

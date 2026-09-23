@@ -76,7 +76,10 @@ class FeedbackManager
         // Hook directly — screen checks happen inside the callbacks.
         add_action('admin_enqueue_scripts', [__CLASS__, 'maybe_enqueue']);
         add_action('admin_footer', [__CLASS__, 'maybe_render']);
-        add_action('wp_ajax_sb_deactivation_feedback', [DeactivationSurvey::class, 'handle_ajax']);
+        // Priority 1: every plugin's bundled copy of this package hooks the same
+        // action; older copies (priority 10) die with a 400 on slugs they don't
+        // own, so a copy that also steps aside on unknown slugs must run first.
+        add_action('wp_ajax_sb_deactivation_feedback', [DeactivationSurvey::class, 'handle_ajax'], 1);
         // Help Widget hooks (additive — does not affect deactivation flow).
         add_action('admin_enqueue_scripts', [__CLASS__, 'maybe_enqueue_help_widget']);
         add_action('admin_footer', [__CLASS__, 'maybe_render_help_widget']);

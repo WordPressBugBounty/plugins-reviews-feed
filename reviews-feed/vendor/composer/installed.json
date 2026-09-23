@@ -225,13 +225,13 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-customizer.git",
-                "reference": "9fc0c470a7cad1fd5934ea18fe9c3c20daf394f6"
+                "reference": "c48a96103945af4ddabed70c085ebfc362f633f5"
             },
             "require": {
                 "smashballoon\/framework": "dev-master",
                 "smashballoon\/stubs": "dev-master"
             },
-            "time": "2026-09-15T10:35:34+00:00",
+            "time": "2026-09-23T08:09:42+00:00",
             "type": "library",
             "installation-source": "source",
             "autoload": {
@@ -254,12 +254,12 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-common.git",
-                "reference": "3c53a9a74cc5bbdb4df2cfec13007f4793404e0f"
+                "reference": "cae457bd26a2304d2b09916dc469c616b7afed47"
             },
             "dist": {
                 "type": "zip",
-                "url": "https:\/\/api.github.com\/repos\/awesomemotive\/sb-common\/zipball\/3c53a9a74cc5bbdb4df2cfec13007f4793404e0f",
-                "reference": "3c53a9a74cc5bbdb4df2cfec13007f4793404e0f",
+                "url": "https:\/\/api.github.com\/repos\/awesomemotive\/sb-common\/zipball\/cae457bd26a2304d2b09916dc469c616b7afed47",
+                "reference": "cae457bd26a2304d2b09916dc469c616b7afed47",
                 "shasum": ""
             },
             "require": {
@@ -276,7 +276,7 @@
                 "phpcompatibility\/php-compatibility": "^9.3",
                 "squizlabs\/php_codesniffer": "^3.7"
             },
-            "time": "2026-06-11T09:56:01+00:00",
+            "time": "2026-09-23T10:48:26+00:00",
             "default-branch": true,
             "type": "library",
             "installation-source": "dist",
@@ -305,10 +305,6 @@
                 }
             ],
             "description": "WordPress plugin framework. Developed by SmashBalloon Team.",
-            "support": {
-                "source": "https:\/\/github.com\/awesomemotive\/sb-common\/tree\/master",
-                "issues": "https:\/\/github.com\/awesomemotive\/sb-common\/issues"
-            },
             "install-path": "..\/smashballoon\/framework"
         },
         {

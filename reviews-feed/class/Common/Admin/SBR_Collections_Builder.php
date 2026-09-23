@@ -15,6 +15,7 @@ if (! defined('ABSPATH')) {
 use Smashballoon\Customizer\V2\Collections_Builder;
 use SmashBalloon\Reviews\Common\Builder\Config\Proxy;
 use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
+use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\Util;
 
 
@@ -66,6 +67,14 @@ class SBR_Collections_Builder extends Collections_Builder
 			'collectionsPageUrl' => admin_url('admin.php?page=sbr-collections'),
 			'sourcesList' => SBR_Sources::get_sources_list(),
 			'sourcesCount' => SBR_Sources::get_sources_count(),
+			// SMASH-1599: the screen used to derive its collections by filtering
+			// `sourcesList` — a page of 20 rows across ALL providers — so a site
+			// saw however many of its first 20 sources happened to be
+			// collections, with no way to reach the rest. These three are the
+			// collections themselves, paged on their own.
+			'collectionsList' => DB::get_collections_page(1),
+			'collectionsCount' => DB::get_collections_count(),
+			'collectionsPerPage' => DB::COLLECTIONS_PER_PAGE,
 			'builderUrl'           => admin_url('admin.php?page=sbr'),
 			'adminHomeURL'           => admin_url('admin.php'),
 			'editHomeURL'           => admin_url('edit.php'),

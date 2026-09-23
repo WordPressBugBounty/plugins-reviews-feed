@@ -73,6 +73,7 @@ class SBR_Feed_Saver_Manager
 		add_action('wp_ajax_sbr_feed_saver_manager_advanced_search_reviews', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'advanced_search_reviews'));
 		add_action('wp_ajax_sbr_feed_saver_manager_duplicate_collection', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'duplicate_collection'));
 		add_action('wp_ajax_sbr_feed_saver_manager_load_more_sources', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'load_more_sources'));
+		add_action('wp_ajax_sbr_feed_saver_manager_load_more_collections', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'load_more_collections'));
 
 		add_action('wp_ajax_sbr_feed_saver_manager_export_collection', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'export_collection'));
 		add_action('wp_ajax_sbr_import_full_collection', array('SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager', 'import_full_collection'));
@@ -2384,6 +2385,45 @@ class SBR_Feed_Saver_Manager
 			'page' => $args['page'],
 			'perPage' => $per_page,
 			'totalPages' => ceil($total_count / $per_page)
+		]);
+		wp_die();
+	}
+
+	/**
+	 * One page of collections for the Collections screen.
+	 *
+	 * Mirrors load_more_sources() — same nonce, same capability, same response
+	 * keys — so the front end pages both lists the same way. It is a separate
+	 * action because it pages a different set: load_more_sources() walks ALL
+	 * providers, and filtering its page down to collections client-side is the
+	 * bug this fixes (SMASH-1599).
+	 *
+	 * @since SMASH-1599
+	 */
+	public static function load_more_collections(): void
+	{
+		check_ajax_referer('sbr-admin', 'nonce');
+		if (!sbr_current_user_can('manage_reviews_feed_options')) {
+			wp_send_json_error();
+		}
+
+		$page = isset($_POST['collections_page']) ? absint($_POST['collections_page']) : 1;
+		// absint(0) and absint('abc') are both 0, and page 0 would ask for a
+		// negative offset. The query floors it too; doing it here as well keeps
+		// the `page` echoed back honest, because the front end uses that value
+		// to highlight the active pager button.
+		$page = max(1, $page);
+
+		$collections_list = DB::get_collections_page($page);
+		$total_count      = DB::get_collections_count();
+		$per_page         = DB::COLLECTIONS_PER_PAGE;
+
+		echo sbr_json_encode([
+			'collectionsList'  => $collections_list,
+			'collectionsCount' => $total_count,
+			'page'             => $page,
+			'perPage'          => $per_page,
+			'totalPages'       => (int) max(1, ceil($total_count / $per_page))
 		]);
 		wp_die();
 	}

@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.13.0
+Stable tag: 2.13.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,18 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.13.1 =
+* Fix: The All Feeds page opens again on sites with a lot of content. Working out where each feed was used meant searching every post on the site, twice per feed, so on large sites the page could sit loading for around ten minutes. It now does that work once and remembers it.
+* Fix: Feeds added with the Reviews block, the older feed block, a synced pattern, a template part or the Elementor widget are now counted under "Instances". Before this, only feeds added with a shortcode were, so a feed that was live on your site could be listed as used in 0 places right next to the delete button.
+* Fix: Instance counts are accurate where feed IDs share the first digits. Feed 12 was also counting pages that used feed 127. Some counts will go down after updating, and the lower number is the right one.
+* Fix: Adding or removing a feed from a page shows up straight away instead of waiting for a cached result to expire.
+* Fix: When we cannot finish checking where a feed is used, the Instances column now says so instead of showing zero, and the delete confirmation no longer claims the feed is unused.
+* Fix: Double-clicking the Finish button when adding a source no longer saves it more than once.
+* Fix: The onboarding tooltip that points at the block inserter works again on WordPress 6.9 and 7.0, where the editor moved into a frame and the tooltip lost track of the button.
+* Fix: Review dates read "1 year ago" instead of "1 years ago".
+* Fix: The About us and Support pages line up with the plugin's other pages again instead of sitting slightly to the right.
+* Fix: Deactivating Reviews Feed no longer clashes with the feedback form of another Smash Balloon plugin active on the same site, which could show the wrong form or make the request fail.
+
 = 2.13.0 =
 * New: Reviews Feed now shares your overall rating, your connected review sources, each feed's stats and your latest reviews with the Feed Analytics dashboard, so its Reviews report is fully populated instead of asking you to update this plugin. Nothing is shared unless Feed Analytics asks for it.
 * Improvement: Translations refreshed. The translation template had not been rebuilt in several releases, so hundreds of newer strings could not be translated. They can now, and translations that already existed for them are back in use.

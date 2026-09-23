@@ -595,7 +595,14 @@ if (!defined('OBJECT_K')) {
 if (!function_exists('get_transient')) {
 	function get_transient($key)
 	{
-		global $wp_transients_mock;
+		global $wp_transients_mock, $wp_transient_reads;
+		// Counted so a test can pin a per-request memo: without one, code that reads
+		// the same transient once per entity still passes every value assertion.
+		if (!is_array($wp_transient_reads)) {
+			$wp_transient_reads = [];
+		}
+		$wp_transient_reads[$key] = (isset($wp_transient_reads[$key]) ? $wp_transient_reads[$key] : 0) + 1;
+
 		if (!is_array($wp_transients_mock) || !isset($wp_transients_mock[$key])) {
 			return false;
 		}
@@ -872,6 +879,206 @@ if (!function_exists('wp_clear_scheduled_hook')) {
 			unset($wp_scheduled_events_mock[$hook]);
 		}
 		return 0;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Feed-location scan (SMASH-2103 / SMASH-2109).
+//
+// The parsers are NOT stubbed. Common\Customizer\DB reads placements with
+// WordPress' own shortcode and block parsers, and the whole point of the tests
+// over it is whether that reading is right — a hand-rolled stand-in would test
+// the stand-in. So the real wp-includes files are loaded from the WordPress
+// install this plugin sits in, and when they are not reachable the functions
+// throw rather than quietly answer with something less faithful.
+// ---------------------------------------------------------------------------
+
+$sbr_wp_includes = dirname(__DIR__, 4) . '/wp-includes/';
+
+// Declared unconditionally: the block-parser fallback below calls it, and that
+// branch can be taken while shortcodes.php was readable.
+if (!function_exists('sbr_tests_no_wp_core')) {
+	function sbr_tests_no_wp_core($fn)
+	{
+		throw new RuntimeException(
+			$fn . '() needs WordPress core. Looked in ' . dirname(__DIR__, 4) . '/wp-includes/. '
+			. 'These tests parse with WordPress\' own parser on purpose and will not substitute a stand-in; '
+			. 'run them from a plugin checkout inside a WordPress install.'
+		);
+	}
+}
+
+if (is_readable($sbr_wp_includes . 'shortcodes.php')) {
+	require_once $sbr_wp_includes . 'shortcodes.php';
+} elseif (!function_exists('get_shortcode_regex')) {
+	function get_shortcode_regex($tagnames = null)
+	{
+		sbr_tests_no_wp_core(__FUNCTION__);
+	}
+	function shortcode_parse_atts($text)
+	{
+		sbr_tests_no_wp_core(__FUNCTION__);
+	}
+}
+
+if (!function_exists('parse_blocks')) {
+	$sbr_parser_files = array(
+		'class-wp-block-parser-block.php',
+		'class-wp-block-parser-frame.php',
+		'class-wp-block-parser.php',
+	);
+	$sbr_have_parser = is_readable($sbr_wp_includes . 'class-wp-block-parser.php');
+
+	if ($sbr_have_parser) {
+		foreach ($sbr_parser_files as $sbr_parser_file) {
+			if (is_readable($sbr_wp_includes . $sbr_parser_file)) {
+				require_once $sbr_wp_includes . $sbr_parser_file;
+			}
+		}
+
+		function parse_blocks($content)
+		{
+			// Counted so a test can pin that a site-wide scan parses each post once
+			// rather than once per entity it is matching against.
+			global $wp_parse_blocks_calls;
+			$wp_parse_blocks_calls = (is_int($wp_parse_blocks_calls) ? $wp_parse_blocks_calls : 0) + 1;
+
+			$parser = new WP_Block_Parser();
+
+			return $parser->parse($content);
+		}
+	} else {
+		function parse_blocks($content)
+		{
+			sbr_tests_no_wp_core(__FUNCTION__);
+		}
+	}
+}
+
+// Post-type registry. Keys are type names, values are the `public` flag, so a
+// test can register the non-public containers the scan deliberately opts back in.
+if (!function_exists('get_post_types')) {
+	function get_post_types($args = array(), $output = 'names', $operator = 'and')
+	{
+		global $wp_post_types_mock;
+
+		$types = is_array($wp_post_types_mock)
+			? $wp_post_types_mock
+			: array('post' => true, 'page' => true, 'attachment' => true);
+
+		if (isset($args['public'])) {
+			$types = array_filter(
+				$types,
+				static function ($is_public) use ($args) {
+					return (bool) $is_public === (bool) $args['public'];
+				}
+			);
+		}
+
+		$names = array_keys($types);
+
+		return array_combine($names, $names);
+	}
+}
+
+if (!function_exists('post_type_exists')) {
+	function post_type_exists($post_type)
+	{
+		global $wp_post_types_mock;
+
+		return is_array($wp_post_types_mock) && array_key_exists($post_type, $wp_post_types_mock);
+	}
+}
+
+// Post-type lookup by ID, for the cache-invalidation hook.
+if (!function_exists('get_post_type')) {
+	function get_post_type($post = null)
+	{
+		global $wp_post_type_by_id_mock;
+
+		$id = is_object($post) ? (int) $post->ID : (int) $post;
+
+		return ( is_array($wp_post_type_by_id_mock) && isset($wp_post_type_by_id_mock[$id]) )
+			? $wp_post_type_by_id_mock[$id]
+			: false;
+	}
+}
+
+if (!function_exists('wp_is_post_revision')) {
+	function wp_is_post_revision($post)
+	{
+		global $wp_post_revisions_mock;
+
+		$id = is_object($post) ? (int) $post->ID : (int) $post;
+
+		return ( is_array($wp_post_revisions_mock) && in_array($id, $wp_post_revisions_mock, true) ) ? $id : false;
+	}
+}
+
+if (!function_exists('wp_is_post_autosave')) {
+	function wp_is_post_autosave($post)
+	{
+		global $wp_post_autosaves_mock;
+
+		$id = is_object($post) ? (int) $post->ID : (int) $post;
+
+		return ( is_array($wp_post_autosaves_mock) && in_array($id, $wp_post_autosaves_mock, true) ) ? $id : false;
+	}
+}
+
+// Cache priming is a pure optimisation in the scan; there is no object cache here.
+if (!function_exists('_prime_post_caches')) {
+	function _prime_post_caches($ids, $update_term_cache = true, $update_meta_cache = true)
+	{
+		return null;
+	}
+}
+
+if (!function_exists('get_the_permalink')) {
+	function get_the_permalink($post = 0, $leavename = false)
+	{
+		$id = is_object($post) ? (int) $post->ID : (int) $post;
+
+		return 'https://example.test/?p=' . $id;
+	}
+}
+
+if (!function_exists('get_user_locale')) {
+	function get_user_locale($user = 0)
+	{
+		global $wp_user_locale_mock;
+
+		return is_string($wp_user_locale_mock) ? $wp_user_locale_mock : 'en_US';
+	}
+}
+
+if (!function_exists('get_current_blog_id')) {
+	function get_current_blog_id()
+	{
+		global $wp_current_blog_id_mock;
+
+		return is_numeric($wp_current_blog_id_mock) ? (int) $wp_current_blog_id_mock : 1;
+	}
+}
+
+// Post-type object, for code that reads a type's own singular label.
+if (!function_exists('get_post_type_object')) {
+	function get_post_type_object($post_type)
+	{
+		global $wp_post_types_mock;
+
+		if (!is_array($wp_post_types_mock) || !array_key_exists($post_type, $wp_post_types_mock)) {
+			return null;
+		}
+
+		$labels = new stdClass();
+		$labels->singular_name = ucfirst(str_replace(array('_', '-'), ' ', (string) $post_type));
+
+		$object = new stdClass();
+		$object->name   = $post_type;
+		$object->labels = $labels;
+
+		return $object;
 	}
 }
 

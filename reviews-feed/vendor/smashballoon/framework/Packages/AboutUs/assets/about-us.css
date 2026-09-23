@@ -1,0 +1,638 @@
+/**
+ * About Us Page Styles - Figma-matched design.
+ * Scoped with sbc-about-us-* prefix to avoid conflicts.
+ */
+
+/* ============================================
+   Reset & Base
+   ============================================ */
+.wrap:has(.sbc-about-us-wrap) {
+	display: flex;
+	justify-content: center;
+	padding: 0 20px;
+}
+
+.sbc-about-us-wrap {
+	/* Section headings use Display; body + card titles use Text. */
+	--sbc-font-text: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	--sbc-font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+	--sbc-ink: #141B38;
+	--sbc-slate: #434960;
+	--sbc-muted: #696D80;
+	--sbc-shadow-card: 0px 1px 2px rgba(0, 0, 0, 0.05), 0px 4px 5px rgba(0, 0, 0, 0.05);
+
+	max-width: 877px;
+	width: 100%;
+	margin: 20px 0 40px;
+	padding: 0;
+	font-family: var(--sbc-font-text);
+	color: var(--sbc-ink);
+}
+
+.sbc-about-us-wrap * {
+	box-sizing: border-box;
+}
+
+.sbc-about-us-header h1,
+.sbc-about-us-team-left h2,
+.sbc-about-us-promo-content h3,
+.sbc-about-us-our-plugins > h2,
+.sbc-about-us-recommended > h2 {
+	font-family: var(--sbc-font-display);
+}
+
+/* Header */
+.sbc-about-us-header {
+	margin-bottom: 12px;
+}
+
+.sbc-about-us-header h1 {
+	font-size: 28px;
+	font-weight: 600;
+	color: var(--sbc-ink);
+	margin: 0;
+	padding: 0;
+	line-height: 1.2;
+}
+
+/* Section Description */
+.sbc-about-us-section-desc {
+	color: var(--sbc-slate);
+	font-size: 14px;
+	margin: 0 0 24px;
+	line-height: 1.6;
+	max-width: 420px;
+}
+
+/* ============================================
+   Team Section
+   ============================================ */
+.sbc-about-us-team {
+	background: #fff;
+	border-radius: 2px;
+	box-shadow: var(--sbc-shadow-card);
+	overflow: hidden;
+	margin-bottom: 20px;
+}
+
+/* Avatar Header Bar */
+.sbc-about-us-team-header {
+	background: #F7FDFF;
+	border-bottom: 1px solid #BFE8FF;
+	padding: 38px 0;
+	display: flex;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.sbc-about-us-team-avatars {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding-right: 7px;
+}
+
+.sbc-about-us-avatar {
+	width: 52px;
+	height: 52px;
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+	margin-right: -7px;
+	border: 2px solid #fff;
+	position: relative;
+}
+
+.sbc-about-us-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* Team Content - Two Column */
+.sbc-about-us-team-content {
+	display: flex;
+	gap: 39px;
+	padding: 48px 48px 64px;
+	align-items: flex-start;
+}
+
+.sbc-about-us-team-left {
+	flex-shrink: 0;
+	width: 287px;
+}
+
+.sbc-about-us-team-left h2 {
+	font-size: 19px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--sbc-ink);
+	margin: 0;
+	letter-spacing: -0.19px;
+}
+
+.sbc-about-us-team-right {
+	flex: 1;
+	font-size: 14px;
+	color: var(--sbc-slate);
+	line-height: 1.6;
+}
+
+.sbc-about-us-team-right p {
+	margin: 0 0 12px;
+}
+
+.sbc-about-us-team-right p:last-child {
+	margin-bottom: 0;
+}
+
+/* Rich-text lists inside section descriptions (WP admin resets these to
+   list-style:none / no indent, which hides bullets and numbers). */
+.sbc-about-us-team-right ul,
+.sbc-about-us-team-right ol,
+.sbc-about-us-section-desc ul,
+.sbc-about-us-section-desc ol {
+	margin: 0 0 12px;
+	padding-left: 20px;
+}
+
+.sbc-about-us-team-right ul,
+.sbc-about-us-section-desc ul {
+	list-style: disc;
+}
+
+.sbc-about-us-team-right ol,
+.sbc-about-us-section-desc ol {
+	list-style: decimal;
+}
+
+.sbc-about-us-team-right li,
+.sbc-about-us-section-desc li {
+	margin-bottom: 4px;
+}
+
+.sbc-about-us-team-right li:last-child,
+.sbc-about-us-section-desc li:last-child {
+	margin-bottom: 0;
+}
+
+/* ============================================
+   Featured Promo Section
+   ============================================ */
+.sbc-about-us-featured-promo {
+	background: #00206F;
+	border-radius: 2px;
+	box-shadow: var(--sbc-shadow-card);
+	margin-bottom: 40px;
+	overflow: hidden;
+}
+
+.sbc-about-us-promo-inner {
+	display: flex;
+	align-items: stretch;
+	min-height: 320px;
+	position: relative;
+}
+
+.sbc-about-us-promo-content {
+	flex: 1;
+	padding: 43px 50px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: 420px;
+	position: relative;
+	z-index: 1;
+}
+
+.sbc-about-us-promo-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: #995C00;
+	color: #fff;
+	padding: 2px 9px;
+	border-radius: 21px;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	line-height: 1.6;
+	margin-bottom: 7px;
+}
+
+.sbc-about-us-promo-badge-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.sbc-about-us-promo-content h3 {
+	font-size: 19px;
+	font-weight: 600;
+	color: #fff;
+	margin: 0 0 5px;
+	line-height: 1.2;
+	letter-spacing: -0.19px;
+}
+
+.sbc-about-us-promo-content {
+	color: rgba(255, 255, 255, 0.6);
+}
+
+.sbc-about-us-promo-content p,
+.sbc-about-us-promo-content ul,
+.sbc-about-us-promo-content ol {
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.6);
+	line-height: 1.6;
+	margin: 0 0 24px;
+	max-width: 339px;
+}
+
+.sbc-about-us-promo-content ul,
+.sbc-about-us-promo-content ol {
+	padding-left: 20px;
+}
+
+.sbc-about-us-promo-content ul {
+	list-style: disc;
+}
+
+.sbc-about-us-promo-content ol {
+	list-style: decimal;
+}
+
+.sbc-about-us-promo-content li {
+	color: rgba(255, 255, 255, 0.6);
+	margin-bottom: 4px;
+}
+
+.sbc-about-us-promo-content li:last-child {
+	margin-bottom: 0;
+}
+
+.sbc-about-us-promo-content a {
+	color: #fff;
+	text-decoration: underline;
+}
+
+.sbc-about-us-promo-content a:hover,
+.sbc-about-us-promo-content a:focus {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.sbc-about-us-promo-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 268px;
+	max-width: 100%;
+	background: #ED4944;
+	color: #fff;
+	padding: 8px 20px;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 600;
+	border: none;
+	cursor: pointer;
+	text-decoration: none;
+	line-height: 1.6;
+	box-shadow: 0px 2px 5px rgba(60, 66, 87, 0.12), 0px 1px 1px rgba(0, 0, 0, 0.08), inset 0px -1px 1px rgba(0, 0, 0, 0.12);
+	transition: background 0.2s;
+}
+
+.sbc-about-us-promo-btn:hover {
+	background: #D93D38;
+	color: #fff;
+}
+
+.sbc-about-us-promo-btn:focus {
+	outline: 2px solid rgba(255, 255, 255, 0.5);
+	outline-offset: 2px;
+}
+
+.sbc-about-us-promo-btn svg {
+	flex-shrink: 0;
+}
+
+.sbc-about-us-promo-image {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 420px;
+	overflow: hidden;
+}
+
+.sbc-about-us-promo-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	object-position: center bottom;
+}
+
+/* ============================================
+   Plugin & Recommended Grids
+   ============================================ */
+.sbc-about-us-our-plugins,
+.sbc-about-us-recommended {
+	margin-bottom: 40px;
+}
+
+.sbc-about-us-our-plugins > h2,
+.sbc-about-us-recommended > h2 {
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--sbc-ink);
+	margin: 0 0 10px;
+	line-height: 1.2;
+	letter-spacing: -0.24px;
+}
+
+.sbc-about-us-recommended > h2 {
+	margin-bottom: 24px;
+}
+
+.sbc-about-us-plugins-grid,
+.sbc-about-us-recommended-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	border-radius: 8px;
+	box-shadow: var(--sbc-shadow-card);
+	overflow: hidden;
+}
+
+.sbc-about-us-plugins-grid {
+	margin-bottom: 12px;
+}
+
+/* Cards (regular plugin + recommended share the box; layout differs) */
+.sbc-about-us-plugin-card,
+.sbc-about-us-rec-card {
+	background: #fff;
+	padding: 24px 40px 32px;
+	border-radius: 7px;
+	overflow: hidden;
+	display: flex;
+}
+
+.sbc-about-us-plugin-card {
+	flex: 1 0 calc(33.333% - 8px);
+	min-width: 276px;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.sbc-about-us-rec-card {
+	flex: 1 0 calc(50% - 6px);
+	min-width: 292px;
+	align-items: flex-start;
+	gap: 16px;
+}
+
+/* Featured cards (Social Wall, Feed Analytics) - wider */
+.sbc-about-us-featured-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.sbc-about-us-featured-card {
+	flex: 1 0 calc(50% - 6px);
+	min-width: 200px;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.15);
+	padding: 24px;
+	display: flex;
+	align-items: flex-start;
+	gap: 20px;
+	overflow: hidden;
+}
+
+/* Card icons */
+.sbc-about-us-plugin-icon {
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+}
+
+.sbc-about-us-featured-icon {
+	width: 64px;
+	height: 64px;
+	flex-shrink: 0;
+}
+
+.sbc-about-us-rec-icon {
+	width: 52px;
+	height: 52px;
+	flex-shrink: 0;
+	border-radius: 2px;
+	box-shadow: 0px 1.164px 1.455px rgba(0, 26, 119, 0.03);
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sbc-about-us-plugin-icon img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.sbc-about-us-featured-icon img {
+	width: 100%;
+	height: 100%;
+}
+
+.sbc-about-us-rec-icon img {
+	width: 48px;
+	height: 48px;
+	object-fit: contain;
+}
+
+/* Card content (plugin / featured / recommended) */
+.sbc-about-us-plugin-info,
+.sbc-about-us-featured-content,
+.sbc-about-us-rec-content {
+	flex: 1;
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--sbc-muted);
+}
+
+.sbc-about-us-plugin-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.sbc-about-us-plugin-info h3,
+.sbc-about-us-featured-content h3,
+.sbc-about-us-rec-content h3 {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--sbc-ink);
+	margin: 0 0 4px;
+	line-height: 1.6;
+}
+
+.sbc-about-us-plugin-info p,
+.sbc-about-us-rec-content p {
+	margin: 0;
+}
+
+.sbc-about-us-featured-content p {
+	margin: 0 0 16px;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.sbc-about-us-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 8px 12px;
+	font-size: 14px;
+	font-weight: 600;
+	border-radius: 4px;
+	border: none;
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.2s;
+	white-space: nowrap;
+	line-height: 1.6;
+	font-family: inherit;
+}
+
+.sbc-about-us-btn:focus {
+	outline: 2px solid #667EEA;
+	outline-offset: 2px;
+}
+
+.sbc-about-us-btn svg {
+	flex-shrink: 0;
+}
+
+/* Secondary Button (Install, Activate, See Demo) */
+.sbc-about-us-btn-secondary {
+	background: #F9F9FA;
+	color: var(--sbc-ink);
+	border: 1px solid #E6E6EB;
+	box-shadow: 0px 2px 5px rgba(60, 66, 87, 0.05), 0px 1px 1px rgba(0, 0, 0, 0.05), inset 0px -1px 1px rgba(0, 0, 0, 0.12);
+}
+
+.sbc-about-us-btn-secondary:hover {
+	background: #F0F0F2;
+	border-color: #D5D5DC;
+	color: var(--sbc-ink);
+}
+
+/* Installed / Active Button */
+.sbc-about-us-btn-installed {
+	background: #F9F9FA;
+	color: var(--sbc-muted);
+	border: 1px solid #E6E6EB;
+	cursor: default;
+}
+
+.sbc-about-us-btn-installed svg {
+	color: var(--sbc-muted);
+}
+
+/* Loading State */
+.sbc-about-us-btn-loading {
+	opacity: 0.7;
+	pointer-events: none;
+}
+
+/* Success State */
+.sbc-about-us-btn-success {
+	background: #E8F5E9;
+	color: #2E7D32;
+	border-color: #C8E6C9;
+}
+
+/* Error State */
+.sbc-about-us-btn-error {
+	background: #FFEBEE;
+	color: #C62828;
+	border-color: #FFCDD2;
+}
+
+/* Plugin Action Container */
+.sbc-about-us-plugin-action {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+/* Spinner */
+.sbc-about-us-spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid rgba(0, 0, 0, 0.15);
+	border-top-color: currentColor;
+	border-radius: 50%;
+	animation: sbc-about-us-spin 0.6s linear infinite;
+	margin-right: 6px;
+}
+
+@keyframes sbc-about-us-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 782px) {
+	.sbc-about-us-wrap {
+		padding: 0 12px;
+	}
+
+	.sbc-about-us-team-content {
+		flex-direction: column;
+		gap: 24px;
+		padding: 32px 24px 40px;
+	}
+
+	.sbc-about-us-team-left {
+		width: 100%;
+	}
+
+	.sbc-about-us-team-avatars {
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.sbc-about-us-promo-inner {
+		flex-direction: column;
+		min-height: auto;
+	}
+
+	.sbc-about-us-promo-content {
+		max-width: 100%;
+		padding: 32px 24px;
+	}
+
+	.sbc-about-us-promo-image {
+		position: relative;
+		width: 100%;
+		height: 200px;
+	}
+
+	.sbc-about-us-plugin-card,
+	.sbc-about-us-featured-card,
+	.sbc-about-us-rec-card {
+		flex: 1 0 100%;
+		min-width: 0;
+	}
+}

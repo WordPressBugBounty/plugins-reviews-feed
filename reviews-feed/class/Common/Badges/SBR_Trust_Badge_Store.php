@@ -2,6 +2,7 @@
 
 namespace SmashBalloon\Reviews\Common\Badges;
 
+use SmashBalloon\Reviews\Common\Customizer\DB;
 use WP_Query;
 
 /**
@@ -26,18 +27,11 @@ use WP_Query;
 class SBR_Trust_Badge_Store
 {
 	/**
-	 * Memoised content scan for the request, or null before the first scan.
+	 * The whole placement map for the request, badge id => rows.
 	 *
-	 * @var array<int, array{ID: int, post_title: string, post_type: string, post_content: string}>|null
+	 * @var array<int, array<int, array<int, array{ID: int, post_title: string, post_type: string}>>|false>
 	 */
-	private static $content_candidates = null;
-
-	/**
-	 * Per-badge content scans, used when the broad one was truncated.
-	 *
-	 * @var array<int, array<int, array{ID: int, post_title: string, post_type: string, post_content: string}>>
-	 */
-	private static $content_candidates_by_id = array();
+	private static $instance_map = array();
 
 	/**
 	 * Memoised builder-meta scans for the request, keyed on the meta-key set.
@@ -379,9 +373,6 @@ class SBR_Trust_Badge_Store
 	 */
 	public static function save($data)
 	{
-		// A write invalidates the per-request instance scans.
-		self::flush_instance_scans();
-
 		if (! is_array($data)) {
 			return null;
 		}
@@ -457,6 +448,13 @@ class SBR_Trust_Badge_Store
 		// cannot make it stale. (It also takes a $feed_id — there is no
 		// "clear everything" call, by design: invalidation bumps a per-feed
 		// version salt so it survives a persistent object cache.)
+
+		// Flushed AFTER the write, not before it: the map is a 12-hour transient now,
+		// so a flush that precedes the write leaves a window in which anything
+		// rebuilding the map re-caches pre-write state. Flushing first also threw the
+		// cache away for a save that then failed validation. See SMASH-2116.
+		self::flush_instance_scans();
+
 		return $id;
 	}
 
@@ -469,9 +467,6 @@ class SBR_Trust_Badge_Store
 	 */
 	public static function delete($id)
 	{
-		// A write invalidates the per-request instance scans.
-		self::flush_instance_scans();
-
 		$id   = (int) $id;
 		$post = $id > 0 ? get_post($id) : null;
 
@@ -490,7 +485,11 @@ class SBR_Trust_Badge_Store
 		// the id is still meaningful.
 		SBR_Badge_Image::purge($id);
 
-		return (bool) wp_delete_post($id, true);
+		$deleted = (bool) wp_delete_post($id, true);
+
+		self::flush_instance_scans();
+
+		return $deleted;
 	}
 
 	/**
@@ -502,9 +501,7 @@ class SBR_Trust_Badge_Store
 	 */
 	public static function duplicate($id)
 	{
-		// A write invalidates the per-request instance scans.
-		self::flush_instance_scans();
-
+		// No flush here: this returns through save(), which flushes after its write.
 		$badge = self::get($id);
 
 		if ($badge === null) {
@@ -677,18 +674,64 @@ class SBR_Trust_Badge_Store
 	/**
 	 * Rows the broad content scan will look at.
 	 *
-	 * The scan asks for one more than this so a caller can tell a complete
-	 * answer from a truncated one.
+	 * Retained because it is public API; nothing reads it inside this class any
+	 * more. The content scan it bounded was a 200-row post_title window over the
+	 * whole site's badge-bearing posts, replaced by INSTANCE_SCAN_CEILING in
+	 * SMASH-2116. meta_rows() still has a window of its own, written inline.
 	 */
 	const INSTANCE_SCAN_LIMIT = 200;
 
 	/**
 	 * Placements the delete dialog will list, per badge.
 	 *
-	 * The cap on the ANSWER, not on the scan — INSTANCE_SCAN_LIMIT bounds that.
+	 * The cap on the ANSWER, not on the scan — INSTANCE_SCAN_CEILING bounds the
+	 * content scan, and meta_rows() still bounds the builder-meta one at 200.
 	 * Named because both scan loops enforce it and two inline 50s drift.
 	 */
 	const MAX_INSTANCE_ROWS = 50;
+
+	/**
+	 * How long the badge-placement map survives, in seconds.
+	 *
+	 * Twelve hours, matching the feed-location map. Post writes invalidate it, so
+	 * staleness is bounded by edits rather than by the clock. See SMASH-2116.
+	 */
+	const INSTANCE_MAP_CACHE_TTL = 43200;
+
+	/**
+	 * Transient holding the badge-placement map.
+	 *
+	 * The generation is appended, so invalidation bumps rather than deletes. A
+	 * delete plus a fixed key loses a race that matters here: a request that missed
+	 * the cache and is mid-scan finishes AFTER an editor's save and writes its
+	 * pre-save map back under the same key, for twelve hours, into the count the
+	 * delete dialog reads. Bumping means the in-flight scan writes to a key nobody
+	 * asks for again. Same reason DB keys its feed map by version.
+	 */
+	const INSTANCE_MAP_CACHE_KEY = 'sbr_badge_instance_map';
+
+	/**
+	 * Option holding the badge-placement map's generation.
+	 */
+	const INSTANCE_MAP_VERSION_OPTION = 'sbr_badge_instance_map_version';
+
+	/**
+	 * Rows one scan will examine.
+	 *
+	 * High enough that no real site reaches it — the first pass asks only for IDs,
+	 * so the ceiling costs nothing until posts actually place a badge. Replaces the
+	 * old INSTANCE_SCAN_LIMIT window, which was 200 rows ordered by post_title, so a
+	 * badge placed only on a late-alphabet post came back with a count of zero.
+	 */
+	const INSTANCE_SCAN_CEILING = 20000;
+
+	/**
+	 * Rows whose content is pulled in one batch of the second pass.
+	 *
+	 * Named for the reason MAX_INSTANCE_ROWS is: two inline copies drift. Mirrors
+	 * DB::FEED_LOCATIONS_BATCH_SIZE.
+	 */
+	const INSTANCE_BATCH_SIZE = 200;
 
 	/**
 	 * How many badges a picker offers.
@@ -699,151 +742,239 @@ class SBR_Trust_Badge_Store
 	const CHOICE_LIMIT = 100;
 
 	/**
-	 * Posts whose content could place THIS badge.
+	 * Post types the badge-placement scan reads.
 	 *
-	 * Only used when the broad scan was truncated. The id goes into the SQL here,
-	 * so the limit applies to this badge's placements rather than to the site's.
+	 * Shares DB::scanned_post_types() with the feed-location scan — a badge lives
+	 * wherever a feed does — but keeps its own filter, so a site can widen one
+	 * without the other. Before SMASH-2116 the query named no post type at all,
+	 * which is why MySQL had nothing to range-scan on.
 	 *
-	 * The patterns are a SUPERSET of real matches, never an exact test — a block
-	 * serialises `{"id":12}` in any attribute order, and a shortcode may write
-	 * `id="12"`, `id='12'` or `id=12` — so `%…12%` also catches 120 and 121 and
-	 * content_places_badge() still has to confirm each row. Narrowing is all this
-	 * is for.
+	 * Public because the invalidation hook has to test against this list and not
+	 * against DB::scanned_post_types(): a type added through the filter below would
+	 * otherwise be scanned and then never invalidated, which is 12 hours of stale
+	 * counts on exactly the type the site opted into.
 	 *
-	 * @param int $id Badge id.
+	 * @return string[]
 	 *
-	 * @return array<int, array{ID: int, post_title: string, post_type: string, post_content: string}>
+	 * @since 2.13.2
 	 */
-	private static function content_candidates_for($id)
+	public static function instance_scan_post_types()
 	{
-		global $wpdb;
+		/**
+		 * Filters the post types searched for badge placements.
+		 *
+		 * Mirrors `sbr_feed_locations_post_types`, and defaults to the same list.
+		 *
+		 * @param string[] $post_types Public post types plus the block-editor containers.
+		 */
+		$post_types = apply_filters('sbr_badge_instance_post_types', DB::scanned_post_types());
 
-		$id = (int) $id;
-
-		if (isset(self::$content_candidates_by_id[$id])) {
-			return self::$content_candidates_by_id[$id];
-		}
-
-		$block      = '%wp:sbr/trust-badge%"id":' . $id . '%';
-		$shortcode  = '%[reviews-feed-badge%id="' . $id . '%';
-		$shortcode2 = "%[reviews-feed-badge%id='" . $id . '%';
-		$shortcode3 = '%[reviews-feed-badge%id=' . $id . '%';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- no index exists for post content; memoised per id immediately below.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
-				 WHERE post_status IN ( 'publish', 'draft', 'pending', 'future', 'private' )
-				   AND ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s )
-				 ORDER BY post_title ASC
-				 LIMIT %d",
-				$block,
-				$shortcode,
-				$shortcode2,
-				$shortcode3,
-				self::INSTANCE_SCAN_LIMIT + 1
-			),
-			ARRAY_A
-		);
-
-		$out = array();
-
-		foreach ((array) $rows as $row) {
-			if (! is_array($row)) {
-				continue;
-			}
-
-			$out[] = array(
-				'ID'           => isset($row['ID']) && is_scalar($row['ID']) ? (int) $row['ID'] : 0,
-				'post_title'   => isset($row['post_title']) && is_scalar($row['post_title']) ? (string) $row['post_title'] : '',
-				'post_type'    => isset($row['post_type']) && is_scalar($row['post_type']) ? (string) $row['post_type'] : '',
-				'post_content' => isset($row['post_content']) && is_scalar($row['post_content']) ? (string) $row['post_content'] : '',
-			);
-		}
-
-		self::$content_candidates_by_id[$id] = $out;
-
-		return $out;
+		return array_values(array_unique(array_filter((array) $post_types, 'is_string')));
 	}
 
 	/**
-	 * Posts whose CONTENT could place any badge, scanned once per request.
+	 * Every badge id the store knows about.
 	 *
-	 * The scan does not mention a badge id — it cannot, because a block
-	 * serialises its attributes in any order — so the same two LIKEs ran once
-	 * per badge on the list screen while returning identical rows. Measured on a
-	 * 20-badge page: 84 queries, 60 of them from this and its meta twin.
+	 * @return array<int, int>
 	 *
-	 * Memoised for the request rather than cached in the object cache: the list
-	 * screen reads it up to PER_PAGE times in one page load, which is the entire
-	 * problem, and a request that writes a badge does not then list them.
-	 *
-	 * Rows are normalised to a known shape here rather than handed on raw: the
-	 * inline query this replaced let the analyser infer the columns, and a helper
-	 * returning `array<string, mixed>` lost that — every downstream cast became
-	 * "cannot cast mixed" and every offset "might not exist".
-	 *
-	 * @return array<int, array{ID: int, post_title: string, post_type: string, post_content: string}>
+	 * @since 2.13.2
 	 */
-	private static function content_candidates()
+	private static function badge_ids()
 	{
-		if (self::$content_candidates !== null) {
-			return self::$content_candidates;
+		$query = new WP_Query(array(
+			'post_type'              => self::POST_TYPE,
+			'post_status'            => 'any',
+			'posts_per_page'         => -1,
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		));
+
+		// WP_Query::$posts is typed int|WP_Post whatever `fields` asked for, so the
+		// shape is narrowed here rather than assumed.
+		$ids = array();
+		foreach ((array) $query->posts as $post) {
+			$ids[] = is_object($post) ? (int) $post->ID : (int) $post;
 		}
 
+		return $ids;
+	}
+
+	/**
+	 * Where every badge is placed, in one scan.
+	 *
+	 * The query this replaces named no post type and no cache beyond the request,
+	 * and past 200 badge-bearing posts it ran once PER BADGE — an admin list page
+	 * issuing N unindexed full scans of wp_posts. On the site that reported
+	 * SMASH-2103 that table is 8.6GB. Same fix as the feed-location scan: filter to
+	 * post types an index can serve, ask for IDs first so no LONGTEXT crosses the
+	 * wire, batch the content fetch, and answer every badge from one pass.
+	 * See SMASH-2116, and DB::get_all_feed_shortcode_locations() for the original.
+	 *
+	 * @return array<int, array<int, array{ID: int, post_title: string, post_type: string}>>|false
+	 *         Placements per badge, or false when the scan could not run. False is
+	 *         not an empty map: one means "we do not know", the other "placed
+	 *         nowhere", and only the second licenses a sentence with "no" in it
+	 *         above a delete button. Mirrors DB::get_all_feed_shortcode_locations().
+	 *
+	 * @since 2.13.2
+	 */
+	private static function all_badge_instances()
+	{
 		global $wpdb;
 
-		// SQL narrows, PHP confirms — see content_places_badge(). The needles are
-		// the shortcode tag and the block comment, neither carrying an id.
-		$shortcode = '%[reviews-feed-badge%';
-		$block     = '%wp:sbr/trust-badge%';
+		// Keyed by blog: the transient is per-blog, so a bare static would hand
+		// blog A's map to blog B across switch_to_blog(). Mirrors DB.php:943-945.
+		$memo_key = get_current_blog_id();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- no index exists for shortcode content; memoised for the request immediately below.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
-				 WHERE post_status IN ( 'publish', 'draft', 'pending', 'future', 'private' )
-				   AND ( post_content LIKE %s OR post_content LIKE %s )
-				 ORDER BY post_title ASC
-				 LIMIT %d",
-				$shortcode,
-				$block,
-				self::INSTANCE_SCAN_LIMIT + 1
-			),
-			ARRAY_A
-		);
-
-		$out = array();
-
-		foreach ((array) $rows as $row) {
-			if (! is_array($row)) {
-				continue;
-			}
-
-			$out[] = array(
-				'ID'           => isset($row['ID']) && is_scalar($row['ID']) ? (int) $row['ID'] : 0,
-				'post_title'   => isset($row['post_title']) && is_scalar($row['post_title']) ? (string) $row['post_title'] : '',
-				'post_type'    => isset($row['post_type']) && is_scalar($row['post_type']) ? (string) $row['post_type'] : '',
-				'post_content' => isset($row['post_content']) && is_scalar($row['post_content']) ? (string) $row['post_content'] : '',
-			);
+		if (isset(self::$instance_map[ $memo_key ])) {
+			return self::$instance_map[ $memo_key ];
 		}
 
-		self::$content_candidates = $out;
+		$cached = get_transient(self::instance_map_cache_key());
+		if (is_array($cached)) {
+			self::$instance_map[ $memo_key ] = $cached;
+			return $cached;
+		}
 
-		return self::$content_candidates;
+		$post_types = self::instance_scan_post_types();
+		$badge_ids  = self::badge_ids();
+
+		if (empty($post_types) || empty($badge_ids)) {
+			self::$instance_map[ $memo_key ] = array();
+			return array();
+		}
+
+		$type_placeholders = implode(',', array_fill(0, count($post_types), '%s'));
+
+		$args = array( '%[reviews-feed-badge%', '%wp:sbr/trust-badge%' );
+		$args = array_merge($args, $post_types, array( self::INSTANCE_SCAN_CEILING ));
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cached in the transient below.
+		// The only interpolation is a generated list of %s markers; every value is
+		// passed to prepare(). Same shape as DB::feed_location_content_ids().
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$post_ids = self::read_rows(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts}
+				 WHERE ( post_content LIKE %s OR post_content LIKE %s )
+				   AND post_type IN ($type_placeholders)
+				   AND post_status IN ( 'publish', 'draft', 'pending', 'future', 'private' )
+				 ORDER BY post_date DESC
+				 LIMIT %d",
+				$args
+			),
+			true
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// get_col() answers array() for a failed query too. Returning an empty map
+		// AND caching it would tell every author their badges are placed nowhere,
+		// for twelve hours, under a delete button. Answer empty for this request and
+		// let the next one try again.
+		if ($post_ids === null) {
+			// Memoised for the request so a 20-badge list does not run the broken
+			// scan 20 times; NOT cached, so the next request tries again.
+			self::$instance_map[ $memo_key ] = false;
+
+			return false;
+		}
+
+		// read_rows() hands back the column as mixed; narrow it here rather than
+		// letting the batch query's %d placeholders take whatever came out.
+		$ids = array();
+		foreach ($post_ids as $post_id) {
+			$ids[] = (int) ( is_scalar($post_id) ? $post_id : 0 );
+		}
+		$post_ids = $ids;
+		$map      = array();
+
+		foreach (array_chunk($post_ids, self::INSTANCE_BATCH_SIZE) as $batch) {
+			$id_placeholders = implode(',', array_fill(0, count($batch), '%d'));
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- cached in the transient below.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- generated %d list; $batch goes through prepare().
+			$rows = self::read_rows(
+				$wpdb->prepare(
+					"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
+					 WHERE ID IN ($id_placeholders)
+					 ORDER BY post_date DESC",
+					$batch
+				)
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			// The first pass already refuses to cache a failed answer; without the
+			// same check here a failed batch silently drops every post from that
+			// batch on, and set_transient() stores the under-report for 12 hours —
+			// under the delete button this count gates.
+			if ($rows === null) {
+				self::$instance_map[ $memo_key ] = false;
+
+				return false;
+			}
+
+			foreach ((array) $rows as $row) {
+				if (! is_array($row) || ! isset($row['post_content'])) {
+					continue;
+				}
+
+				$content = (string) $row['post_content'];
+				$place   = array(
+					'ID'         => isset($row['ID']) && is_scalar($row['ID']) ? (int) $row['ID'] : 0,
+					'post_title' => isset($row['post_title']) && is_scalar($row['post_title']) ? (string) $row['post_title'] : '',
+					'post_type'  => isset($row['post_type']) && is_scalar($row['post_type']) ? (string) $row['post_type'] : '',
+				);
+
+				// Parsed ONCE per row, not once per row per badge. content_places_badge()
+				// runs parse_blocks() on every call, and this loop is rows x badges: at
+				// the 20,000-row ceiling with 40 badges that is 800,000 parses of the
+				// same strings on one cold request, which would have made the cache fill
+				// the new timeout. The id-bearing tests below are cheap by comparison.
+				$blocks = ( strpos($content, 'wp:sbr/trust-badge') !== false && function_exists('parse_blocks') )
+					? parse_blocks($content)
+					: null;
+
+				// The LIKEs carry no badge id — a block serialises its attributes in
+				// any order — so which badge a row places is decided here, once for the
+				// whole site rather than once per badge per page load.
+				foreach ($badge_ids as $badge_id) {
+					if (self::content_shortcode_places_badge($content, $badge_id)) {
+						$map[ $badge_id ][ $place['ID'] ] = $place;
+						continue;
+					}
+
+					if ($blocks !== null && self::blocks_place_badge($blocks, $badge_id)) {
+						$map[ $badge_id ][ $place['ID'] ] = $place;
+					}
+				}
+			}
+		}
+
+		foreach ($map as $badge_id => $places) {
+			$map[ $badge_id ] = array_values($places);
+		}
+
+		set_transient(self::instance_map_cache_key(), $map, self::INSTANCE_MAP_CACHE_TTL);
+		self::$instance_map[ $memo_key ] = $map;
+
+		return $map;
 	}
 
 	/**
 	 * Builder-meta rows that could place any badge, scanned once per request.
 	 *
-	 * Same shape as content_candidates(): the LIKE is `%reviews-feed-badge%` and
-	 * the id is applied by meta_places_badge() afterwards, so the query is
-	 * identical for every badge on the page.
+	 * Same shape as the content scan in all_badge_instances(): the LIKE carries no
+	 * badge id, and the id is applied by meta_places_badge() afterwards, so the
+	 * query is identical for every badge on the page.
 	 *
 	 * @param string            $placeholders Generated `%s` list for the meta keys.
 	 * @param array<int, mixed> $args         Meta keys followed by the LIKE needle.
 	 *
-	 * @return array<int, array{ID: int, post_title: string, post_type: string, meta_value: string}>
+	 * @return array<int, array{ID: int, post_title: string, post_type: string, meta_value: string}>|false
+	 *         False when the read failed — an empty result and a failed one look
+	 *         identical otherwise, and only one of them means "no placements".
 	 */
 	private static function meta_rows($placeholders, array $args)
 	{
@@ -862,7 +993,7 @@ class SBR_Trust_Badge_Store
 		// placeholder per filtered key, each the literal '%s' from array_fill, so
 		// no caller value reaches the SQL text.
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$rows = $wpdb->get_results(
+		$rows = self::read_rows(
 			$wpdb->prepare(
 				"SELECT p.ID, p.post_title, p.post_type, m.meta_value
 				 FROM {$wpdb->postmeta} m
@@ -873,10 +1004,19 @@ class SBR_Trust_Badge_Store
 				 ORDER BY p.post_title ASC
 				 LIMIT 200",
 				...$args
-			),
-			ARRAY_A
+			)
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		// The two content reads refuse to treat an empty result as an answer; this is
+		// the third read on the same path. Returning array() here would be harmless
+		// on its own — no matches looks the same — but memoising it is not: every
+		// later badge in the request reuses "no builder placements" from one failed
+		// query, and builder-placed badges read as unused. Not memoised, so the next
+		// caller tries again.
+		if ($rows === null) {
+			return false;
+		}
 
 		$out = array();
 
@@ -908,9 +1048,76 @@ class SBR_Trust_Badge_Store
 	 */
 	public static function flush_instance_scans()
 	{
-		self::$content_candidates       = null;
-		self::$content_candidates_by_id = array();
-		self::$meta_rows                = array();
+		self::$instance_map = array();
+		self::$meta_rows    = array();
+
+		// The map now outlives the request, so clearing the statics is no longer
+		// enough — a badge saved here would keep its old placements for 12 hours.
+		// Bumped rather than deleted: see INSTANCE_MAP_CACHE_KEY for the race a
+		// delete loses. The orphan carries its own TTL, so nothing has to sweep it.
+		update_option(self::INSTANCE_MAP_VERSION_OPTION, self::instance_map_version() + 1, false);
+	}
+
+	/**
+	 * Run a prepared read and say whether it failed, rather than leaving the caller
+	 * to ask $wpdb afterwards.
+	 *
+	 * wpdb answers array() both for a failed query and for one that matched
+	 * nothing, and on this path those mean opposite things — "we could not check"
+	 * versus "placed nowhere", the second of which is printed next to a delete
+	 * button. Reading `$wpdb->last_error` at each call site also reads as dead code
+	 * to a file-scoped analysis, which narrows it to '' after the first check; a
+	 * whole-project run does not, so the two disagreed and CI reported the ignore
+	 * that silenced one of them as unmatched. Failure is a property of the call.
+	 *
+	 * @param string       $sql    Prepared SQL.
+	 * @param bool         $column True to fetch a single column.
+	 *
+	 * @return array<int, mixed>|null Rows, or null when the query failed.
+	 *
+	 * @since 2.13.2
+	 */
+	private static function read_rows($sql, $column = false)
+	{
+		global $wpdb;
+
+		// $sql arrives already prepared — every caller on this path builds it with
+		// $wpdb->prepare() — but the sniff can only see a variable here.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $column ? $wpdb->get_col($sql) : $wpdb->get_results($sql, ARRAY_A);
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		if ('' !== (string) $wpdb->last_error) {
+			return null;
+		}
+
+		return (array) $rows;
+	}
+
+	/**
+	 * Current generation of the placement map, floored at 1.
+	 *
+	 * @return int
+	 *
+	 * @since 2.13.2
+	 */
+	private static function instance_map_version()
+	{
+		$version = get_option(self::INSTANCE_MAP_VERSION_OPTION, 1);
+
+		return is_numeric($version) && (int) $version > 0 ? (int) $version : 1;
+	}
+
+	/**
+	 * Transient key for this generation of the map.
+	 *
+	 * @return string
+	 *
+	 * @since 2.13.2
+	 */
+	public static function instance_map_cache_key()
+	{
+		return self::INSTANCE_MAP_CACHE_KEY . '_v' . self::instance_map_version();
 	}
 
 	/**
@@ -932,17 +1139,15 @@ class SBR_Trust_Badge_Store
 	 *
 	 * @param int $id Badge id.
 	 *
-	 * @return array{count: int, items: array<int, array{name: string, type: string, typeLabel: string}>}
+	 * @return array{count: int, items: array<int, array{name: string, type: string, typeLabel: string}>, status: string}
 	 */
 	public static function get_instances($id)
 	{
 		$id = (int) $id;
 
 		if ($id < 1) {
-			return array( 'count' => 0, 'items' => array() );
+			return array( 'count' => 0, 'items' => array(), 'status' => 'ok' );
 		}
-
-		global $wpdb;
 
 		// SQL narrows, PHP confirms. The query cannot do both jobs: a block
 		// serialises its attributes as JSON in any order, so `{"id":12}` and
@@ -954,50 +1159,43 @@ class SBR_Trust_Badge_Store
 		// placement was therefore invisible: the list said "used in 0 places"
 		// and the delete dialog told the author a live badge was safe to remove.
 		//
-		// Statuses match what SBR_Embed_Targets offers as a destination. It was
-		// `publish` plus `wp_auto_draft`, which is not a WordPress status at all
-		// (the real one is `auto-draft`), so a badge placed on a draft page
-		// counted as nowhere.
-		// The broad scan's LIKEs carry no badge id — they cannot, because a block
-		// serialises its attributes in any order — so its ORDER BY/LIMIT applies
-		// to every badge-bearing post on the site, not to this badge's. On a site
-		// past the limit that window holds the alphabetically-first posts whatever
-		// badge they place, so a badge placed only on a late-alphabet post came
-		// back with count 0 — and this count gates the delete confirmation, which
-		// told the author a live badge was safe to remove.
+		// Which badge each post places is now decided once for the whole site, in
+		// all_badge_instances(), rather than per badge on this screen. That retires
+		// the 200-row post_title window the CONTENT half worked within: it applied
+		// to the site's badge-bearing posts rather than to one badge's, so past the
+		// limit a badge placed only on a late-alphabet post read as zero.
 		//
-		// Used only while it is EXHAUSTIVE. Asking for one row more than the limit
-		// is how we know: fewer than that came back, so nothing was cut and the
-		// PHP filter below is exact. Past it, this badge gets its own query with
-		// its id in the SQL.
-		$candidates = self::content_candidates();
-
-		if (count($candidates) > self::INSTANCE_SCAN_LIMIT) {
-			$candidates = self::content_candidates_for($id);
-		}
+		// The builder-meta half below still carries that window (meta_rows(), ORDER
+		// BY post_title ASC LIMIT 200) and is still memoised per request rather than
+		// cached. Its query is served by the meta_key index, so it is not the full
+		// table scan SMASH-2116 is about, but the truncation bug is the same one.
+		// Left for its own change rather than widened into this one. See SMASH-2116.
+		$map     = self::all_badge_instances();
+		$unknown = ( $map === false );
+		$found   = ( ! $unknown && isset($map[ $id ]) ) ? $map[ $id ] : array();
 
 		$rows = array();
 		$seen = array();
 
-		foreach ((array) $candidates as $candidate) {
+		foreach ($found as $candidate) {
 			if (count($rows) >= self::MAX_INSTANCE_ROWS) {
 				break;
 			}
 
-			if (self::content_places_badge($candidate['post_content'], $id)) {
-				// Built rather than unset(): the row arrives as a known shape and
-				// unsetting a key leaves the analyser with a different one.
-				$rows[] = array(
-					'ID'         => $candidate['ID'],
-					'post_title' => $candidate['post_title'],
-					'post_type'  => $candidate['post_type'],
-				);
-
-				$seen[ $candidate['ID'] ] = true;
-			}
+			$rows[]                   = $candidate;
+			$seen[ $candidate['ID'] ] = true;
 		}
 
-		foreach (self::meta_candidates($id) as $candidate) {
+		$meta = self::meta_candidates($id);
+
+		if ($meta === false) {
+			// The builder half failed on its own. Same answer as a failed content
+			// scan: we do not know, so the caller must not print a zero.
+			$unknown = true;
+			$meta    = array();
+		}
+
+		foreach ($meta as $candidate) {
 			if (count($rows) >= self::MAX_INSTANCE_ROWS) {
 				break;
 			}
@@ -1050,8 +1248,12 @@ class SBR_Trust_Badge_Store
 		}
 
 		return array(
-			'count' => count($items),
-			'items' => $items,
+			'count'  => count($items),
+			'items'  => $items,
+			// Additive: existing readers of count/items are untouched. 'unknown'
+			// means the scan could not run, which the list and the delete dialog
+			// render as "couldn't check" rather than as zero. SMASH-2117.
+			'status' => $unknown ? 'unknown' : 'ok',
 		);
 	}
 
@@ -1074,7 +1276,9 @@ class SBR_Trust_Badge_Store
 	 *
 	 * @param int $id Badge id.
 	 *
-	 * @return array<int, array{ID: int, post_title: string, post_type: string}>
+	 * @return array<int, array{ID: int, post_title: string, post_type: string}>|false
+	 *         False when the builder-meta read failed, for the same reason
+	 *         all_badge_instances() answers false.
 	 */
 	protected static function meta_candidates($id)
 	{
@@ -1099,6 +1303,10 @@ class SBR_Trust_Badge_Store
 		// and it fires on a line inside the string, so the pair wraps the statement.
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$found = self::meta_rows($placeholders, $args);
+
+		if ($found === false) {
+			return false;
+		}
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		$out = array();
@@ -1198,21 +1406,43 @@ class SBR_Trust_Badge_Store
 	 */
 	protected static function content_places_badge($content, $id)
 	{
-		if ($content === '') {
+		if (self::content_shortcode_places_badge($content, $id)) {
+			return true;
+		}
+
+		if ((string) $content === '' || strpos((string) $content, 'wp:sbr/trust-badge') === false || ! function_exists('parse_blocks')) {
+			return false;
+		}
+
+		return self::blocks_place_badge(parse_blocks($content), $id);
+	}
+
+	/**
+	 * The shortcode half of content_places_badge(), on its own.
+	 *
+	 * Split out so the site-wide scan can parse a post's blocks once and then test
+	 * every badge against that one tree — calling the combined matcher per badge
+	 * re-parsed the same content for each of them. See all_badge_instances().
+	 *
+	 * @param string $content Post content.
+	 * @param int    $id      Badge id.
+	 *
+	 * @return bool
+	 *
+	 * @since 2.13.2
+	 */
+	protected static function content_shortcode_places_badge($content, $id)
+	{
+		if ((string) $content === '') {
 			return false;
 		}
 
 		// `\b` on the closing quote, not just the digits: without it badge 12
 		// matches id="120".
-		if (preg_match('/\[reviews-feed-badge[^\]]*\bid=["\']?' . preg_quote((string) $id, '/') . '["\'\]\s]/', $content)) {
-			return true;
-		}
-
-		if (strpos($content, 'wp:sbr/trust-badge') === false || ! function_exists('parse_blocks')) {
-			return false;
-		}
-
-		return self::blocks_place_badge(parse_blocks($content), $id);
+		return 1 === preg_match(
+			'/\[reviews-feed-badge[^\]]*\bid=["\']?' . preg_quote((string) $id, '/') . '["\'\]\s]/',
+			(string) $content
+		);
 	}
 
 	/**

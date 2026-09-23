@@ -1,0 +1,155 @@
+{
+	"version": "1.0.0",
+	"team_section": {
+		"avatars": [
+			"images/team/avatar-1.jpg",
+			"images/team/avatar-2.jpg",
+			"images/team/avatar-3.jpg",
+			"images/team/avatar-4.jpg",
+			"images/team/avatar-5.jpg",
+			"images/team/avatar-6.jpg",
+			"images/team/avatar-7.jpg",
+			"images/team/avatar-8.jpg",
+			"images/team/avatar-9.jpg",
+			"images/team/avatar-10.jpg",
+			"images/team/avatar-11.jpg"
+		],
+		"heading": "At Smash Balloon, we build software that helps you create beautiful responsive social media feeds for your website in minutes.",
+		"description": "<p>We&#8217;re on a mission to make it super simple to add social media feeds in WordPress. No more complicated setup steps, ugly iframe widgets, or negative page speed scores.</p>\n<p>Our plugins aren&#8217;t just easy to use, but completely customizable, reliable, and fast! Which is why over 1.5 million awesome users, just like you, choose to use them on their site.</p>\n"
+	},
+	"featured_promo": {
+		"badge_icon": "icons/sparkle.svg",
+		"badge_text": "New from Smash Balloon",
+		"heading": "The Best WordPress Chat Plugin",
+		"description": "<p>Easy, reliable and powerful WordPress Chat plugin. Give instant, helpful and personalized support to your users with the messaging apps they use every day. No coding needed.</p>\n",
+		"promo_image": "images/promo.png",
+		"button_enabled": true,
+		"button_text": "Install for Free",
+		"button_action": "install",
+		"button_plugin": "https://downloads.wordpress.org/plugin/smashballoon-wpchat-livechat-customer-support.zip"
+	},
+	"our_plugins": {
+		"heading": "Our Other Social Media Feed Plugins",
+		"description": "<p>We're more than just a [add plugin name here] plugin!  Check out our other plugins and add more content to your site.</p>\n",
+		"plugins": {
+			"facebook": {
+				"title": "Facebook Feed",
+				"description": "Display customizable Facebook feeds in WordPress",
+				"icon": "icons/facebook.svg",
+				"pro": "custom-facebook-feed-pro/custom-facebook-feed.php",
+				"free": "custom-facebook-feed/custom-facebook-feed.php",
+				"download_url": "https://downloads.wordpress.org/plugin/custom-facebook-feed.zip"
+			},
+			"instagram": {
+				"title": "Instagram Feed",
+				"description": "Display customizable Instagram feeds in WordPress",
+				"icon": "icons/instagram.svg",
+				"pro": "instagram-feed-pro/instagram-feed.php",
+				"free": "instagram-feed/instagram-feed.php",
+				"download_url": "https://downloads.wordpress.org/plugin/instagram-feed.zip"
+			},
+			"twitter": {
+				"title": "Twitter Feed",
+				"description": "Display customizable Twitter feeds in WordPress",
+				"icon": "icons/twitter.svg",
+				"pro": "custom-twitter-feeds-pro/custom-twitter-feed.php",
+				"free": "custom-twitter-feeds/custom-twitter-feed.php",
+				"download_url": "https://downloads.wordpress.org/plugin/custom-twitter-feeds.zip"
+			},
+			"youtube": {
+				"title": "YouTube Feed",
+				"description": "Display customizable YouTube feeds in WordPress",
+				"icon": "icons/youtube.svg",
+				"pro": "youtube-feed-pro/youtube-feed.php",
+				"free": "feeds-for-youtube/youtube-feed.php",
+				"download_url": "https://downloads.wordpress.org/plugin/feeds-for-youtube.zip"
+			},
+			"tiktok": {
+				"title": "TikTok Feed",
+				"description": "The easiest way to display your TikTok videos",
+				"icon": "icons/tiktok.svg",
+				"pro": "feeds-for-tiktok-pro/feeds-for-tiktok.php",
+				"free": "feeds-for-tiktok/feeds-for-tiktok.php",
+				"download_url": "https://downloads.wordpress.org/plugin/feeds-for-tiktok.zip"
+			},
+			"reviews": {
+				"title": "Reviews Feed",
+				"description": "Customer reviews from Google, Yelp, and more",
+				"icon": "icons/reviews.svg",
+				"pro": "reviews-feed-pro/sb-reviews-pro.php",
+				"free": "reviews-feed/sb-reviews.php",
+				"download_url": "https://downloads.wordpress.org/plugin/reviews-feed.zip"
+			},
+			"social_wall": {
+				"title": "Social Wall",
+				"description": "Connect all social feeds in a single feed with Social Wall",
+				"icon": "icons/social-wall.svg",
+				"pro": "social-wall/social-wall.php",
+				"demo_url": "https://smashballoon.com/demo/social-wall/",
+				"featured": true
+			},
+			"feed_analytics": {
+				"title": "Feed Analytics",
+				"description": "Get in depth analytics on all your social feeds in a single place",
+				"icon": "icons/analytics.svg",
+				"pro": "sb-feed-analytics/sb-feed-analytics.php",
+				"demo_url": "https://smashballoon.com/demo/feed-analytics/",
+				"featured": true
+			}
+		}
+	},
+	"recommended_plugins": {
+		"heading": "Plugins we recommend",
+		"plugins": {
+			"wpforms": {
+				"title": "WPForms",
+				"description": "The most beginner friendly drag & drop WordPress forms plugin allowing you to create beautiful contact forms, subscription forms, payment forms, and more in minutes, not hours!",
+				"icon": "icons/wpforms.svg",
+				"plugin_file": "wpforms-lite/wpforms.php",
+				"download_url": "https://downloads.wordpress.org/plugin/wpforms-lite.zip"
+			},
+			"monsterinsights": {
+				"title": "MonsterInsights",
+				"description": "MonsterInsights makes it \"effortless\" to properly connect your WordPress site with Google Analytics, so you can start making data-driven decisions to grow your business.",
+				"icon": "icons/monster-insights.svg",
+				"plugin_file": "google-analytics-for-wordpress/googleanalytics.php",
+				"download_url": "https://downloads.wordpress.org/plugin/google-analytics-for-wordpress.zip"
+			},
+			"optinmonster": {
+				"title": "OptinMonster",
+				"description": "Our high-converting optin forms like Exit-Intent® popups, Fullscreen Welcome Mats, and Scroll boxes help you dramatically boost conversions and get more email subscribers.",
+				"icon": "icons/optin-monster.svg",
+				"plugin_file": "optinmonster/optin-monster-wp-api.php",
+				"download_url": "https://downloads.wordpress.org/plugin/optinmonster.zip"
+			},
+			"wp_mail_smtp": {
+				"title": "WP Mail SMTP",
+				"description": "Make sure your website's emails reach the inbox. Our goal is to make email deliverability easy and reliable. Trusted by over 1 million websites.",
+				"icon": "icons/smtp.svg",
+				"plugin_file": "wp-mail-smtp/wp_mail_smtp.php",
+				"download_url": "https://downloads.wordpress.org/plugin/wp-mail-smtp.zip"
+			},
+			"rafflepress": {
+				"title": "RafflePress",
+				"description": "Turn your visitors into brand ambassadors! Easily grow your email list, website traffic, and social media followers with powerful viral giveaways & contests.",
+				"icon": "icons/raffle-press.svg",
+				"plugin_file": "rafflepress/rafflepress.php",
+				"download_url": "https://downloads.wordpress.org/plugin/rafflepress.zip"
+			},
+			"aioseo": {
+				"title": "All in One SEO Pack",
+				"description": "Out-of-the-box SEO for WordPress. Features like XML Sitemaps, SEO for custom post types, SEO for blogs, business sites, or ecommerce sites, and much more.",
+				"icon": "icons/aio-seo.svg",
+				"plugin_file": "all-in-one-seo-pack/all_in_one_seo_pack.php",
+				"download_url": "https://downloads.wordpress.org/plugin/all-in-one-seo-pack.zip"
+			},
+			"wpconsent": {
+				"title": "WPConsent",
+				"description": "Add a customizable cookie consent banner and keep your site compliant with privacy laws like GDPR and CCPA, with automatic cookie scanning and script blocking.",
+				"icon": "icons/wpconsent.svg",
+				"plugin_file": "wpconsent-cookies-banner-privacy-suite/wpconsent.php",
+				"download_url": "https://downloads.wordpress.org/plugin/wpconsent-cookies-banner-privacy-suite.zip"
+			}
+		}
+	}
+}
