@@ -32,27 +32,32 @@ if (!\function_exists('SmashBalloon\Reviews\Vendor\sbc_about_us_kses')) {
         return \wp_kses((string) $html, array('a' => array('href' => array(), 'target' => array(), 'rel' => array()), 'strong' => array(), 'b' => array(), 'em' => array(), 'i' => array(), 'span' => array('style' => array()), 'br' => array(), 'p' => array(), 'ul' => array(), 'ol' => array(), 'li' => array()));
     }
 }
-if (!\function_exists('SmashBalloon\Reviews\Vendor\sbc_about_us_bundled_icon')) {
+if (!\function_exists('SmashBalloon\Reviews\Vendor\sbc_about_us_icon')) {
     /**
-     * Resolve a plugin's icon from the BUNDLED sb-common data, ignoring any icon
-     * supplied by remote content. Smash Balloon's own plugin + recommended brand
-     * icons ship with the package and are fixed, so they must always come from
-     * sb-common rather than being overridable by the remote about-us.json.
+     * Resolve a plugin card icon from the content in use: the remote
+     * about-us.json when data-sharing consent is on, the bundled file when it
+     * is off (ContentProvider never serves remote data without consent). A
+     * plugin that exists only in the remote JSON therefore gets its icon from
+     * there. An empty icon falls back to the bundled icon for the same key.
      *
      * @param string $key       Plugin key (e.g. 'facebook', 'feed_analytics').
      * @param string $section   'our_plugins' | 'recommended_plugins'.
+     * @param array  $plugin    Plugin entry from the content in use.
      * @param string $asset_url Assets base URL.
-     * @return string Resolved icon URL, or '' when the key is not bundled.
+     * @return string Resolved icon URL, or '' when there is none.
      */
-    function sbc_about_us_bundled_icon($key, $section, $asset_url)
+    function sbc_about_us_icon($key, $section, $plugin, $asset_url)
     {
         static $bundled = null;
-        if (null === $bundled) {
-            $file = \dirname(__FILE__) . '/../assets/about-us-data.json';
-            $decoded = \is_readable($file) ? \json_decode(\file_get_contents($file), \true) : [];
-            $bundled = \is_array($decoded) ? $decoded : [];
+        $icon = isset($plugin['icon']) && \is_string($plugin['icon']) ? $plugin['icon'] : '';
+        if ('' === $icon) {
+            if (null === $bundled) {
+                $file = \dirname(__FILE__) . '/../assets/about-us-data.json';
+                $decoded = \is_readable($file) ? \json_decode(\file_get_contents($file), \true) : [];
+                $bundled = \is_array($decoded) ? $decoded : [];
+            }
+            $icon = isset($bundled[$section]['plugins'][$key]['icon']) ? $bundled[$section]['plugins'][$key]['icon'] : '';
         }
-        $icon = isset($bundled[$section]['plugins'][$key]['icon']) ? $bundled[$section]['plugins'][$key]['icon'] : '';
         if ('' === $icon) {
             return '';
         }

@@ -30,7 +30,7 @@ use SmashBalloon\Reviews\Common\Services\Upgrade\RoutineManagerService;
 use SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver_Manager;
 use SmashBalloon\Reviews\Common\Migrations\Reviews_Post;
 use SmashBalloon\Reviews\Common\Settings\SBR_Settings_Builder;
-use SmashBalloon\Reviews\Common\Admin\SBR_About_Builder;
+// use SmashBalloon\Reviews\Common\Admin\SBR_About_Builder;
 use SmashBalloon\Reviews\Common\Admin\SBR_Support_Builder;
 use SmashBalloon\Reviews\Common\Tooltip_Wizard;
 use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
@@ -68,7 +68,7 @@ class ServiceContainer extends ServiceProvider
 		SBR_Feed_Builder::class,
 		Clear_Cache::class,
 		SBR_Settings_Builder::class,
-		SBR_About_Builder::class,
+		// SBR_About_Builder::class,
 		SBR_Support_Builder::class,
 		SBR_Admin_Notice::class,
 		SBR_Plugin_Insltaller::class,

@@ -26,7 +26,7 @@ echo \esc_html($section_heading);
 foreach ($rec_plugins as $key => $plugin) {
     $installed = !empty($plugin['installed']);
     $activated = !empty($plugin['activated']);
-    $icon_url = sbc_about_us_bundled_icon($key, 'recommended_plugins', $asset_url);
+    $icon_url = sbc_about_us_icon($key, 'recommended_plugins', $plugin, $asset_url);
     ?>
 			<div class="sbc-about-us-rec-card" data-plugin-key="<?php 
     echo \esc_attr($key);
@@ -83,7 +83,7 @@ foreach ($rec_plugins as $key => $plugin) {
         ?>">
 								<img src="<?php 
         echo \esc_url($asset_url . 'icons/download.svg');
-        ?>" alt="" width="10" height="10" />
+        ?>" alt="" width="16" height="16" />
 								<?php 
         \esc_html_e('Install', 'sb-common');
         ?>

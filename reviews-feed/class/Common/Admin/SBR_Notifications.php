@@ -354,16 +354,38 @@ class SBR_Notifications extends ServiceProvider
 			return array();
 		}
 
+		// Honour the consent source switch so local <-> remote is an exclusive
+		// swap rather than additive (mirrors instagram-feed). 'none' hides
+		// everything; 'local' serves the Consent package's bundled fallback;
+		// 'remote' uses the fetched feed as before.
+		$source = class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager')
+			? \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager::notification_source()
+			: 'remote';
+
+		if ('none' === $source) {
+			return array();
+		}
 
 		$option = $this->get_option();
 
-		// Update notifications using async task.
-		if (empty($option['update']) || sbr_get_current_time() > $option['update'] + DAY_IN_SECONDS) {
-			$this->update();
+		if ('local' === $source) {
+			$feed = class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentNotifications')
+				? \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentNotifications::load_local_fallback(self::PLUGIN, \SmashBalloon\Reviews\Common\Util::sbr_is_pro())
+				: array();
+			// dismiss() records ids in this plugin's option, which the package's
+			// local verify() does not read, so filter dismissed local notices here.
+			$feed = array_values(array_filter($feed, function ($notification) use ($option) {
+				return ! in_array($notification['id'], $option['dismissed'], true);
+			}));
+		} else {
+			// Update notifications using async task.
+			if (empty($option['update']) || sbr_get_current_time() > $option['update'] + DAY_IN_SECONDS) {
+				$this->update();
+			}
+			$feed = ! empty($option['feed']) ? $this->verify_active($option['feed']) : array();
 		}
 
 		$events = ! empty($option['events']) ? $this->verify_active($option['events']) : array();
-		$feed   = ! empty($option['feed']) ? $this->verify_active($option['feed']) : array();
 
 		// If there is a new user notification, add it to the beginning of the notification list
 		$sbr_newuser = new SBR_New_User();
@@ -433,6 +455,17 @@ class SBR_Notifications extends ServiceProvider
 	 */
 	public function update()
 	{
+		// The Consent package owns the source-switch + local-fallback path. Only
+		// fire the remote fetch when consent resolves to 'remote'; 'local' and
+		// 'none' are no-ops here (mirrors instagram-feed).
+		$source = class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager')
+			? \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager::notification_source()
+			: 'remote';
+
+		if ('remote' !== $source) {
+			return;
+		}
+
 		$feed   = $this->fetch_feed();
 		$option = $this->get_option();
 		update_option(
@@ -559,15 +592,18 @@ class SBR_Notifications extends ServiceProvider
 		}
 
 		$notifications = $this->get();
+
+		// Keep the persisted marketing store in sync with the active consent
+		// source — an empty/none result clears it — so notices from a previous
+		// source can't linger (mirrors instagram-feed).
+		if (class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentNotifications')) {
+			\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentNotifications::reconcile_from_notifications('reviews-feed', $notifications);
+		}
+
 		if (empty($notifications)) {
 			return null;
 		}
 
-		$is_review_notice = ! empty($notifications[0]) && ! empty($notifications[0]['id']) && $notifications[0]['id'] === 'review';
-
-		if (! $is_review_notice || ! empty($_GET['feed_id'])) {
-			return null;
-		}
 
 		$notifications_html   = '';
 		$current_class        = ' current';

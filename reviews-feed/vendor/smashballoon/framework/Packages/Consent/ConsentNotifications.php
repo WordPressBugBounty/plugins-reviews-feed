@@ -1,14 +1,13 @@
 <?php
 
 /**
- * ConsentNotifications — owns the canonical sbc_* notifications fetch + cache.
+ * ConsentNotifications — shared notification verification and consent sync.
  *
  * Lifted from instagram-feed's class-sbi-notifications.php (Phase 0). Only the
- * methods relevant to consent (verify, load_local_fallback, source-switching
- * update, two-store sync refresh_notifications) are kept here. Per-plugin
- * presentation (output() carousel rendering, dismissal endpoints, etc.) stays
- * in each consumer plugin's own subclass — those classes can read from the
- * shared `sbc_notifications` option populated here.
+ * methods relevant to consent (verify, load_local_fallback, two-store sync
+ * refresh_notifications) are kept here. Fetching, caching, presentation and
+ * dismissal stay in each consumer plugin's own notifications class, which
+ * owns its <prefix>_notifications option.
  *
  * @package Smashballoon\Framework\Packages\Consent
  */
@@ -20,8 +19,6 @@ if (!defined('ABSPATH')) {
 }
 class ConsentNotifications
 {
-    const SOURCE_URL = 'https://plugin.smashballoon.com/notifications.json';
-    const OPTION_NAME = 'sbc_notifications';
     /**
      * Short aliases used in the remote feed → canonical plugin slugs used
      * by consumer plugins when calling ConsentManager::init(). Substring
@@ -32,6 +29,15 @@ class ConsentNotifications
      * @var array<string,string>
      */
     private static $target_aliases = array('instagram' => 'instagram-feed', 'facebook' => 'custom-facebook-feed', 'twitter' => 'custom-twitter-feeds', 'youtube' => 'feeds-for-youtube', 'tiktok' => 'tiktok-feeds', 'reviews' => 'reviews-feed');
+    /**
+     * Short plugin slug => the option where that plugin's dismiss() handler
+     * records dismissed notification ids. verify() merges these in when a
+     * calling plugin identifies itself, so a notice dismissed in the plugin
+     * UI stays gone instead of coming back from local.json on reload.
+     *
+     * @var array<string,string>
+     */
+    private static $dismissed_options = array('instagram' => 'sbi_notifications', 'facebook' => 'cff_notifications', 'twitter' => 'ctf_notifications', 'youtube' => 'sby_notifications', 'tiktok' => 'sbtt_notifications', 'reviews' => 'sbr_notifications');
     /**
      * Reverse of $target_aliases: canonical plugin slug → short brand name.
      * Used to build the {plugin}-{edition} utm_campaign value (e.g.
@@ -50,29 +56,17 @@ class ConsentNotifications
         return $short === \false ? $slug : $short;
     }
     /**
-     * Refresh the canonical `sbc_notifications` cache against the current
-     * consent source, then clear stale marketing-group notices in every
-     * registered plugin's SBNotices store so the next admin_init re-renders
-     * from the new cache.
+     * Clear stale marketing-group notices in every registered plugin's
+     * SBNotices store so the next admin_init re-renders from the current
+     * consent source.
      *
-     * Cost: O(N) over registered plugin slugs. One outbound HTTP request
-     * only when DSC=on; otherwise a single local file read.
+     * Cost: O(N) over registered plugin slugs. No HTTP request.
      */
     public static function refresh_notifications()
     {
-        $source = ConsentManager::notification_source();
-        if ($source === 'remote') {
-            $feed = self::fetch_feed();
-        } elseif ($source === 'local') {
-            $feed = self::load_local_fallback();
-        } else {
-            $feed = array();
-        }
-        $existing = get_option(self::OPTION_NAME, array());
-        update_option(self::OPTION_NAME, array('update' => time(), 'feed' => $feed, 'events' => isset($existing['events']) ? $existing['events'] : array(), 'dismissed' => isset($existing['dismissed']) ? $existing['dismissed'] : array()));
         // Two-store sync: drop marketing-group notices in every registered
-        // plugin's SBNotices instance so on the next admin_init the freshly
-        // re-fetched/cleared cache is what the user sees. Without this,
+        // plugin's SBNotices instance so on the next admin_init the current
+        // consent source is what the user sees. Without this,
         // remotely-fetched notices linger after DSC flips off.
         foreach (ConsentManager::get_registered_slugs() as $slug) {
             self::reconcile_marketing_store($slug, array());
@@ -149,26 +143,6 @@ class ConsentNotifications
         self::reconcile_marketing_store($slug, $expected_ids);
     }
     /**
-     * Fetch notifications from the remote feed.
-     *
-     * @return array
-     */
-    public static function fetch_feed()
-    {
-        $res = wp_safe_remote_get(self::SOURCE_URL, array('timeout' => 10));
-        if (is_wp_error($res)) {
-            return array();
-        }
-        if (200 !== (int) wp_remote_retrieve_response_code($res)) {
-            return array();
-        }
-        $body = wp_remote_retrieve_body($res);
-        if (empty($body)) {
-            return array();
-        }
-        return self::verify(json_decode($body, \true));
-    }
-    /**
      * Load notifications from the bundled local.json fallback. The payload
      * is run through verify() so it is held to the same schema as remote.
      *
@@ -219,8 +193,9 @@ class ConsentNotifications
         if (!is_array($notifications) || empty($notifications)) {
             return $data;
         }
-        $option = get_option(self::OPTION_NAME, array());
-        $dismissed = isset($option['dismissed']) ? (array) $option['dismissed'] : array();
+        // Dismissed ids come only from the calling plugin's own
+        // <prefix>_notifications option (plus the sbc_consent_dismissed_ids filter).
+        $dismissed = array();
         // When a calling plugin identifies itself, scope targeting to that one
         // plugin (its short slug + canonical). Otherwise fall back to every
         // registered plugin — the legacy, multi-plugin-unsafe behaviour.
@@ -228,6 +203,12 @@ class ConsentNotifications
         if ($slug !== '') {
             $canonical_self = isset(self::$target_aliases[$slug]) ? self::$target_aliases[$slug] : $slug;
             $scope = array($slug, $canonical_self);
+            $short = self::short_slug($slug);
+            if (isset(self::$dismissed_options[$short])) {
+                $own = get_option(self::$dismissed_options[$short], array());
+                $dismissed = !empty($own['dismissed']) ? (array) $own['dismissed'] : array();
+            }
+            $dismissed = (array) apply_filters('sbc_consent_dismissed_ids', $dismissed, $slug);
         } else {
             $scope = ConsentManager::get_registered_slugs();
         }

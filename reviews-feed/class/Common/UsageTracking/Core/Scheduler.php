@@ -25,6 +25,10 @@ class Scheduler {
 		$this->cleanup_legacy();
 
 		if (! Config::is_enabled()) {
+			// Never leave a telemetry cron scheduled without consent: clear any
+			// existing hook (e.g. after the per-plugin toggle or DSC consent is
+			// turned off) rather than merely skipping the (re)schedule.
+			$this->unschedule();
 			return;
 		}
 

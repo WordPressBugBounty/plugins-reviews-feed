@@ -55,9 +55,8 @@ class ConsentCron
         return $schedules;
     }
     /**
-     * Cron callback. Fetches a fresh remote notifications feed and writes
-     * the canonical sbc_notifications cache. Plugin subclasses may read
-     * from this cache via their own SBI_/CFF_/etc. notifications classes.
+     * Cron callback. Clears stale marketing-group notices in every plugin's
+     * SBNotices store. Each plugin fetches and caches its own feed.
      */
     public static function on_cron($source = '')
     {

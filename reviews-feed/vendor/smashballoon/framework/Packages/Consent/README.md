@@ -46,7 +46,6 @@ ConsentManager::reconcile_cron();         // idempotent
 | Option (DSC)             | `sbc_data_sharing_consent`          |
 | Option (notifications)   | `sbc_in_plugin_notifications`       |
 | Option (modal dismiss)   | `sbc_consent_modal_dismissed`       |
-| Cache (notifications)    | `sbc_notifications`                 |
 | AJAX action              | `wp_ajax_sbc_save_consent_choice`   |
 | Nonce action             | `sbc-consent`                       |
 | Cron hook                | `sbc_notification_update`           |

@@ -62,26 +62,29 @@ class SBNotices
     private $notice_option;
     private $group_notice_option;
     /**
-     * The single instance of the class.
+     * One instance per plugin slug.
      *
-     * @var SBNotices
+     * @var array<string,SBNotices>
      */
-    protected static $instance = null;
+    protected static $instances = [];
     /**
-     * Main SBNotices Instance.
+     * SBNotices instance for a plugin.
      *
-     * Ensures only one instance of SBNotices is loaded or can be loaded.
+     * Keyed by slug so each plugin gets its own notice store and display
+     * hook. A single shared instance let whichever plugin loaded first own
+     * the store, so e.g. Instagram notices never rendered with Facebook active.
      *
      * @since 1.0.0
      * @static
-     * @return SBNotices - Main instance.
+     * @param string $plugin_slug Plugin slug, e.g. 'instagram-feed'.
+     * @return SBNotices
      */
     public static function instance($plugin_slug = '')
     {
-        if (is_null(self::$instance)) {
-            self::$instance = new self($plugin_slug);
+        if (!isset(self::$instances[$plugin_slug])) {
+            self::$instances[$plugin_slug] = new self($plugin_slug);
         }
-        return self::$instance;
+        return self::$instances[$plugin_slug];
     }
     /**
      * Constructor

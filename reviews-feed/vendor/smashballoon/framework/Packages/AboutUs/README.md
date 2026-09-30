@@ -40,12 +40,12 @@ AboutUsManager::init([
 
 ## Content API
 
-Content is fetched from a single canonical endpoint, `https://plugin.smashballoon.com/about-us.json` (filterable via `sbc_about_us_remote_url`), and cached in one shared option (`sbc_about_us_content`) for the whole site — the plugin lists are identical across Smash Balloon plugins, and the only per-plugin value (the `{plugin_name}` token) is interpolated at render time.
+Content is fetched from a single canonical endpoint, `https://plugin.smashballoon.com/about-us.json` (filterable via `sbc_about_us_remote_url`), and cached in one shared option (`sbc_about_us_content`) for the whole site because the content is identical across Smash Balloon plugins.
 
 Refresh happens in two ways, mirroring the notifications feed:
 
-- **Cron** — a single `sbc_about_us_update` event on the `daily` schedule, registered once in `AboutUsManager::boot()` (lazily, no per-plugin activation hook).
-- **Lazy on-load** — when the About Us page is viewed and the cached content is older than `DAY_IN_SECONDS`, it refreshes synchronously.
+- **Cron** — a single `sbc_about_us_update` event on the `twicedaily` schedule, registered once in `AboutUsManager::boot()` (lazily, no per-plugin activation hook).
+- **Lazy on-load** — when the About Us page is viewed and the cached content is older than 12 hours, it refreshes synchronously. The fetch adds an hourly `?v=YmdH` query arg so a backend publish is not hidden by the Cloudflare edge cache (4 hours).
 
 `ContentProvider::refresh()` resolves content in this order: freshly fetched remote → last-good cached option → the bundled `assets/about-us-data.json`. On a failed fetch the last-good data is kept and the timestamp is still bumped, so an unavailable endpoint is not re-hit on every page load.
 

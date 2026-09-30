@@ -152,6 +152,26 @@ $customizerContainer->set(\Smashballoon\Customizer\V2\Config\Proxy::class, new \
 $serviceContainerClass = SmashBalloon\Reviews\Common\Util::sbr_is_pro() ? \SmashBalloon\Reviews\Pro\ServiceContainer::class : \SmashBalloon\Reviews\Common\ServiceContainer::class;
 $commonServiceContainer = \SmashBalloon\Reviews\Common\Container::get_instance()->get($serviceContainerClass)->register();
 
+// Initialize the About Us page.
+if ( class_exists( '\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\AboutUs\AboutUsManager' ) ) {
+	$sbr_about_plugin_file = defined( 'SBR_PRO' ) && SBR_PRO
+		? SBR_PLUGIN_DIR . 'sb-reviews-pro.php'
+		: SBR_PLUGIN_DIR . 'sb-reviews.php';
+
+	\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\AboutUs\AboutUsManager::init(
+		array(
+			'plugin_slug'    => 'sb-reviews',
+			'plugin_name'    => 'Reviews Feed',
+			'plugin_version' => SBRVER,
+			'plugin_file'    => $sbr_about_plugin_file,
+			'menu_parent'    => 'sbr',
+			'page_slug'      => 'sbr-about',
+			'menu_position'  => 4,
+			'is_pro'         => defined( 'SBR_PRO' ) && SBR_PRO,
+		)
+	);
+}
+
 $sbr_main_plugin_file = defined('SBR_PRO') && SBR_PRO
 	? SBR_PLUGIN_DIR . 'sb-reviews-pro.php'
 	: SBR_PLUGIN_DIR . 'sb-reviews.php';
@@ -178,4 +198,20 @@ if (class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\F
 		'enable_help_widget' => true,
 		'help_url'           => 'https://smashballoon.com/docs/reviews/',
 	]);
+}
+
+// Initialize the WP-compliance Consent package.
+if ( class_exists( '\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager' ) ) {
+	$sbr_pro = ( class_exists( '\SmashBalloon\Reviews\Common\Util' ) && \SmashBalloon\Reviews\Common\Util::sbr_is_pro() );
+	\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager::init(
+		array(
+			'plugin_slug'         => 'reviews-feed',
+			'plugin_name'         => $sbr_pro ? 'Reviews Feed Pro' : 'Reviews Feed',
+			'utm_slug'            => 'reviews',
+			'legacy_class'        => 'SBR_Consent',
+			'is_pro'              => $sbr_pro,
+			'show_reprompt_modal' => ! $sbr_pro,
+			'pro_init_option'     => $sbr_pro ? 'sbr_pro_consent_initialized' : null,
+		)
+	);
 }

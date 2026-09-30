@@ -4,7 +4,7 @@
  * Content Provider - Loads About Us page content.
  *
  * Content is fetched once per site from the central endpoint and cached in a
- * shared option (refreshed daily via a single cron event registered in
+ * shared option (refreshed twice daily via a single cron event registered in
  * AboutUsManager). The bundled JSON file is the guaranteed fallback when the
  * remote content has never been fetched or is unavailable.
  *
@@ -37,8 +37,7 @@ class ContentProvider
     const CRON_HOOK = 'sbc_about_us_update';
     /**
      * Default remote endpoint. The content is identical across Smash Balloon
-     * plugins (only the {plugin_name} token differs, and that is interpolated at
-     * render time), so a single canonical file serves every plugin on the site.
+     * plugins, so a single canonical file serves every plugin on the site.
      *
      * @var string
      */
@@ -98,7 +97,7 @@ class ContentProvider
         }
         // Lazily refresh when the cache has never been populated or has expired.
         // The refresh is only ever triggered while viewing the About Us page,
-        // and at most once per day; the cron handles background refreshes.
+        // and at most every 12 hours; the cron handles background refreshes.
         if (self::needs_refresh()) {
             $fresh = self::refresh();
             if (is_array($fresh) && !empty($fresh)) {
@@ -119,7 +118,7 @@ class ContentProvider
     /**
      * Fetch the remote content and update the shared cache.
      *
-     * Runs both from the daily cron and from the lazy on-page check. On failure
+     * Runs both from the twice-daily cron and from the lazy on-page check. On failure
      * it keeps the last-good data but still bumps the timestamp, so an
      * unavailable endpoint is not re-hit on every page load.
      *
@@ -135,7 +134,7 @@ class ContentProvider
         $data = is_array($fetched) ? $fetched : $current;
         // Only treat this as a real update when the remote content actually
         // differs from what is already cached. When nothing changed we leave the
-        // stored content alone. A consent toggle or the daily cron does not
+        // stored content alone. A consent toggle or the cron does not
         // churn the content or fire change-driven work for identical data.
         $changed = self::content_changed($current, $data);
         update_option(self::OPTION_NAME, ['update' => time(), 'data' => $data], \false);
@@ -174,7 +173,7 @@ class ContentProvider
      * Wired to the shared `sbc_consent_changed` action (see AboutUsManager::boot)
      * so that the moment a user opts in to data sharing — for any Smash Balloon
      * feed plugin — the About Us content is fetched immediately, rather than
-     * waiting for the daily cron or for the user to open the About Us page.
+     * waiting for the cron or for the user to open the About Us page.
      *
      * @param array $flags Consent flags payload: [ 'dsc' => bool, 'notif' => bool ].
      *
@@ -182,7 +181,7 @@ class ContentProvider
      */
     public static function refresh_on_consent($flags = [])
     {
-        // Schedule or clear the daily remote-fetch cron to match the new consent
+        // Schedule or clear the remote-fetch cron to match the new consent
         // state (also handles opt-out: the cron must not linger once DSC is off).
         self::reconcile_cron();
         // Only fetch when data-sharing consent is now ON.
@@ -195,7 +194,7 @@ class ContentProvider
         }
     }
     /**
-     * Keep the daily refresh cron in sync with data-sharing consent.
+     * Keep the refresh cron in sync with data-sharing consent.
      *
      * WP.org compliance: a scheduled event whose callback contacts an external
      * URL must not exist while the user has not opted in (a consent gate inside
@@ -207,10 +206,13 @@ class ContentProvider
      */
     public static function reconcile_cron()
     {
-        $scheduled = (bool) wp_next_scheduled(self::CRON_HOOK);
+        $schedule = wp_get_schedule(self::CRON_HOOK);
+        $scheduled = \false !== $schedule;
         if (self::remote_allowed()) {
-            if (!$scheduled) {
-                wp_schedule_event(time(), 'daily', self::CRON_HOOK);
+            // Also moves sites still on the old daily schedule to twice daily.
+            if ('twicedaily' !== $schedule) {
+                wp_clear_scheduled_hook(self::CRON_HOOK);
+                wp_schedule_event(time(), 'twicedaily', self::CRON_HOOK);
             }
         } elseif ($scheduled) {
             wp_clear_scheduled_hook(self::CRON_HOOK);
@@ -229,7 +231,7 @@ class ContentProvider
         if (empty($option['data']) || !is_array($option['data'])) {
             return \true;
         }
-        return empty($option['update']) || time() > (int) $option['update'] + \DAY_IN_SECONDS;
+        return empty($option['update']) || time() > (int) $option['update'] + 12 * \HOUR_IN_SECONDS;
     }
     /**
      * Perform the remote request and decode the response.
@@ -247,6 +249,10 @@ class ContentProvider
         if (empty($url)) {
             return null;
         }
+        // Per-minute cache-buster: Cloudflare keeps about-us.json for 4 hours per
+        // edge, so a cron run would otherwise get a stale copy. Minute buckets
+        // still let the edge absorb the burst of sites refreshing together.
+        $url = add_query_arg('v', gmdate('YmdHi'), $url);
         $response = wp_safe_remote_get($url, ['timeout' => 10]);
         if (is_wp_error($response)) {
             return null;

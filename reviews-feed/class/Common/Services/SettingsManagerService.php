@@ -57,7 +57,10 @@ class SettingsManagerService extends ServiceProvider
 		// Legacy interim key; consent now lives in the 'usagetracking' key.
 		unset($updated_settings['smash_usage_tracking']);
 
-		$result = update_option($this->settings_options, $updated_settings);
+		// update_option() returns false when the value is unchanged; that is not
+		// a failed save, so treat a no-op save as success.
+		$result = $updated_settings === $current_settings
+			|| update_option($this->settings_options, $updated_settings);
 
 		// Schedule/unschedule the usage tracking cron based on consent.
 		if (array_key_exists('usagetracking', $updated_settings)) {

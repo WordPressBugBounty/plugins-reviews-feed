@@ -17,9 +17,6 @@ if (!\defined('ABSPATH')) {
 }
 $section_heading = isset($our_sec['heading']) ? $our_sec['heading'] : \__('Our Other Social Media Feed Plugins', 'sb-common');
 $section_desc = isset($our_sec['description']) ? $our_sec['description'] : '';
-$plugin_name = isset($config['plugin_name']) ? $config['plugin_name'] : '';
-// Replace {plugin_name} placeholder.
-$section_desc = \str_replace('{plugin_name}', $plugin_name, $section_desc);
 // Split the single plugins list into regular and featured (flagged) cards.
 $regular_plugins = \array_filter($sb_plugins, function ($plugin) {
     return empty($plugin['featured']);
@@ -47,7 +44,7 @@ if ($section_desc) {
 foreach ($regular_plugins as $key => $plugin) {
     $installed = !empty($plugin['installed']);
     $activated = !empty($plugin['activated']);
-    $icon_url = sbc_about_us_bundled_icon($key, 'our_plugins', $asset_url);
+    $icon_url = sbc_about_us_icon($key, 'our_plugins', $plugin, $asset_url);
     ?>
 			<div class="sbc-about-us-plugin-card" data-plugin-key="<?php 
     echo \esc_attr($key);
@@ -138,7 +135,7 @@ if (!empty($featured_plugins)) {
     foreach ($featured_plugins as $key => $plugin) {
         $installed = !empty($plugin['installed']);
         $activated = !empty($plugin['activated']);
-        $icon_url = sbc_about_us_bundled_icon($key, 'our_plugins', $asset_url);
+        $icon_url = sbc_about_us_icon($key, 'our_plugins', $plugin, $asset_url);
         $demo_url = isset($plugin['demo_url']) ? $plugin['demo_url'] : '';
         ?>
 				<div class="sbc-about-us-featured-card" data-plugin-key="<?php 

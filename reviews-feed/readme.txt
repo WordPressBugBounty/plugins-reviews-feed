@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.13.1
+Stable tag: 2.14.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,13 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.14.0 =
+* New: An About Us page under the Reviews Feed menu with plugin information and helpful links.
+* New: A Data Sharing settings tab lets you choose whether usage data is shared and whether in-plugin notifications are shown.
+* Tweak: Usage data is only sent, and remote notices are only fetched, when data sharing is allowed.
+* Fix: Saving settings without making any changes no longer shows an error message.
+* Fix: In-plugin notifications now appear as expected, and a dismissed notification stays dismissed.
+
 = 2.13.1 =
 * Fix: The All Feeds page opens again on sites with a lot of content. Working out where each feed was used meant searching every post on the site, twice per feed, so on large sites the page could sit loading for around ten minutes. It now does that work once and remembers it.
 * Fix: Feeds added with the Reviews block, the older feed block, a synced pattern, a template part or the Elementor widget are now counted under "Instances". Before this, only feeds added with a shortcode were, so a feed that was live on your site could be listed as used in 0 places right next to the delete button.

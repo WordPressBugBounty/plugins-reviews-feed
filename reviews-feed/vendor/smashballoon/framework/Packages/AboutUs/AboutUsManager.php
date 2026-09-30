@@ -94,7 +94,7 @@ class AboutUsManager
         ContentProvider::reconcile_cron();
         // The moment a user opts in to data sharing (for any Smash Balloon feed
         // plugin), force-fetch the About Us content if the cache is empty or
-        // stale — don't wait for the daily cron or an About Us page view.
+        // stale — don't wait for the cron or an About Us page view.
         add_action('sbc_consent_changed', [ContentProvider::class, 'refresh_on_consent']);
     }
     /**

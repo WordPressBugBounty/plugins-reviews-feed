@@ -33,7 +33,7 @@ humbug_phpscoper_expose_class('ComposerAutoloaderInit84e16c3d027f83f5f9e0fadd381
 
 // Function aliases. For more information see:
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases
-if (!function_exists('sbc_about_us_bundled_icon')) { function sbc_about_us_bundled_icon() { return \SmashBalloon\Reviews\Vendor\sbc_about_us_bundled_icon(...func_get_args()); } }
+if (!function_exists('sbc_about_us_icon')) { function sbc_about_us_icon() { return \SmashBalloon\Reviews\Vendor\sbc_about_us_icon(...func_get_args()); } }
 if (!function_exists('sbc_about_us_kses')) { function sbc_about_us_kses() { return \SmashBalloon\Reviews\Vendor\sbc_about_us_kses(...func_get_args()); } }
 
 return $loader;

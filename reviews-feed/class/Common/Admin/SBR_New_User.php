@@ -50,6 +50,26 @@ class SBR_New_User extends SBR_Notifications {
 	}
 
 	/**
+	 * Whether the current consent state permits remote fetches.
+	 *
+	 * Mirrors the per-edition default via the shared ConsentManager (Pro on by
+	 * default, Free off until opt-in); defaults to true when the Consent package
+	 * is unavailable so behaviour is unchanged on installs without it.
+	 *
+	 * @since 1.2
+	 *
+	 * @return bool
+	 */
+	private function consent_allows_remote()
+	{
+		$source = class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager')
+			? \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager::notification_source()
+			: 'remote';
+
+		return 'remote' === $source;
+	}
+
+	/**
 	 * Verify notification data before it is saved.
 	 *
 	 * @param array $notifications Array of notifications items to verify.
@@ -164,8 +184,11 @@ class SBR_New_User extends SBR_Notifications {
 
 		$option = $this->get_option();
 
-		// Only update if does not exist.
-		if (empty($option['update'])) {
+		// Only update if it does not exist. The remote fetch is consent-gated,
+		// so skip the call entirely while consent is withheld — otherwise the
+		// never-written 'update' timestamp would re-trigger this no-op on every
+		// admin page load. The deferred fetch still runs once consent is granted.
+		if (empty($option['update']) && $this->consent_allows_remote()) {
 			$this->update();
 		}
 
@@ -220,6 +243,13 @@ class SBR_New_User extends SBR_Notifications {
 	 */
 	public function update()
 	{
+		// SMASH-1245: gate remote new-user feed fetch on consent so the remote
+		// request only fires once the user has consented. Kept here as well as in
+		// get() because update() is public (defense in depth).
+		if (! $this->consent_allows_remote()) {
+			return;
+		}
+
 		$feed   = $this->fetch_feed();
 		$option = $this->get_option();
 

@@ -30,7 +30,7 @@
 	},
 	"our_plugins": {
 		"heading": "Our Other Social Media Feed Plugins",
-		"description": "<p>We're more than just a [add plugin name here] plugin!  Check out our other plugins and add more content to your site.</p>\n",
+		"description": "<p>We're more than just a plugin!<br />\nCheck out our other plugins and add more content to your site.</p>\n",
 		"plugins": {
 			"facebook": {
 				"title": "Facebook Feed",
@@ -68,7 +68,7 @@
 				"title": "TikTok Feed",
 				"description": "The easiest way to display your TikTok videos",
 				"icon": "icons/tiktok.svg",
-				"pro": "feeds-for-tiktok-pro/feeds-for-tiktok.php",
+				"pro": "tiktok-feeds-pro/tiktok-feeds-pro.php",
 				"free": "feeds-for-tiktok/feeds-for-tiktok.php",
 				"download_url": "https://downloads.wordpress.org/plugin/feeds-for-tiktok.zip"
 			},
