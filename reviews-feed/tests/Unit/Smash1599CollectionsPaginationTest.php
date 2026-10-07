@@ -61,6 +61,15 @@ final class Smash1599CollectionsPaginationTest extends TestCase
 				$this->var  = $var;
 			}
 
+			/**
+			 * Real wpdb has this (wp-db.php) and DB.php now calls it before the
+			 * LIKE CONCAT bindings, so the double has to carry it or the test
+			 * fails on the shim rather than on the code (SMASH-1033).
+			 */
+			public function esc_like($text)
+			{
+				return addcslashes((string) $text, '_%\\');
+			}
 			public function prepare($sql, ...$args)
 			{
 				if (isset($args[0]) && is_array($args[0])) {

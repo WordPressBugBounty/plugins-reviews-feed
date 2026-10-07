@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.14.0
+Stable tag: 2.15.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,13 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.15.0 =
+* Fix: When you reach the source limit without an API key, Add Source now says so and takes you to the API key step.
+* Fix: Pages with the Reviews Elementor widget no longer include the editor's feed data for visitors. If you use a page cache, clear it after updating.
+* Fix: The block editor now gets only each feed's ID and name, so source details no longer reach anyone who can edit posts.
+* Fix: The "Optimize Images" setting is read correctly, and System Info now reports its real state.
+* Fix: The list of feeds shown as using a source no longer treats a `_` or `%` in its ID as a wildcard, so it can't list feeds that belong to a different source.
+
 = 2.14.0 =
 * New: An About Us page under the Reviews Feed menu with plugin information and helpful links.
 * New: A Data Sharing settings tab lets you choose whether usage data is shared and whether in-plugin notifications are shown.

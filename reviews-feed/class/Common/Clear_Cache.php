@@ -22,6 +22,21 @@ class Clear_Cache extends ServiceProvider
 		add_action('wp_ajax_sbr_clear_post_header_cache', [ $this , 'sbr_clear_post_header_cache' ]);
 		add_action('wp_ajax_sbr_reset_posts', [ $this, 'sbr_reset_posts' ]);
 		add_action('wp_ajax_sbr_reset_local_images', [ $this, 'sbr_reset_local_images' ]);
+		add_action('update_option_sbr_settings', [ $this, 'reset_images_when_optimize_enabled' ], 10, 2);
+	}
+
+	/**
+	 * Rows the feed pass marked done while Optimize Images was off have no local files;
+	 * switching it back on puts them in the queue again.
+	 *
+	 * @param mixed $old_value
+	 * @param mixed $value
+	 */
+	public function reset_images_when_optimize_enabled($old_value, $value): void
+	{
+		if (! Util::optimize_images_enabled($old_value) && Util::optimize_images_enabled($value)) {
+			$this->reset_images();
+		}
 	}
 
 	private static function clear_data($table_name, $column, $where_clause)

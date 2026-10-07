@@ -11,6 +11,7 @@ namespace SmashBalloon\Reviews\Common\Integrations;
 use SmashBalloon\Reviews\Common\Exceptions\RelayResponseException;
 use SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler;
 use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
+use SmashBalloon\Reviews\Common\Services\VariantMismatchFlag;
 use SmashBalloon\Reviews\Common\Support\UrlNormalization;
 
 /**
@@ -1005,6 +1006,11 @@ class SBRelay
 			? $license_payload['api_data']
 			: [];
 		update_option('sbr_settings', $settings);
+
+		// SMASH-1402 — same recorder as the manual Activate flow.
+		VariantMismatchFlag::record_after_activate(
+			$settings['license_info']['item_id'] ?? null
+		);
 	}
 
 	/**

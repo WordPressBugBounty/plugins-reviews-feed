@@ -23,6 +23,7 @@ use SmashBalloon\Reviews\Common\Services\SBR_Upgrader;
 use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
 use SmashBalloon\Reviews\Common\Services\ShortcodeService;
 use SmashBalloon\Reviews\Common\Services\MigrationReactivationNotice;
+use SmashBalloon\Reviews\Common\Services\VariantMismatchNotice;
 use SmashBalloon\Reviews\Common\Services\SiteUrlWatcher;
 use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 use Smashballoon\Stubs\Services\ServiceProvider;
@@ -59,6 +60,10 @@ class ServiceContainer extends ServiceProvider
 		// SMASH-1281 — renders the dismissible admin notice after a
 		// successful silent license re-activation on a migrated site.
 		MigrationReactivationNotice::class,
+		// SMASH-1402 — renders the dismissible warning when the running
+		// SBR_PRODUCT_ID differs from the licence item_id stored at activation
+		// (manual or silent); cleared by a matching activation or deactivation.
+		VariantMismatchNotice::class,
 		Google::class,
 		Yelp::class,
 		SB_Analytics::class,

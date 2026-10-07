@@ -13,6 +13,7 @@ use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\V1Routine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\ClearReviewsDuplicateRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\NewUserRatingRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\ReconcileMigratedLicenseRoutine;
+use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RepairFacebookCollectionRatingsRoutine;
 
 class RoutineManagerService extends ServiceProvider{
 	/**
@@ -37,6 +38,9 @@ class RoutineManagerService extends ServiceProvider{
 		// website_url is settled first. One ping, flips to Activate on a
 		// confirmed mismatch; never auto-reactivates.
 		ReconcileMigratedLicenseRoutine::class,
+		// SMASH-2288 — manual Facebook collection reviews were stored as 1 star; copy the stars back
+		// from json_data and recalculate each collection's rating.
+		RepairFacebookCollectionRatingsRoutine::class,
 	];
 
 	public function register()

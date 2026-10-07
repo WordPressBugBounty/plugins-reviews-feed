@@ -42,7 +42,8 @@ class Smash1130UsageTrackingHardeningTest extends TestCase
 		parent::setUp();
 		$this->previous_wpdb = $GLOBALS['wpdb'] ?? null;
 		global $wp_options_mock, $wp_filter_mock, $wp_transients_mock, $wp_home_url_mock, $wp_http_response_code_mock;
-		$wp_options_mock                  = [];
+		// Data Sharing consent on: the master switch since SMASH-1250 (Config::is_enabled()). Free reads this option.
+		$wp_options_mock                  = ['sbc_data_sharing_consent' => true];
 		$wp_filter_mock                   = [];
 		$wp_transients_mock               = [];
 		$wp_home_url_mock                 = 'https://example.test';
@@ -77,6 +78,15 @@ class Smash1130UsageTrackingHardeningTest extends TestCase
 			Config::is_enabled(),
 			'Absent consent key must default ON for Pro and OFF for Free — Free installs never transmitted before this feature.'
 		);
+	}
+
+	public function testDataSharingConsentOffOverridesTheToggle(): void
+	{
+		global $wp_options_mock;
+		$wp_options_mock['sbc_data_sharing_consent'] = false;
+		$wp_options_mock['sbr_settings']             = ['usagetracking' => true];
+
+		$this->assertFalse(Config::is_enabled(), 'With Data Sharing consent off, nothing is sent whatever the toggle says (SMASH-1250).');
 	}
 
 	public function testExplicitConsentAlwaysWins(): void
@@ -139,7 +149,10 @@ class Smash1130UsageTrackingHardeningTest extends TestCase
 	{
 		define('SBR_PRO', true);
 
-		global $wp_options_mock;
+		global $wp_options_mock, $wp_filter_mock;
+		// Pro forces consent on without storing it: ConsentManager::init(['is_pro' => true]) adds this filter (bootstrap.php).
+		unset($wp_options_mock['sbc_data_sharing_consent']);
+		$wp_filter_mock['sbc_consent_is_pro'] = true;
 		$wp_options_mock['sbr_settings'] = [];
 
 		$this->assertTrue(Config::is_enabled(), 'Pro must default ON — the toggle has always displayed as ON there.');

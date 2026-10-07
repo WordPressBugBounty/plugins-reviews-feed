@@ -248,36 +248,56 @@ final class Smash1785AvatarLocalUrlGuardTest extends TestCase
 	}
 
 	/**
-	 * KNOWN SEPARATE BUG, pinned deliberately: `should_store_local_images()` can never
-	 * return false.
+	 * The Optimize Images switch is live (fixed in SMASH-1033 / #558). It used to end in
+	 * `!empty(x) ? x : true`, so every falsy value read as on and the switch did nothing.
 	 *
-	 * `Util::should_store_local_images()` ends in
-	 * `!empty($settings['optimize_images']) ? $settings['optimize_images'] : true`, so
-	 * every falsy value — false, 0, '0', '', missing — falls through to `true`.
-	 * Verified against a live install: all six inputs returned true.
-	 *
-	 * Consequence: the `should_store_local_images()` guard in all three Parser
-	 * accessors is currently dead code, and turning "optimize images" off does not stop
-	 * local avatars or media being used. That is a behaviour-changing fix (sites with
-	 * the setting off would start requesting remote images, and would fall to the
-	 * placeholder under GDPR), so it is intentionally NOT part of SMASH-1785.
-	 *
-	 * When someone fixes the helper, this test fails and points at the accessors that
-	 * become live — which is exactly the reminder that is wanted.
+	 * @return array<string, array{0: mixed, 1: bool}>
 	 */
-	public function test_should_store_local_images_currently_always_true(): void
+	public static function optimizeImagesValues(): array
+	{
+		return [
+			'true'           => [true, true],
+			'false'          => [false, false],
+			'0'              => [0, false],
+			"'0'"            => ['0', false],
+			"''"             => ['', false],
+			'null'           => [null, false],
+			"'false' string" => ['false', false],
+			"'true' string"  => ['true', true],
+			'1'              => [1, true],
+		];
+	}
+
+	/**
+	 * @dataProvider optimizeImagesValues
+	 * @param mixed $value
+	 */
+	public function test_should_store_local_images_follows_the_setting($value, bool $expected): void
 	{
 		global $wp_options_mock;
+		$wp_options_mock['sbr_settings'] = ['optimize_images' => $value];
 
-		foreach ([true, false, 0, '0', '', null] as $value) {
-			$wp_options_mock['sbr_settings'] = ['optimize_images' => $value];
+		$this->assertSame($expected, \SmashBalloon\Reviews\Common\Util::should_store_local_images());
+	}
 
-			$this->assertTrue(
-				(bool) \SmashBalloon\Reviews\Common\Util::should_store_local_images(),
-				'Documented dead-code behaviour changed for optimize_images='
-				. var_export($value, true) . ' — see this test\'s docblock before "fixing" it.'
-			);
-		}
+	public function test_should_store_local_images_defaults_on_when_the_key_is_absent(): void
+	{
+		global $wp_options_mock;
+		$wp_options_mock['sbr_settings'] = ['gdpr' => 'no'];
+		$this->assertTrue(\SmashBalloon\Reviews\Common\Util::should_store_local_images());
+
+		$wp_options_mock['sbr_settings'] = 'not-an-array';
+		$this->assertTrue(\SmashBalloon\Reviews\Common\Util::should_store_local_images());
+	}
+
+	public function test_optimize_images_off_serves_the_remote_avatar(): void
+	{
+		global $wp_options_mock;
+		$wp_options_mock['sbr_settings'] = ['gdpr' => 'no', 'optimize_images' => false];
+		$remote = 'https://lh3.googleusercontent.com/a/real-remote=s120';
+		$post   = ['reviewer' => ['avatar' => $remote, 'avatar_local' => self::BASEURL . '/sbr-feed-images/google-1785-avatar-150.png']];
+
+		$this->assertSame($remote, (new Parser())->get_reviewer_avatar_url($post));
 	}
 
 	/** The primary URL still prefers the local file when it genuinely serves. */

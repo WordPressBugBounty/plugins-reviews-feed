@@ -225,13 +225,13 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:awesomemotive\/sb-customizer.git",
-                "reference": "c48a96103945af4ddabed70c085ebfc362f633f5"
+                "reference": "080d164693acaee9cfd0ba68191bd115e4958095"
             },
             "require": {
                 "smashballoon\/framework": "dev-master",
                 "smashballoon\/stubs": "dev-master"
             },
-            "time": "2026-09-23T08:09:42+00:00",
+            "time": "2026-10-05T07:52:25+00:00",
             "type": "library",
             "installation-source": "source",
             "autoload": {

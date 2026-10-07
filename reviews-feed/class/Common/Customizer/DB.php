@@ -353,7 +353,7 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 						GROUP BY id
 						LIMIT 100;
 						",
-						$result['account_id']
+						$wpdb->esc_like($result['account_id'])
 					), ARRAY_A);
 				}
 				$i++;
@@ -637,7 +637,7 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 					GROUP BY id
 					LIMIT 100;
 					",
-					$result['account_id']
+					$wpdb->esc_like($result['account_id'])
 				), ARRAY_A);
 			}
 			$i++;
@@ -1010,7 +1010,7 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 					GROUP BY id
 					LIMIT 100;
 					",
-					$result['account_id']
+					$wpdb->esc_like($result['account_id'])
 				), ARRAY_A);
 			}
 		}

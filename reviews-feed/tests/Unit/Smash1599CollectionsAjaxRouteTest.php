@@ -52,6 +52,15 @@ final class Smash1599CollectionsAjaxRouteTest extends TestCase
 				$this->total = $total;
 			}
 
+			/**
+			 * Real wpdb has this (wp-db.php) and DB.php now calls it before the
+			 * LIKE CONCAT bindings, so the double has to carry it or the test
+			 * fails on the shim rather than on the code (SMASH-1033).
+			 */
+			public function esc_like($text)
+			{
+				return addcslashes((string) $text, '_%\\');
+			}
 			public function prepare($sql, ...$args)
 			{
 				if (isset($args[0]) && is_array($args[0])) {
@@ -195,13 +204,9 @@ final class Smash1599CollectionsAjaxRouteTest extends TestCase
 	/**
 	 * The nonce twin of the capability test — asserted on the CALL.
 	 *
-	 * In production `check_ajax_referer()` dies by itself (third arg defaults
-	 * true), so the handler ignores its return. The bootstrap shim returns a
-	 * boolean instead of dying, which means a bad nonce cannot be observed in
-	 * the handler's OUTPUT here: it carries on and answers normally. What is
-	 * observable is that the guard ran, and against which action — the shim
-	 * records that, and a route verifying the wrong action would be a real bug
-	 * (the whole saver family shares `sbr-admin`).
+	 * `check_ajax_referer()` dies by itself on a bad nonce (third arg defaults
+	 * true), and the bootstrap shim does the same. This pins which action it
+	 * verifies; the whole saver family shares `sbr-admin`.
 	 */
 	public function test_the_route_verifies_the_same_nonce_action_as_its_siblings(): void
 	{

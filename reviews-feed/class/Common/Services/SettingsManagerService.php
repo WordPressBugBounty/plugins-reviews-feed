@@ -35,6 +35,12 @@ class SettingsManagerService extends ServiceProvider
 
 		$settings = json_decode(stripslashes($_POST['settings']), true);
 
+		// Server-owned (SMASH-1402): the Settings page posts back the whole
+		// pluginSettings it loaded, so a stale copy would undo an activation's clear.
+		if (is_array($settings)) {
+			unset($settings[VariantMismatchFlag::SETTINGS_KEY]);
+		}
+
 		$update_array = $this->sanitize_settings($settings) ;
 
 		foreach ($settings['translations'] as $key => $value) {

@@ -806,7 +806,7 @@ class Util
 		$output .= isset($sbr_settings['gdpr']) ? self::support_info_text($sbr_settings['gdpr']) : ' Not setup';
 		$output .= '</br>';
 		$output .= 'Optimize Images: ';
-		$output .= isset($sbr_settings['optimize_images']) && $sbr_settings['optimize_images'] === true ? 'Enabled' : 'Disabled';
+		$output .= self::optimize_images_enabled($sbr_settings) ? 'Enabled' : 'Disabled';
 		$output .= '</br>';
 		$output .= 'Usage Tracking: ';
 		$output .= \SmashBalloon\Reviews\Common\UsageTracking\Config::is_enabled() ? 'Enabled' : 'Disabled';
@@ -1873,6 +1873,27 @@ class Util
 	}
 
 	/**
+	 * The rating to store for a Facebook collection row (SMASH-2288).
+	 *
+	 * Only Facebook's 'positive'/'negative' recommendation sentinels map to 5/1. A star value set by
+	 * hand passes through: mapping every non-'positive' value to 1 stored manual 5-star reviews as 1.
+	 *
+	 * @param  array<string,mixed> $post
+	 * @return mixed
+	 */
+	public static function facebook_collection_rating($post)
+	{
+		$rating = $post['rating'] ?? 0;
+		if ($rating === 'positive') {
+			return 5;
+		}
+		if ($rating === 'negative') {
+			return 1;
+		}
+		return $rating;
+	}
+
+	/**
 	 * Convert Object to Array
 	 *
 	 * @return array
@@ -2042,11 +2063,22 @@ class Util
 
 	public static function should_store_local_images()
 	{
-		$settings = get_option('sbr_settings', sbr_plugin_settings_defaults());
-		if (! is_array($settings)) {
-			$settings = sbr_plugin_settings_defaults();
+		return self::optimize_images_enabled(get_option('sbr_settings', sbr_plugin_settings_defaults()));
+	}
+
+	/**
+	 * The "Optimize Images" switch in a settings array: on when the key is absent (the default in
+	 * sbr_plugin_settings_defaults()), otherwise its boolean value. It used to end in
+	 * `!empty(x) ? x : true`, which turned every falsy value into true, so the switch did nothing.
+	 *
+	 * @param mixed $settings
+	 */
+	public static function optimize_images_enabled($settings): bool
+	{
+		if (! is_array($settings) || ! array_key_exists('optimize_images', $settings)) {
+			return true;
 		}
-		return !empty($settings['optimize_images']) ? $settings['optimize_images'] : true;
+		return filter_var($settings['optimize_images'], FILTER_VALIDATE_BOOLEAN);
 	}
 
 	/**

@@ -35,7 +35,8 @@ class Smash1130UsageTrackingHooksTest extends TestCase
 	{
 		parent::setUp();
 		global $wp_options_mock;
-		$wp_options_mock                             = ['sbr_settings' => ['usagetracking' => true]];
+		// Data Sharing consent is the master switch since SMASH-1250 (Config::is_enabled()); Free reads it from this option.
+		$wp_options_mock                             = ['sbr_settings' => ['usagetracking' => true], 'sbc_data_sharing_consent' => true];
 		$GLOBALS['sbr_test_actions']                 = [];
 		$GLOBALS['sbr_test_nonce_ok']                = false;
 		$GLOBALS['sbr_test_user_can']                = false;

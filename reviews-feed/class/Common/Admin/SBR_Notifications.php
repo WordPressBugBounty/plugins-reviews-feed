@@ -474,7 +474,7 @@ class SBR_Notifications extends ServiceProvider
 				'update'    => sbr_get_current_time(),
 				'feed'      => $feed,
 				'events'    => $option['events'],
-				'dismissed' => $option['dismissed'],
+				'dismissed' => $option['dismissed'] ?? array(),
 			)
 		);
 	}

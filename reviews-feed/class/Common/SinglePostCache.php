@@ -270,7 +270,7 @@ class SinglePostCache {
 	{
 		$rating = $this->post_data['rating'];
 		if (Util::is_facebook_collection_post($this->post_data)) {
-			$rating = $this->post_data['rating'] === 'positive' ? 5 : 1;
+			$rating = Util::facebook_collection_rating($this->post_data);
 		}
 
 		$now = date('Y-m-d H:i:s');
@@ -331,7 +331,7 @@ class SinglePostCache {
 	{
 		$rating = $this->post_data['rating'];
 		if (Util::is_facebook_collection_post($this->post_data)) {
-			$rating = $this->post_data['rating'] === 'positive' ? 5 : 1;
+			$rating = Util::facebook_collection_rating($this->post_data);
 		}
 
 		$to_store = array(

@@ -169,7 +169,7 @@ if (!function_exists('esc_html')) {
 if (!function_exists('esc_html__')) {
 	function esc_html__($text, $domain = 'default')
 	{
-		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+		return htmlspecialchars((string) __($text, $domain), ENT_QUOTES, 'UTF-8');
 	}
 }
 
@@ -356,12 +356,18 @@ if (!function_exists('get_option')) {
 
 if (!function_exists('check_ajax_referer')) {
 	// Controllable via $GLOBALS['sbr_test_nonce_ok'] (SMASH-1130 listener guard tests).
-	// Records the requested action so tests can assert the guard verifies the
-	// SAME nonce action the primary handlers use.
+	// Records the requested action and query arg so tests can assert the guard
+	// verifies the SAME nonce the primary handlers use.
 	function check_ajax_referer($action, $query_arg = false, $stop = true)
 	{
 		$GLOBALS['sbr_test_nonce_actions_checked'][] = $action;
-		return $GLOBALS['sbr_test_nonce_ok'] ?? false;
+		$GLOBALS['sbr_test_nonce_query_args_checked'][] = $query_arg;
+		$ok = $GLOBALS['sbr_test_nonce_ok'] ?? false;
+		// Real core dies with -1 / 403 on failure unless $stop is false (pluggable.php).
+		if (! $ok && $stop) {
+			wp_die(-1, '', 403);
+		}
+		return $ok;
 	}
 }
 
@@ -557,6 +563,13 @@ if (!function_exists('apply_filters')) {
 		return $value;
 	}
 }
+// Records enqueues so tests can assert a handler ships as an asset (SMASH-1402).
+if (!function_exists('wp_enqueue_script')) {
+	function wp_enqueue_script($handle, $src = '', $deps = array(), $ver = false, $in_footer = false)
+	{
+		$GLOBALS['sbr_test_enqueued_scripts'][$handle] = compact('src', 'deps', 'ver', 'in_footer');
+	}
+}
 if (!function_exists('do_action')) {
 	function do_action($hook, ...$args)
 	{
@@ -681,9 +694,11 @@ if (!function_exists('is_plugin_active')) {
 
 // i18n stub used by translatable strings in tested code paths.
 if (!function_exists('__')) {
+	// $GLOBALS['sbr_test_translations'] seeds a locale, so a test can reach
+	// translated text containing characters the escapers encode.
 	function __($text, $domain = null)
 	{
-		return $text;
+		return $GLOBALS['sbr_test_translations'][$text] ?? $text;
 	}
 }
 
@@ -720,6 +735,9 @@ if (!function_exists('wp_remote_retrieve_response_code')) {
 if (!function_exists('wp_remote_get')) {
 	function wp_remote_get($url, $args = [])
 	{
+		// Recorded like wp_remote_post, so a test can assert a GET was not sent.
+		$GLOBALS['sbr_test_http_gets'][] = ['url' => $url, 'args' => $args];
+
 		// Mockable failure, so the `is_wp_error()` branch in callers is reachable —
 		// with the old always-false shim it never was.
 		global $wp_http_error_mock;
@@ -1245,3 +1263,61 @@ require_once __DIR__ . '/Support/PhpSource.php';
 // One class per file, per phpcs.
 require_once __DIR__ . '/Doubles/BadgeImageWithBlindImagick.php';
 require_once __DIR__ . '/Doubles/BadgeImageWithNoRasteriser.php';
+
+// Admin-screen and user-meta stubs (SMASH-1402 notice gate). Controllable via
+// $GLOBALS['sbr_test_screen_id'] (null = no screen), $GLOBALS['sbr_test_user_id']
+// and $GLOBALS['sbr_test_user_meta'][user_id][key].
+require_once __DIR__ . '/Doubles/WP_Screen.php';
+
+if (!function_exists('get_current_screen')) {
+	function get_current_screen()
+	{
+		$id = $GLOBALS['sbr_test_screen_id'] ?? null;
+		if ($id === null) {
+			return null;
+		}
+		$screen = new \WP_Screen();
+		$screen->id = (string) $id;
+		return $screen;
+	}
+}
+
+if (!function_exists('get_current_user_id')) {
+	function get_current_user_id()
+	{
+		return (int) ($GLOBALS['sbr_test_user_id'] ?? 0);
+	}
+}
+
+if (!function_exists('get_user_meta')) {
+	function get_user_meta($user_id, $key = '', $single = false)
+	{
+		$value = $GLOBALS['sbr_test_user_meta'][$user_id][$key] ?? null;
+		if ($value === null) {
+			return $single ? '' : [];
+		}
+		return $single ? $value : [$value];
+	}
+}
+
+if (!function_exists('update_user_meta')) {
+	function update_user_meta($user_id, $meta_key, $meta_value, $prev_value = '')
+	{
+		$GLOBALS['sbr_test_user_meta'][$user_id][$meta_key] = $meta_value;
+		return true;
+	}
+}
+
+if (!function_exists('wp_create_nonce')) {
+	function wp_create_nonce($action = -1)
+	{
+		return 'nonce-' . md5((string) $action);
+	}
+}
+
+if (!function_exists('admin_url')) {
+	function admin_url($path = '', $scheme = 'admin')
+	{
+		return 'https://example.test/wp-admin/' . ltrim((string) $path, '/');
+	}
+}

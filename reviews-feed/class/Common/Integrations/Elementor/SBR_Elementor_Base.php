@@ -66,22 +66,75 @@ class SBR_Elementor_Base {
 	{
 		sbr_scripts_enqueue();
 
-		// SMASH-1052: skip the per-feed shortcode-location scans on this
-		// sitewide front-end hook (every Elementor page). The localized
-		// sbrElementorData.feeds payload only needs id + feed_name; the
-		// instance_count / location_summary fields are never read here.
-		$feeds = DB::get_feeds_list(array(), true);
+		// SMASH-2173: editor data for the "Select a Feed" placeholder, which only renders in
+		// edit/preview mode (SB_Elementor_Feed_Widget::render). Public pages get none of it.
+		if (self::is_elementor_editor_request()) {
+			wp_localize_script('sbr_scripts', 'sbrElementorData', self::editor_data());
+		}
 
-		$data = array(
-			'feeds'         => ! empty($feeds) ? $feeds : array(),
+		SB_Feed_Blocks_Registry::instance()->enqueue_elementor_assets();
+	}
+
+	/**
+	 * Payload for sb-elementor-editor.js, which reads only feeds[].id, feeds[].feed_name,
+	 * feed_url and is_pro_active. `nonce` has no reader in that bundle; kept for BC.
+	 *
+	 * @param mixed $feeds Feed rows; null reads them from the DB.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function editor_data($feeds = null)
+	{
+		if (null === $feeds) {
+			// SMASH-1052: skip the per-feed shortcode-location scans.
+			$feeds = DB::get_feeds_list(array(), true);
+		}
+
+		return array(
+			'feeds'         => self::editor_feeds($feeds),
 			'feed_url'      => admin_url('admin.php?page=sbr'),
 			'is_pro_active' => function_exists('sbr_is_pro') && sbr_is_pro(),
 			'nonce'         => wp_create_nonce('sbr-blocks'),
 		);
+	}
 
-		wp_localize_script('sbr_scripts', 'sbrElementorData', $data);
+	/**
+	 * Reduce feed rows to what the placeholder reads: settings, sources and CSS stay server-side.
+	 *
+	 * @param mixed $feeds Rows from DB::get_feeds_list().
+	 *
+	 * @return array<int, array{id: mixed, feed_name: mixed}>
+	 */
+	public static function editor_feeds($feeds)
+	{
+		$feeds_list = array();
+		foreach (is_array($feeds) ? $feeds : array() as $feed) {
+			if (is_array($feed) && isset($feed['id'])) {
+				$feeds_list[] = array(
+					'id'        => $feed['id'],
+					'feed_name' => isset($feed['feed_name']) ? $feed['feed_name'] : '',
+				);
+			}
+		}
 
-		SB_Feed_Blocks_Registry::instance()->enqueue_elementor_assets();
+		return $feeds_list;
+	}
+
+	/**
+	 * Same gate as the placeholder it feeds (SB_Elementor_Feed_Widget::render).
+	 *
+	 * @return bool
+	 */
+	public static function is_elementor_editor_request()
+	{
+		if (! class_exists('\Elementor\Plugin') || empty(\Elementor\Plugin::$instance)) {
+			return false;
+		}
+		$elementor = \Elementor\Plugin::$instance;
+
+		return is_admin()
+			|| (! empty($elementor->editor) && $elementor->editor->is_edit_mode())
+			|| (! empty($elementor->preview) && $elementor->preview->is_preview_mode());
 	}
 
 	/**

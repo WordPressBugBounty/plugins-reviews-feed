@@ -4,6 +4,7 @@ namespace SmashBalloon\Reviews\Common\Admin\Blocks;
 
 use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Blocks\SB_Feed_Block;
 use SmashBalloon\Reviews\Common\Customizer\DB;
+use SmashBalloon\Reviews\Common\Integrations\Elementor\SBR_Elementor_Base;
 
 class SBR_Modern_Feed_Block extends SB_Feed_Block {
 	const EDITOR_ASSETS_PRIORITY = 25;
@@ -67,17 +68,24 @@ class SBR_Modern_Feed_Block extends SB_Feed_Block {
 		add_action('enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ), self::EDITOR_ASSETS_PRIORITY);
 	}
 
-	protected function get_editor_localize_data()
+	/**
+	 * @param mixed $feeds Rows from DB::get_feeds_list(); null reads them. Tests pass rows.
+	 */
+	protected function get_editor_localize_data($feeds = null)
 	{
 		// Skip the shortcode-location scan: the block editor feed picker only needs
 		// each feed's id and name, never location/instance data. Without this the
 		// editor runs an unindexed full-table LIKE over post_content on every load
 		// and hangs on large sites. Mirrors SB_Reviews_Blocks::get_feed_list_options()
 		// (SMASH-1052). See SMASH-1591.
-		$feeds = DB::get_feeds_list(array(), true);
+		if (null === $feeds) {
+			$feeds = DB::get_feeds_list(array(), true);
+		}
 
 		return array(
-			'feeds'    => ! empty($feeds) ? $feeds : array(),
+			// SMASH-2257: the picker reads only id and feed_name (sb-feed-blocks.js); the full
+			// rows carried settings and sourcesList tokens to anyone who can open the editor.
+			'feeds'    => SBR_Elementor_Base::editor_feeds($feeds),
 			'feed_url' => admin_url('admin.php?page=sbr'),
 			'nonce'    => wp_create_nonce('sbr-blocks'),
 		);

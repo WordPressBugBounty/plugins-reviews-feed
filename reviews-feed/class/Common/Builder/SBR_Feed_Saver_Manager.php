@@ -434,7 +434,9 @@ class SBR_Feed_Saver_Manager
 			if ($has_api_key_in_post || $has_stored_api_key) {
 				$data = array(
 					'provider' => $provider,
-					'providerIdUrl' => esc_url_raw($_POST['providerIdUrl']),
+					// esc_url_raw() only ltrim()s: a trailing space would reach the parsers as %20 (SMASH-1706).
+					// is_string(), not a cast: `providerIdUrl[]=` would warn on PHP 8 and parse "Array".
+					'providerIdUrl' => is_string($_POST['providerIdUrl']) ? esc_url_raw(trim($_POST['providerIdUrl'])) : '',
 					'apiKey' => $has_api_key_in_post ? sanitize_text_field($_POST['apiKey']) : null,
 				);
 				$return = self::process_source_apikey($data);
@@ -792,6 +794,22 @@ class SBR_Feed_Saver_Manager
 	}
 
 
+	/**
+	 * Did the relay refuse the source because the keyless source limit is reached?
+	 *
+	 * SBRelay::call() returns the relay's error envelope unwrapped, so the limit arrives
+	 * as `id: maxSourceLimitExceeded` (sb-relay SourceLimit middleware) with no `error`
+	 * key. `error: sourceLimitExceeded` is the legacy shape, kept for BC: the keyless
+	 * pre-flight in process_source_apikey() returns before this check is reached.
+	 *
+	 * @param array<string, mixed> $info Decoded relay response.
+	 */
+	public static function is_source_limit_error(array $info): bool
+	{
+		return 'sourceLimitExceeded' === ($info['error'] ?? null)
+			|| 'maxSourceLimitExceeded' === ($info['id'] ?? null);
+	}
+
 	public static function update_api_limit($provider, $action)
 	{
 		$apikeys_limit = get_option('sbr_apikeys_limit', []);
@@ -831,6 +849,21 @@ class SBR_Feed_Saver_Manager
 			//If there is no providerIdUrl set, then the call is just for checking the API KEY
 			switch ($provider) {
 				case 'tripadvisor':
+					// No providerIdUrl is the key-only probe from update_api_key(); it keeps 'XXX'.
+					if (isset($data['providerIdUrl'])) {
+						$input_error = self::get_tripadvisor_input_error($data['providerIdUrl']);
+						if ($input_error !== null) {
+							// SMASH-1706: nothing to resolve, so no relay round trip. Same shape the
+							// customizer already shows for a relay refusal (`error` + `message`).
+							return [
+								'success'       => false,
+								'error'         => 'invalidSourceUrl',
+								'message'       => $input_error,
+								'apiKeyLimits'  => get_option('sbr_apikeys_limit', []),
+								'pluginNotices' => Util::get_plugin_notices(),
+							];
+						}
+					}
 					$relay_args['place_id'] = isset($data['providerIdUrl']) ? self::get_place_id_tripadvisor($data['providerIdUrl']) : 'XXX';
 					break;
 				case 'trustpilot':
@@ -926,6 +959,11 @@ class SBR_Feed_Saver_Manager
 						&& $info['error'] === 'sourceLimitExceeded'
 					) {
 						SBR_Feed_Saver_Manager::update_api_limit($provider, 'add');
+					}
+					// AddSourceModal.js keys its API-key remedy on `error === 'sourceLimitExceeded'`. The flag is
+					// deliberately not set here: it also freezes live fetches (Feed.php check_api_limit) — SMASH-1901.
+					if (self::is_source_limit_error($info)) {
+						$info['error'] = 'sourceLimitExceeded';
 					}
 					$info['apiKeyLimits'] = get_option('sbr_apikeys_limit', []);
 					$info['pluginNotices'] = Util::get_plugin_notices();
@@ -1307,7 +1345,8 @@ class SBR_Feed_Saver_Manager
 		// "-Reviews-...html". "g" is the geo id, "d" is the location id — only "d".
 		// Match this FIRST so scheme-less pastes (e.g. "tripadvisor.com/...", which
 		// FILTER_VALIDATE_URL rejects) still resolve to the id.
-		if (preg_match('/-d(\d{4,})/i', $place_url, $matches)) {
+		// Any digit count: older listings carry short ids (SMASH-1706 measured `-d123`).
+		if (preg_match('/-d(\d+)/i', $place_url, $matches)) {
 			return $matches[1];
 		}
 
@@ -1319,6 +1358,42 @@ class SBR_Feed_Saver_Manager
 		// Legacy fallback: last path segment (matches get_place_id() behaviour).
 		$broken_up = explode('/', $place_url);
 		return end($broken_up);
+	}
+
+	/**
+	 * Why a TripAdvisor add-source input cannot resolve to a location, or null if it can.
+	 *
+	 * Resolvable means get_place_id_tripadvisor() yields a numeric id: the `-d<digits>`
+	 * token, a bare id, or a URL whose last segment is the id. Enforced here regardless of
+	 * any client-side check, since an older customizer bundle sends the input unchecked.
+	 *
+	 * @param mixed $place_url Raw or esc_url_raw()'d input (a bare id arrives as `http://2422991`).
+	 * @return string|null Translated reason, or null when the input is usable.
+	 */
+	public static function get_tripadvisor_input_error($place_url): ?string
+	{
+		$place_url = is_scalar($place_url) ? trim((string) $place_url) : '';
+
+		if ($place_url === '') {
+			// Same words as the customizer's empty-field notice (AddSourceModal.js), shared by every provider.
+			return __('Enter a listing URL or ID first.', 'reviews-feed');
+		}
+
+		// Checked first: a member handle can itself contain "-d<digits>".
+		if (preg_match('#/Profile/#i', $place_url) === 1) {
+			return __('This TripAdvisor link is a member profile, not a business. Open the business on TripAdvisor and copy the URL of its own page.', 'reviews-feed');
+		}
+
+		// Judge what would actually be sent as place_id, not the input's shape.
+		if (preg_match('/^\d+$/', self::get_place_id_tripadvisor($place_url)) === 1) {
+			return null;
+		}
+
+		if (preg_match('/-g\d+/i', $place_url) === 1) {
+			return __('This TripAdvisor link is a category page (a destination or a list of places), not a single listing. Open the individual business and copy the URL of its own page.', 'reviews-feed');
+		}
+
+		return __('We could not find a TripAdvisor location ID in that. Paste the listing URL (it contains "-d" followed by numbers) or the numeric location ID.', 'reviews-feed');
 	}
 
 	/**
@@ -2016,7 +2091,7 @@ class SBR_Feed_Saver_Manager
 		];
 
 		if (isset($review['media']) && is_array($review['media'])) {
-			$sanitized_review['media'] = $review['media'];
+			$sanitized_review['media'] = self::sanitize_review_media($review['media']);
 		}
 		//JSON Data
 		$sanitized_review['json_data'] = $sanitized_review;
@@ -2321,28 +2396,19 @@ class SBR_Feed_Saver_Manager
 					]
 				];
 
-				if (isset($review['media']) && is_array($review_json['media'])) {
-					$sanitized_review['media'] = $review_json['media'];
+				// SMASH-1033 — was `isset($review['media'])`, but this scope only
+				// defines $review_json (:2299), so the guard never passed and media
+				// was dropped on every collection duplication.
+				if (isset($review_json['media']) && is_array($review_json['media'])) {
+					$sanitized_review['media'] = self::sanitize_review_media($review_json['media']);
 				}
 				//JSON Data
 				$sanitized_review['json_data'] = $sanitized_review;
 				$single_post_cache = new \SmashBalloon\Reviews\Pro\SinglePostCache($sanitized_review, new \SmashBalloon\Reviews\Pro\MediaFinder($sanitized_review['source']));
 				$single_post_cache->set_provider_id($id);
+				// Stored with images_done = 0: the feed's batched sbr_check_media pass resizes them
+				// (Pro\Feed::find_and_resize_media(), 150 rows a call), not this one request.
 				$single_post_cache->store();
-				/** @phpstan-ignore-next-line media key may or may not exist depending on review data */
-				if (isset($sanitized_review['media']) && Util::should_store_local_images()) {
-					$aggregator = new PostAggregator();
-					$single_post_cache->resize_images(array(640, 150));
-					$single_post_data = $single_post_cache->get_post_data();
-					$single_post_storage_data = $single_post_cache->get_storage_data();
-					$single_post_data = $aggregator->add_local_image_urls($single_post_data, $single_post_storage_data);
-					$single_post_cache->update(
-						[
-							array('images_done', 1, '%d'),
-							array('json_data', wp_json_encode($single_post_data), '%s')
-						]
-					);
-				}
 			}
 			echo sbr_json_encode(
 				[
@@ -2490,6 +2556,7 @@ class SBR_Feed_Saver_Manager
 					// An imported review need not carry a review_id; '' is what the
 					// undefined-key read resolved to before, minus the notice.
 					$review_store = Util::parse_single_review($single_review, $collection_json['account_id'], $single_review['review_id'] ?? '');
+					self::carry_review_media($review_store, $single_review);
 					$review_store['json_data'] = $review_store;
 
 					$single_post_cache = new \SmashBalloon\Reviews\Pro\SinglePostCache($review_store, new \SmashBalloon\Reviews\Pro\MediaFinder($review_store['source']));
@@ -2534,24 +2601,13 @@ class SBR_Feed_Saver_Manager
 					$single_review['retimeview_id'] = time();
 
 					$review_store = Util::parse_single_review($single_review, $collection_id, $single_review['review_id']);
+					self::carry_review_media($review_store, $single_review);
 					$review_store['json_data'] = $review_store;
 
 					$single_post_cache = new \SmashBalloon\Reviews\Pro\SinglePostCache($review_store, new \SmashBalloon\Reviews\Pro\MediaFinder($review_store['source']));
 					$single_post_cache->set_provider_id($collection_id);
+					// Same as duplicate_collection(): images_done = 0 hands the resize to the batched feed pass.
 					$single_post_cache->store();
-					if (isset($sanitized_review['media']) && Util::should_store_local_images()) {
-						$aggregator = new PostAggregator();
-						$single_post_cache->resize_images(array(640, 150));
-						$single_post_data = $single_post_cache->get_post_data();
-						$single_post_storage_data = $single_post_cache->get_storage_data();
-						$single_post_data = $aggregator->add_local_image_urls($single_post_data, $single_post_storage_data);
-						$single_post_cache->update(
-							[
-								array('images_done', 1, '%d'),
-								array('json_data', wp_json_encode($single_post_data), '%s')
-							]
-						);
-					}
 				}
 			}
 
@@ -2566,6 +2622,115 @@ class SBR_Feed_Saver_Manager
 		wp_die();
 	}
 
+
+	/**
+	 * Carry a review's media onto the parsed store row.
+	 *
+	 * Util::parse_single_review() (Util.php:1835) builds a fixed shape with no
+	 * `media` key, so every import path has to put it back or the local-image
+	 * guard downstream is in scope and permanently false — the same SMASH-1033
+	 * bug in a better disguise. Shared by the two import handlers,
+	 * import_full_collection() and import_reviews_collection(); the first had
+	 * no copy of this step at all.
+	 *
+	 * Takes $review_store by reference: returning a fresh array<string,mixed>
+	 * erased the shape phpstan had inferred for it, which surfaced as
+	 * "Offset 'source' might not exist" at both call sites.
+	 *
+	 * @param  array<string,mixed> $review_store  parsed row, modified in place
+	 * @param  array<string,mixed> $single_review decoded source review, still has media
+	 */
+	private static function carry_review_media(array &$review_store, array $single_review): void
+	{
+		if (isset($single_review['media']) && is_array($single_review['media'])) {
+			$review_store['media'] = self::sanitize_review_media($single_review['media']);
+		}
+	}
+
+	/**
+	 * Review media from a request or a file, reduced to what the plugin itself writes.
+	 *
+	 * Every producer writes `['type' => 'image', 'url' => …]` (relay, form integrations,
+	 * CollectionReviewForm.js) and the resize and customizer preview read only images
+	 * (Pro\SinglePostCache::resize_images(), sb-customizer Feed/PostMedia.js). An item keeps
+	 * `type`, `url` and the plugin's own `local` size map (present in exports); every URL
+	 * must be absolute http(s). Valid input comes back unchanged. Used by the manual
+	 * review save, the duplicate, both imports and form submissions.
+	 *
+	 * Public for CollectionSubmissionReviews::transform_and_store_review(), which
+	 * writes the same media into collections from another class.
+	 *
+	 * @param  array<mixed> $media  media list from a request, a stored row, or an uploaded file
+	 * @return list<array<string,mixed>>
+	 */
+	public static function sanitize_review_media(array $media): array
+	{
+		$clean = [];
+		foreach ($media as $item) {
+			if (!is_array($item) || ($item['type'] ?? null) !== 'image') {
+				continue;
+			}
+			$url = self::safe_media_url($item['url'] ?? null);
+			if ($url === '') {
+				continue;
+			}
+			$kept  = ['type' => 'image', 'url' => $url];
+			$local = isset($item['local']) && is_array($item['local']) ? self::sanitize_local_sizes($item['local']) : [];
+			if (!empty($local)) {
+				$kept['local'] = $local;
+			}
+			$clean[] = $kept;
+		}
+		return $clean;
+	}
+
+	/**
+	 * A media item's `local` map: numeric size => http(s) or root-relative URL, the rest dropped.
+	 *
+	 * Root-relative is kept here only: a filtered `sbr_resize_url` produces it, Parser::css_url()
+	 * renders it, and nothing fetches a `local` entry (resize_images() reads `url`).
+	 *
+	 * @param  array<mixed> $local
+	 * @return array<int,string>
+	 */
+	private static function sanitize_local_sizes(array $local): array
+	{
+		$clean = [];
+		foreach ($local as $size => $local_url) {
+			$safe = self::safe_media_url($local_url, true);
+			if (is_numeric($size) && $safe !== '') {
+				$clean[(int) $size] = $safe;
+			}
+		}
+		return $clean;
+	}
+
+	/**
+	 * An absolute http(s) URL passed through esc_url_raw(), or '' for anything else.
+	 *
+	 * esc_url_raw() keeps `(`, `)` and `'`, so a URL could still close a CSS url() in a
+	 * style attribute: those are percent-encoded, and the image still loads. It already
+	 * strips `"`, `\` and control characters and encodes spaces. A protocol-relative `//cdn`
+	 * URL gets `https:`, as Parser::css_url() does at the sink.
+	 *
+	 * @param  mixed $url
+	 * @param  bool  $allow_root_relative  `/path` kept too (the `local` map only; see sanitize_local_sizes()).
+	 */
+	private static function safe_media_url($url, bool $allow_root_relative = false): string
+	{
+		if (!is_string($url) || $url === '') {
+			return '';
+		}
+		$clean = strtr(esc_url_raw($url), ['(' => '%28', ')' => '%29', "'" => '%27']);
+		if (strpos($clean, '//') === 0) {
+			$clean = 'https:' . $clean;
+		}
+		$scheme = wp_parse_url($clean, PHP_URL_SCHEME);
+		if ($allow_root_relative && !is_string($scheme) && strpos($clean, '/') === 0) {
+			return $clean;
+		}
+		return is_string($scheme) && in_array(strtolower($scheme), ['http', 'https'], true) ? $clean : '';
+	}
 
 	/**
 	 * One entry of an imported collection file to its review array, or null.
