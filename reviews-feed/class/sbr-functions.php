@@ -1212,3 +1212,42 @@ function sbr_booking_review_score($post)
 
 	return $rating > 0 ? round($rating * 2, 1) : 0.0;
 }
+
+/**
+ * The colours a Review Alert needs when its accent is an exact hex (SMASH-2220).
+ *
+ * `contrast` is the text colour drawn ON the accent (footer text, link hover): white or the
+ * popup's dark text (#18181B, zinc-900), whichever has the higher WCAG contrast ratio.
+ * `ink` is the accent drawn as a foreground on the white card (stars, icons): the colour itself,
+ * or a dark neutral when it is too light to see on white (contrast ratio vs white under 1.2,
+ * i.e. relative luminance above 0.825: #FFFFFF, #EEEEEE). Gold (#FFD700, 0.70) stays itself.
+ * Mirrored by exactAccentColors() in the customizer's Utils/ColorUtils.js.
+ *
+ * @param mixed $hex Accent colour.
+ * @return array{color: string, contrast: string, ink: string}|null Null unless $hex is #RRGGBB.
+ */
+function sbr_review_alert_accent_colors($hex)
+{
+	if (!is_string($hex) || !preg_match('/^#[0-9a-fA-F]{6}$/', $hex)) {
+		return null;
+	}
+
+	$hex    = strtoupper($hex);
+	$linear = static function (string $pair): float {
+		$value = hexdec($pair) / 255;
+		return $value <= 0.04045 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+	};
+	$luminance = 0.2126 * $linear(substr($hex, 1, 2))
+		+ 0.7152 * $linear(substr($hex, 3, 2))
+		+ 0.0722 * $linear(substr($hex, 5, 2));
+
+	$dark_luminance = 0.009266; // #18181B
+	$on_white       = 1.05 / ($luminance + 0.05);
+	$on_dark        = ($luminance + 0.05) / ($dark_luminance + 0.05);
+
+	return [
+		'color'    => $hex,
+		'contrast' => $on_white >= $on_dark ? '#FFFFFF' : '#18181B',
+		'ink'      => $luminance <= 0.825 ? $hex : '#3F3F46',
+	];
+}

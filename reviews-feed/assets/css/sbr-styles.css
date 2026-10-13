@@ -264,8 +264,10 @@ body:not(.wp-admin) [id^=sb-reviews-container-] .sb-feed-header-rating-icons{
     width: 20px;
     height: 20px;
 }
+/* SMASH-1685: empty stars are a fixed grey whatever star colour is chosen (grayscale left black/dark stars looking full).
+   Same value as --sbr-badge-star-dim in sbr-badges.css. */
 [id^=sb-reviews-container-] .sb-item-rating-icon-dimmed svg{
-    filter: grayscale(1);
+    color: #D8DCE6;
 }
 [id^=sb-reviews-container-] .sb-feed-item-icon-half {
     display: inline-block;

@@ -3061,14 +3061,14 @@ msgstr ""
 msgid "Dismiss review notification"
 msgstr ""
 
-#. translators: %d: number of reviews
+#. translators: %s: number of reviews, formatted for the site's locale (e.g. 7,133)
 #: templates/review-alerts/popup.php:198
-msgid "%d Total Reviews"
+msgid "%s Total Reviews"
 msgstr ""
 
-#. translators: %d: number of reviews
+#. translators: %s: number of reviews, formatted for the site's locale (e.g. 7,133)
 #: templates/review-alerts/popup.php:311
-msgid "View All %d Reviews"
+msgid "View All %s Reviews"
 msgstr ""
 
 #: templates/review-alerts/popup.php:331

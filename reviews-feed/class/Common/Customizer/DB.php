@@ -1405,6 +1405,11 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 						continue;
 					}
 
+					// `[[reviews-feed …]]` is WordPress's escape: printed as text, never rendered (SMASH-2033).
+					if (( $shortcode[1] ?? '' ) === '[' && ( $shortcode[6] ?? '' ) === ']') {
+						continue;
+					}
+
 					// shortcode_parse_atts() hands back the raw string when a shortcode
 					// carries no attributes; only an array can hold a feed ID.
 					$atts = shortcode_parse_atts($shortcode[3]);
@@ -1555,8 +1560,9 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 	 * @return array<int, int>
 	 *
 	 * @since 2.13.1
+	 * @since 2.15.1 Public: SBR_Schema_Service reads placements through it.
 	 */
-	private static function feed_ids_in_meta($raw)
+	public static function feed_ids_in_meta($raw)
 	{
 		if (! is_string($raw) || $raw === '') {
 			return array();

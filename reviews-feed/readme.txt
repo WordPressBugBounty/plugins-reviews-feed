@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.15.0
+Stable tag: 2.15.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,9 +208,17 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.15.1 =
+* Fix: Empty and half stars in a feed are shown in grey whatever star colour you choose, so a half star or a 3-star review no longer looks like a full rating with black or dark stars.
+* Fix: Review rich snippets now appear for feeds placed with SiteOrigin Page Builder, Beaver Builder or Bricks.
+* Fix: A page that only shows the shortcode as text, or holds another plugin's feed, no longer publishes a review rating for a feed that isn't there.
+* Fix: Reviews Feed's database tables are recreated automatically if they go missing, for example after a database cleanup tool runs.
+* Fix: Clearing a feed's cache no longer logs a PHP notice when debugging is on.
+* Fix: A feed that can't fetch reviews for a source now tells you why in the feed editor, instead of only showing "No Posts Found".
+
 = 2.15.0 =
 * Fix: When you reach the source limit without an API key, Add Source now says so and takes you to the API key step.
-* Fix: Pages with the Reviews Elementor widget no longer include the editor's feed data for visitors. If you use a page cache, clear it after updating.
+* Fix: Plugin security hardening. If you use a page cache, clear it after updating.
 * Fix: The block editor now gets only each feed's ID and name, so source details no longer reach anyone who can edit posts.
 * Fix: The "Optimize Images" setting is read correctly, and System Info now reports its real state.
 * Fix: The list of feeds shown as using a source no longer treats a `_` or `%` in its ID as a wildcard, so it can't list feeds that belong to a different source.

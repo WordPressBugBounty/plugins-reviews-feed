@@ -173,6 +173,23 @@
 		}
 
 		/**
+		 * A review count with the site locale's thousands separator (SMASH-2220), matching
+		 * number_format_i18n() in templates/review-alerts/popup.php.
+		 *
+		 * @param {number} count
+		 * @returns {string}
+		 */
+		formatCount(count) {
+			const number = Number(count) || 0;
+			try {
+				return number.toLocaleString(document.documentElement.lang || undefined);
+			} catch (e) {
+				// An invalid lang tag throws a RangeError.
+				return number.toLocaleString();
+			}
+		}
+
+		/**
 		 * Convert hex color to HSL hue value (0-360)
 		 *
 		 * Extracts hue from hex color for HSL-based theming.
@@ -789,7 +806,7 @@
 							${hasMoreReviews ? `
 								<div class="sbr-review-alert__expanded-see-all">
 									<button type="button" class="sbr-review-alert__expanded-see-all-btn">
-										<span>See all ${totalReviews} Reviews</span>
+										<span>See all ${this.formatCount(totalReviews)} Reviews</span>
 										<span class="sbr-review-alert__chevron">
 											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
 												<polyline points="9 18 15 12 9 6"></polyline>

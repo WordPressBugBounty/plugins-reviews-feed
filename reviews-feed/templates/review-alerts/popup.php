@@ -19,6 +19,7 @@
 
 use SmashBalloon\Reviews\Common\DisplayElements;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Frontend;
+use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Service;
 
 if (! defined('ABSPATH')) {
 	exit;
@@ -117,6 +118,16 @@ $custom_style = sprintf('--sbr-popup-accent-hue: %s;', esc_attr($accent_hue));
 if ($accent_color) {
 	$custom_style .= sprintf(' --sbr-popup-accent-fallback: %s;', esc_attr($accent_color));
 }
+$exact_accent       = SBR_Review_Alert_Service::exact_accent($settings);
+$exact_accent_class = $exact_accent ? 'sbr-review-alert--exact-accent' : '';
+if ($exact_accent) {
+	$custom_style .= sprintf(
+		' --sbr-popup-accent-exact: %s; --sbr-popup-accent-contrast: %s; --sbr-popup-accent-ink: %s;',
+		esc_attr($exact_accent['color']),
+		esc_attr($exact_accent['contrast']),
+		esc_attr($exact_accent['ink'])
+	);
+}
 
 // Visibility settings with defaults
 $show_avatar = $content_settings['show_avatar'] ?? true;
@@ -130,7 +141,7 @@ $link_url = $content_settings['link_url'] ?? '';
 ?>
 
 <div
-	class="sbr-review-alert <?php echo esc_attr($theme_class); ?> <?php echo esc_attr($position_class); ?> <?php echo esc_attr($powered_by_class); ?> <?php echo esc_attr($popup_type_class); ?>"
+	class="sbr-review-alert <?php echo esc_attr($theme_class); ?> <?php echo esc_attr($position_class); ?> <?php echo esc_attr($powered_by_class); ?> <?php echo esc_attr($popup_type_class); ?> <?php echo esc_attr($exact_accent_class); ?>"
 	style="<?php echo esc_attr($custom_style); ?>"
 	role="complementary"
 	aria-label="<?php esc_attr_e('Customer review notification', 'reviews-feed'); ?>"
@@ -194,9 +205,9 @@ $link_url = $content_settings['link_url'] ?? '';
 							<span>
 								<?php
 								printf(
-									/* translators: %d: number of reviews */
-									esc_html__('%d Total Reviews', 'reviews-feed'),
-									absint($total_reviews)
+									/* translators: %s: number of reviews, formatted for the site's locale (e.g. 7,133) */
+									esc_html__('%s Total Reviews', 'reviews-feed'),
+									esc_html(number_format_i18n(absint($total_reviews)))
 								);
 								?>
 							</span>
@@ -307,9 +318,9 @@ $link_url = $content_settings['link_url'] ?? '';
 							<span>
 								<?php
 								printf(
-									/* translators: %d: number of reviews */
-									esc_html__('View All %d Reviews', 'reviews-feed'),
-									absint($total_reviews)
+									/* translators: %s: number of reviews, formatted for the site's locale (e.g. 7,133) */
+									esc_html__('View All %s Reviews', 'reviews-feed'),
+									esc_html(number_format_i18n(absint($total_reviews)))
 								);
 								?>
 							</span>

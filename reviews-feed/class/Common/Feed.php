@@ -102,12 +102,46 @@ class Feed
 		$this->statuses['errors'] = $errors_array;
 	}
 
-	public function add_error($message, $instructions)
+	/**
+	 * @param string $message      Error HTML shown to admins.
+	 * @param string $instructions Directions HTML.
+	 * @param string $error_id     Relay error id (e.g. `freeReviewsLimitExceeded`) when the error came from the relay.
+	 * @param string $summary      Plain-text reason, for surfaces that don't render HTML (the feed editor).
+	 */
+	public function add_error($message, $instructions, $error_id = '', $summary = '')
 	{
-		$this->statuses['errors'][] = array(
+		$error = array(
 			'message' => $message,
 			'directions' => $instructions
 		);
+		if ($error_id !== '') {
+			$error['error_id'] = $error_id;
+			$error['summary'] = $summary;
+		}
+		$this->statuses['errors'][] = $error;
+	}
+
+	/**
+	 * Errors the relay returned while fetching reviews (SMASH-1610), plain text, for the feed editor.
+	 * Survives the feed cache because it is derived from the cached error list.
+	 *
+	 * No Settings link: whether an API key fixes a refusal depends on the provider too (several have no key field).
+	 *
+	 * @return array<int, array{id: string, message: string}>
+	 */
+	public function get_relay_errors()
+	{
+		$relay_errors = array();
+		foreach ((array) $this->get_errors() as $error) {
+			if (! is_array($error) || empty($error['error_id'])) {
+				continue;
+			}
+			$relay_errors[] = array(
+				'id' => self::clean_error_id($error['error_id']),
+				'message' => wp_strip_all_tags((string) ($error['summary'] ?? '')),
+			);
+		}
+		return $relay_errors;
 	}
 
 	public function get_feed_id()
@@ -247,7 +281,8 @@ class Feed
 		}
 
 		try {
-			$remote_posts = $this->get_remote_posts($settings);
+			$refused_before = count($this->get_relay_errors());
+			$remote_posts   = $this->get_remote_posts($settings);
 
 			foreach ($remote_posts as $provider_remote_posts) {
 				// Only dispatch when the reviews payload is actually a list. An
@@ -259,7 +294,10 @@ class Feed
 			}
 
 			$posts = $this->posts_from_db();
-			if (empty($posts)) {
+			// Every source refused (SMASH-1610) is not "no reviews": those errors are already recorded.
+			// A mixed feed keeps the generic reason, since its other sources' emptiness is otherwise unexplained.
+			$refused = count($this->get_relay_errors()) - $refused_before;
+			if (empty($posts) && ! ( $refused > 0 && $refused >= count($settings['sources']) )) {
 				$no_posts_found = __('No Posts Found.', 'reviews-feed');
 				if ($this->statuses['post_found_before_filter']) {
 					$this->add_error($no_posts_found, sprintf(__('There were no posts that fit your filters. Try modifying the filters set or add more sources with reviews that fit the filter by %sediting your feed%s', 'reviews-feed'), '<a href="' . esc_url(admin_url('admin.php?page=sbr')) . '" target="_blank" rel="noopener noreferrer">', '</a>'));
@@ -1041,6 +1079,13 @@ class Feed
 				$new_data = $remote_request->fetch();
 			}
 
+			// SMASH-1610: SBRelay::call() returns a refused request as the bare error envelope
+			// (`id`, `success: false`, no `data` key), so the branch below used to drop it silently.
+			if ($type === 'reviews' && $this->is_relay_error_envelope($new_data)) {
+				$this->add_relay_error($new_data, $request);
+				continue;
+			}
+
 			// If no data was returned, fall back to stored source info for header requests
 			if (!isset($new_data['data'])) {
 				if ($type === 'sources' && !empty($request['info'])) {
@@ -1070,9 +1115,9 @@ class Feed
 					}
 				}
 				$message .= '<br><br>';
-				$message .= sprintf(__('This is affecting the source %s for %s. New reviews will not be fetched until this is resolved.', 'reviews-feed'), wp_strip_all_tags($request['name']), wp_strip_all_tags($request['provider']));
+				$message .= self::source_affected_sentence(wp_strip_all_tags($request['name']), wp_strip_all_tags($request['provider']));
 				$message .= '<br><br>';
-				$this->add_error($message, sprintf(__('Troubleshoot by visiting %serror message reference page%s.', 'reviews-feed'), '<a href="https://smashballoon.com/doc/reviews-feed-error-message-reference/?reviews&utm_campaign=reviews-pro&utm_source=feed&utm_medium=apierror&utm_content=Error%20Message%20Reference" target="_blank" rel="noopener noreferrer">', '</a>'));
+				$this->add_error($message, self::troubleshoot_directions());
 				// For source requests: always skip the normal data push after error handling
 				// (error structures lack 'info' key and would break update_header_cache)
 				// For review requests: preserve original fall-through behavior
@@ -1090,6 +1135,97 @@ class Feed
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Second sentence of a fetch error, shared by the relay-refusal and `data.error` branches. Not escaped.
+	 *
+	 * @param string $source_name
+	 * @param string $provider
+	 * @return string
+	 */
+	private static function source_affected_sentence($source_name, $provider)
+	{
+		/* translators: 1: source name, 2: provider name */
+		return sprintf(__('This is affecting the source %s for %s. New reviews will not be fetched until this is resolved.', 'reviews-feed'), $source_name, $provider);
+	}
+
+	/**
+	 * Directions HTML for a fetch error: the error message reference link.
+	 *
+	 * @return string
+	 */
+	private static function troubleshoot_directions()
+	{
+		/* translators: 1: opening link tag, 2: closing link tag */
+		return sprintf(__('Troubleshoot by visiting %serror message reference page%s.', 'reviews-feed'), '<a href="https://smashballoon.com/doc/reviews-feed-error-message-reference/?reviews&utm_campaign=reviews-pro&utm_source=feed&utm_medium=apierror&utm_content=Error%20Message%20Reference" target="_blank" rel="noopener noreferrer">', '</a>');
+	}
+
+	/**
+	 * Relay error ids are camelCase identifiers; keep the case, drop anything else.
+	 *
+	 * @param mixed $id
+	 * @return string
+	 */
+	private static function clean_error_id($id)
+	{
+		return is_string($id) ? (string) preg_replace('/[^A-Za-z0-9_-]/', '', $id) : '';
+	}
+
+	/**
+	 * A refused relay request as SBRelay::call() returns it: an `id`, no `data`, not successful.
+	 *
+	 * @param mixed $response
+	 * @return bool
+	 */
+	private function is_relay_error_envelope($response)
+	{
+		return is_array($response)
+			&& ! isset($response['data'])
+			&& isset($response['id']) && is_string($response['id']) && $response['id'] !== ''
+			&& ( $response['success'] ?? false ) !== true;
+	}
+
+	/**
+	 * Record a relay refusal as a feed error carrying its id (SMASH-1610).
+	 *
+	 * The text is ours, keyed by id, not the relay's `message`: relay strings can echo request input.
+	 * relayUnreachable / relayServerError carry a message SBRelay itself wrote, so that one is reused.
+	 *
+	 * @param array $response Relay error envelope.
+	 * @param array $request  Hydrated source.
+	 * @return void
+	 */
+	private function add_relay_error(array $response, $request)
+	{
+		$error_id = self::clean_error_id($response['id'] ?? '');
+		if ($error_id === '') {
+			$error_id = 'relayError';
+		}
+
+		if ($error_id === 'freeReviewsLimitExceeded') {
+			// Provider-neutral on purpose: this also fires for sources with no API-key field (Trustpilot, sb-relay LimitReviewsRequest).
+			$reason = __("This source has reached the number of reviews the plugin can fetch on your current plan, so new reviews can't be fetched for it right now.", 'reviews-feed');
+		} elseif (in_array($error_id, array( 'relayUnreachable', 'relayServerError' ), true) && ! empty($response['message']) && is_string($response['message'])) {
+			$reason = wp_strip_all_tags($response['message']);
+		} else {
+			/* translators: %s: error code returned by the reviews server */
+			$reason = sprintf(__("The reviews server couldn't fetch reviews for this source (%s).", 'reviews-feed'), $error_id);
+		}
+
+		$source_name = wp_strip_all_tags((string) ($request['name'] ?? ''));
+		$provider    = wp_strip_all_tags((string) ($request['provider'] ?? ''));
+
+		$message  = esc_html($reason) . '<br><br>';
+		$message .= esc_html(self::source_affected_sentence($source_name, $provider));
+		$message .= '<br><br>';
+
+		$this->add_error(
+			$message,
+			self::troubleshoot_directions(),
+			$error_id,
+			$source_name !== '' ? $source_name . ': ' . $reason : $reason
+		);
 	}
 
 	public function add_source_to_post_set($source, $post_set)

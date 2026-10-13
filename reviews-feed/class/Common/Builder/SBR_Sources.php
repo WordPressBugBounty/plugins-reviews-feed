@@ -225,7 +225,9 @@ class SBR_Sources{
 
 		$info_collection = json_decode($collection['info'], true);
 		$info_collection['total_rating'] = $total_rating;
-		$info_collection['rating'] = $total_rating > 0 ? ceil($rating / $total_rating) : 0;
+		// SMASH-1685: the real average (two decimals, like Woo/EDD), not ceil(): 5,5,3,5,5 is 4.6, not 5.
+		// Displays round to one decimal and draw stars to the half below.
+		$info_collection['rating'] = $total_rating > 0 ? round($rating / $total_rating, 2) : 0;
 
 
 		$collection['last_updated'] = date('Y-m-d H:i:s');

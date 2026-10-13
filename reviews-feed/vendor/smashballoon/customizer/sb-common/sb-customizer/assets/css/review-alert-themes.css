@@ -228,6 +228,44 @@
     --sbr-popup-close-bg-hover: var(--sbr-popup-accent-700);
 }
 
+/* ==========================================================================
+   Exact accent (SMASH-2220)
+   A HEX typed in the customizer is used as entered instead of being reduced to
+   a hue: the palette is mixed from it, and 600/700 (stars, border, footer bar,
+   link hover) are the colour itself. Presets and the hue slider never set
+   --exact-accent, so they keep the OKLCH palette above.
+   --sbr-popup-accent-exact / -contrast / -ink come from the popup's inline style
+   (SBR_Review_Alert_Service::exact_accent() and its JS twin). Browsers without
+   color-mix() fall back to --sbr-popup-accent-fallback, which is the same hex.
+   ========================================================================== */
+@supports (color: color-mix(in oklch, red, blue)) {
+    .sbr-review-alert.sbr-review-alert--exact-accent {
+        --sbr-popup-accent-50: color-mix(in oklch, var(--sbr-popup-accent-exact) 6%, white);
+        --sbr-popup-accent-100: color-mix(in oklch, var(--sbr-popup-accent-exact) 14%, white);
+        --sbr-popup-accent-200: color-mix(in oklch, var(--sbr-popup-accent-exact) 28%, white);
+        --sbr-popup-accent-300: color-mix(in oklch, var(--sbr-popup-accent-exact) 45%, white);
+        --sbr-popup-accent-400: color-mix(in oklch, var(--sbr-popup-accent-exact) 65%, white);
+        --sbr-popup-accent-500: color-mix(in oklch, var(--sbr-popup-accent-exact) 85%, white);
+        --sbr-popup-accent-600: var(--sbr-popup-accent-exact);
+        --sbr-popup-accent-700: var(--sbr-popup-accent-exact);
+        --sbr-popup-accent-800: color-mix(in oklch, var(--sbr-popup-accent-exact) 75%, black);
+        --sbr-popup-accent-900: color-mix(in oklch, var(--sbr-popup-accent-exact) 45%, black);
+        --sbr-popup-accent-950: color-mix(in oklch, var(--sbr-popup-accent-exact) 25%, black);
+
+        --sbr-popup-accent-muted-50: color-mix(in oklch, var(--sbr-popup-accent-50) 40%, var(--sbr-popup-zinc-50));
+        --sbr-popup-accent-muted-100: color-mix(in oklch, var(--sbr-popup-accent-100) 40%, var(--sbr-popup-zinc-100));
+        --sbr-popup-accent-muted-200: color-mix(in oklch, var(--sbr-popup-accent-200) 40%, var(--sbr-popup-zinc-200));
+        --sbr-popup-accent-muted-300: color-mix(in oklch, var(--sbr-popup-accent-300) 40%, var(--sbr-popup-zinc-300));
+        --sbr-popup-accent-muted-400: color-mix(in oklch, var(--sbr-popup-accent-400) 40%, var(--sbr-popup-zinc-400));
+        --sbr-popup-accent-muted-500: color-mix(in oklch, var(--sbr-popup-accent-500) 40%, var(--sbr-popup-zinc-500));
+        --sbr-popup-accent-muted-600: color-mix(in oklch, var(--sbr-popup-accent-600) 40%, var(--sbr-popup-zinc-600));
+        --sbr-popup-accent-muted-700: color-mix(in oklch, var(--sbr-popup-accent-700) 40%, var(--sbr-popup-zinc-700));
+        --sbr-popup-accent-muted-800: color-mix(in oklch, var(--sbr-popup-accent-800) 40%, var(--sbr-popup-zinc-800));
+        --sbr-popup-accent-muted-900: color-mix(in oklch, var(--sbr-popup-accent-900) 40%, var(--sbr-popup-zinc-900));
+        --sbr-popup-accent-muted-950: color-mix(in oklch, var(--sbr-popup-accent-950) 40%, var(--sbr-popup-zinc-950));
+    }
+}
+
 .sbr-review-alert *,
 .sbr-review-alert *::before,
 .sbr-review-alert *::after {
@@ -2468,4 +2506,35 @@
     line-height: 1.2;
     margin-top: 2px;
     color: var(--sbr-popup-text);
+}
+
+/* ==========================================================================
+   Exact accent, light theme (SMASH-2220)
+   Text and icons drawn ON the accent use --contrast (black or white, whichever
+   reads better), and the accent drawn as a foreground on the white card uses
+   --ink (the colour itself, or a dark neutral when it is too light to see on
+   white, e.g. #FFFFFF). Dark and minimal themes keep their own text colours.
+   ========================================================================== */
+@supports (color: color-mix(in oklch, red, blue)) {
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) {
+        --sbr-popup-star-fill: var(--sbr-popup-accent-ink);
+        --sbr-popup-badge-icon: var(--sbr-popup-accent-ink);
+        --sbr-popup-link-hover-text: var(--sbr-popup-accent-contrast);
+        --sbr-popup-powered-text: var(--sbr-popup-accent-contrast);
+    }
+
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) .sbr-review-alert__logo svg path {
+        fill: var(--sbr-popup-accent-contrast);
+    }
+
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) .sbr-review-alert__expanded-cta,
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) .sbr-review-alert__expanded-cta:hover,
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) .sbr-review-alert__expanded-star:not(.sbr-review-alert__expanded-star--empty),
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) .sbr-review-alert__expanded-see-all-btn {
+        color: var(--sbr-popup-accent-ink);
+    }
+
+    .sbr-review-alert--exact-accent:not([class*="sbr-review-alert--dark"]):not([class*="sbr-review-alert--minimal"]) .sbr-review-alert__expanded-cta .sbr-review-alert__expanded-cta-icon path {
+        fill: var(--sbr-popup-accent-ink);
+    }
 }

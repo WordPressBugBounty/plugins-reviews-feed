@@ -25,6 +25,7 @@ use SmashBalloon\Reviews\Common\Services\ShortcodeService;
 use SmashBalloon\Reviews\Common\Services\MigrationReactivationNotice;
 use SmashBalloon\Reviews\Common\Services\VariantMismatchNotice;
 use SmashBalloon\Reviews\Common\Services\SiteUrlWatcher;
+use SmashBalloon\Reviews\Common\Services\DatabaseHealthService;
 use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 use Smashballoon\Stubs\Services\ServiceProvider;
 use SmashBalloon\Reviews\Common\Services\Upgrade\RoutineManagerService;
@@ -47,6 +48,8 @@ class ServiceContainer extends ServiceProvider
 		Reviews_Post::class,
 		MenuService::class,
 		RoutineManagerService::class,
+		// SMASH-1606: after the upgrade routines, so a fresh install's V1Routine has created the tables first.
+		DatabaseHealthService::class,
 		//Customizer Services
 		\Smashballoon\Customizer\V2\ServiceContainer::class,
 		FeedCacheUpdateService::class,

@@ -180,6 +180,8 @@ class SBR_Feed_Saver_Manager
 					$feed->get_set_cache();
 					$posts = $feed->get_post_set_page();
 					$return['posts'] = $posts;
+					// SMASH-1610: the editor replaces its notice with whatever this returns.
+					$return['relayErrors'] = $feed->get_relay_errors();
 				}
 			}
 		}
@@ -305,6 +307,8 @@ class SBR_Feed_Saver_Manager
 			// cached review set, so the preview's combined count + weighted
 			// average line up with what visitors actually see.
 			$return['sourcesList'] = self::backfill_preview_source_counts($sources_list, $feed->get_posts());
+			// SMASH-1610: relay refusals behind an empty preview.
+			$return['relayErrors'] = $feed->get_relay_errors();
 
 			echo sbr_json_encode(
 				$return
@@ -2564,6 +2568,8 @@ class SBR_Feed_Saver_Manager
 					$single_post_cache->store();
 				}
 			}
+			// SMASH-1685: the export's rating went through absint() above (4.6 -> 4); recompute from the imported rows.
+			SBR_Sources::update_collection_ratings($collection_info['account_id']);
 		}
 
 		echo sbr_json_encode(

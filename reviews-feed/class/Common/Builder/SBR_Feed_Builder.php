@@ -250,7 +250,9 @@ class SBR_Feed_Builder extends Feed_Builder {
 				'feed_info' => $feed_db_data,
 				'settings' => $settings,
 				'posts' => !empty($posts) ? $posts : [],
-				'sourcesList' => $sources_list
+				'sourcesList' => $sources_list,
+				// SMASH-1610: why the preview may be empty, for the editor to say so.
+				'relayErrors' => $feed->get_relay_errors(),
 			];
 		}
 		return [];

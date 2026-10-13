@@ -71,8 +71,11 @@ class Smash1756SchemaServiceTest extends TestCase
 			)
 		);
 
-		// And when the whole block comment is itself JSON-escaped one level deeper.
-		$this->assertSame([17], $this->service->detect_feed_ids('reviews-feed {\\"feedId\\":\\"17\\"}'));
+		// And when the whole block comment is itself JSON-escaped one level deeper, inside builder JSON.
+		$this->assertSame(
+			[17],
+			$this->service->detect_feed_ids('[{"settings":{"editor":"<!-- wp:smashballoon\\/reviews-feed {\\"feedId\\":\\"17\\"} \\/-->"}}]')
+		);
 	}
 
 	/** An unconfigured block has `feedId: ""` — there is no feed to look up. */
@@ -115,15 +118,21 @@ class Smash1756SchemaServiceTest extends TestCase
 		);
 	}
 
-	/** All four placement forms at once — shortcode, both blocks, Elementor. */
+	/**
+	 * All four placement forms — shortcode and both blocks in post_content, Elementor in its own meta value.
+	 * setup() reads each source separately (placement_feed_ids()), so the two are detected separately.
+	 */
 	public function test_detect_feed_ids_across_every_placement_form(): void
 	{
 		$content = '[reviews-feed feed=3]'
 			. '<!-- wp:sbr/sbr-feed-block {"shortcodeSettings":"feed=\\"7\\""} /-->'
-			. '<!-- wp:smashballoon/reviews-feed {"feedId":"41"} /-->'
-			. ' {"widgetType":"sb-reviews-feed","settings":{"feed_id":"183"}}';
+			. '<!-- wp:smashballoon/reviews-feed {"feedId":"41"} /-->';
 
-		$this->assertSame([3, 7, 41, 183], $this->service->detect_feed_ids($content));
+		$this->assertSame([3, 7, 41], $this->service->detect_feed_ids($content));
+		$this->assertSame(
+			[183],
+			$this->service->detect_feed_ids('[{"widgetType":"sb-reviews-feed","settings":{"feed_id":"183"}}]')
+		);
 	}
 
 	/** Shortcode spacing/quoting variants a user might actually type. */

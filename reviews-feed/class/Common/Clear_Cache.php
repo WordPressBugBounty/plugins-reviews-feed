@@ -158,16 +158,28 @@ class Clear_Cache extends ServiceProvider
 	public static function clear_feed_caches_by_id($feeds_ids)
 	{
 		global $wpdb;
+		// SMASH-1990: one %s per id. prepare() with no placeholder logged a doing_it_wrong notice on every call.
+		$feeds_ids = array_values(
+			array_filter(
+				array_map('strval', (array) $feeds_ids),
+				static function (string $id): bool {
+					return $id !== '';
+				}
+			)
+		);
+		if (empty($feeds_ids)) {
+			return;
+		}
 		$cache_table_name = $wpdb->prefix . 'sbr_feed_caches';
-		$feeds_ids_string = "'" . implode('\', \'', $feeds_ids) . "'";
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is prefixed, feed_ids are sanitized internally
+		$placeholders     = implode(', ', array_fill(0, count($feeds_ids), '%s'));
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is prefixed; ids are placeholders
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE $cache_table_name
 				SET cache_value = ''
 				WHERE cache_key NOT IN ( 'posts_backup', 'header_backup' )
-				AND feed_id IN ($feeds_ids_string)
-				"
+				AND feed_id IN ($placeholders)",
+				...$feeds_ids
 			)
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared

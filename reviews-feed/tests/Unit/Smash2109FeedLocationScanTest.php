@@ -147,6 +147,13 @@ class Smash2109FeedLocationScanTest extends TestCase
 		$this->assertSame(array(), $this->feed_ids_in_content('[reviews-feed]'));
 	}
 
+	/** SMASH-2033: `[[…]]` is printed as text, so a docs page showing the shortcode is not a placement. */
+	public function test_escaped_shortcode_places_nothing(): void
+	{
+		$this->assertSame(array(), $this->feed_ids_in_content('<code>[[reviews-feed feed=12]]</code>'));
+		$this->assertSame(array(8 => 8), $this->feed_ids_in_content('[[reviews-feed feed=12]] [reviews-feed feed=8]'));
+	}
+
 	// ---------- placement forms 2 and 3: the two blocks ----------
 
 	public function test_modern_block_feed_id_is_found(): void

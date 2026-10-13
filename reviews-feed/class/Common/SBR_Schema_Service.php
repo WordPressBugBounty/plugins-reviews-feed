@@ -21,6 +21,7 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+use SmashBalloon\Reviews\Common\Customizer\DB;
 use Smashballoon\Stubs\Services\ServiceProvider;
 
 class SBR_Schema_Service extends ServiceProvider
@@ -123,7 +124,7 @@ class SBR_Schema_Service extends ServiceProvider
 			return;
 		}
 
-		$feed_ids = $this->detect_feed_ids($this->placement_haystack($post));
+		$feed_ids = $this->placement_feed_ids($post);
 		if (empty($feed_ids)) {
 			return;
 		}
@@ -158,44 +159,52 @@ class SBR_Schema_Service extends ServiceProvider
 	}
 
 	/**
-	 * Everything on this page that could reference a feed.
+	 * Feed IDs placed on this post, from post_content and from the postmeta page builders keep their layout in.
 	 *
-	 * `post_content` alone is not enough: Elementor keeps its layout in the
-	 * `_elementor_data` postmeta, so a feed placed with the Elementor widget is
-	 * invisible to a content-only scan — verified on a local page where the feed
-	 * rendered 61 review cards while the schema graph carried no rated node at all.
-	 * The widget's control is `feed_id`, which detect_feed_ids() also matches.
-	 *
-	 * Cheap: postmeta for a singular post is already primed by the main query, and
-	 * the string is only appended when the meta actually exists.
+	 * Meta keys: the feed-location scan's `sbr_feed_locations_meta_keys` list (Elementor by default) plus SiteOrigin,
+	 * Beaver Builder and Bricks (SMASH-2122). Postmeta for a singular post is already primed by the main query.
 	 *
 	 * @param  \WP_Post $post
-	 * @return string
+	 * @return int[]
 	 */
-	private function placement_haystack(\WP_Post $post): string
+	private function placement_feed_ids(\WP_Post $post): array
 	{
-		$content = (string) $post->post_content;
+		$ids = $this->detect_feed_ids((string) $post->post_content);
 
-		$elementor = get_post_meta($post->ID, '_elementor_data', true);
-		if (is_string($elementor) && $elementor !== '') {
-			$content .= ' ' . $elementor;
+		$keys = (array) apply_filters('sbr_feed_locations_meta_keys', [ '_elementor_data' ]);
+		$keys = array_merge($keys, [ 'panels_data', '_fl_builder_data', '_bricks_page_content_2' ]);
+		foreach (array_unique($keys) as $key) {
+			// An empty key makes get_post_meta() return every meta row.
+			if (! is_string($key) || $key === '') {
+				continue;
+			}
+			$value = get_post_meta($post->ID, $key, true);
+			// Encoded once so detect_feed_ids() can gate on a marker before parsing; Beaver's nodes are stdClass, which
+			// the tree walker can't read until decoded as arrays. A page with no marker is never decoded.
+			if (is_array($value) || is_object($value)) {
+				$value = wp_json_encode($value);
+			}
+			if (is_string($value) && $value !== '') {
+				$ids = array_merge($ids, $this->detect_feed_ids($value));
+			}
 		}
 
-		return $content;
+		return array_values(array_unique($ids));
 	}
 
 	/**
-	 * Extract Reviews Feed feed IDs referenced on the page. Covers all three ways a
-	 * feed can be placed:
-	 *   - `[reviews-feed feed=N]` shortcode (bare, quoted or single-quoted)
-	 *   - legacy `sbr/sbr-feed-block`, whose `shortcodeSettings` embeds `feed=\"N\"`
-	 *   - modern `smashballoon/reviews-feed` block, serialised as `{"feedId":"N"}`
-	 *   - Elementor widget `sb-reviews-feed`, whose control is `feed_id` and whose data
-	 *     lives in the `_elementor_data` postmeta (see placement_haystack())
-	 * Gated on a marker so an unrelated `feed=` elsewhere on the page can't trigger
-	 * a lookup. An unconfigured block (`"feedId":""`) correctly yields nothing.
+	 * Reviews Feed IDs placed by a piece of content: the `[reviews-feed]` shortcode, both blocks, the Elementor
+	 * widget (in `_elementor_data` JSON), a shortcode inside builder JSON, and a rendered feed a builder copied into
+	 * the page (`id="sb-reviews-container-N"`, sbr_container_id()).
 	 *
-	 * @param  string $content Raw post content.
+	 * Parsed by the feed-location scan's parser (DB::feed_ids_in_meta(), SMASH-2109), so schema and the "used in"
+	 * list agree on what a placement is. An escaped `[[reviews-feed …]]`, a look-alike tag, and another plugin's
+	 * `feed=` or `feed_id` don't count (SMASH-2033). An unconfigured block (`"feedId":""`) yields nothing.
+	 *
+	 * @since 2.15.1 Reads one source at a time. Post content with builder JSON appended, or a JSON fragment
+	 *               outside a block comment, is no longer a placement; setup() passes each source separately.
+	 *
+	 * @param  string $content Raw post content or builder JSON.
 	 * @return int[]           Unique positive feed IDs.
 	 */
 	public function detect_feed_ids($content): array
@@ -203,24 +212,25 @@ class SBR_Schema_Service extends ServiceProvider
 		if (! is_string($content) || $content === '') {
 			return [];
 		}
-		if (strpos($content, 'reviews-feed') === false && strpos($content, 'sbr/sbr-feed-block') === false) {
+
+		// Cheap gate: most pages hold no feed, and the parser below decodes and walks the whole value. Covers the
+		// shortcode, both blocks (`sbr-feed-block` also matches its JSON-escaped `sbr\/sbr-feed-block`), the Elementor
+		// widget (`sb-reviews-feed`) and a rendered feed.
+		if (
+			strpos($content, 'reviews-feed') === false
+			&& strpos($content, 'sbr-feed-block') === false
+			&& strpos($content, 'sb-reviews-container-') === false
+		) {
 			return [];
 		}
 
-		$ids = [];
-		// Every way a feed can be placed on a page serialises its id differently, and
-		// missing one means the page silently gets no schema at all:
-		//   shortcode      [reviews-feed feed=3]              -> feed=3
-		//   legacy block   sbr/sbr-feed-block                 -> shortcodeSettings with feed=\"3\"
-		//   modern block   smashballoon/reviews-feed          -> {"feedId":"3"}
-		// The `feedId` form was missed originally (the optional `Id` below), so a feed
-		// inserted with the modern Gutenberg block emitted nothing. Caught on a QA site
-		// after the demo page was switched from the shortcode to the block.
-		if (preg_match_all('/feed(?:Id|_id)?\\\\?["\']?\s*[=:]\s*\\\\?["\']?(\d+)/i', $content, $matches)) {
+		$ids = DB::feed_ids_in_meta($content);
+
+		if (preg_match_all('/\bid=\\\\?["\']sb-reviews-container-(\d+)\\\\?["\']/', $content, $matches)) {
 			foreach ($matches[1] as $raw) {
 				$id = (int) $raw;
 				if ($id > 0) {
-					$ids[$id] = $id;
+					$ids[ $id ] = $id;
 				}
 			}
 		}

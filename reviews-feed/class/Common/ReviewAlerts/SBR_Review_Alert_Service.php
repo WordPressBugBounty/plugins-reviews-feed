@@ -204,6 +204,8 @@ class SBR_Review_Alert_Service extends ServiceProvider
 			'popup_type'  => 'aggregate', // 'aggregate' (summary view) or 'recent' (cycles through reviews)
 			'accent_color' => '#175CE3',
 			'accent_hue'  => '220', // Hue value (0-360) for HSL theming, corresponds to #175CE3
+			// 'hue': OKLCH palette from accent_hue (presets, slider). 'exact': accent_color as entered (SMASH-2220).
+			'accent_mode' => 'hue',
 			'position'    => 'bottom-right',
 			'timing'      => [
 				'mode'               => 'fixed',  // 'fixed' or 'random' - controls review cycling interval
@@ -310,6 +312,10 @@ class SBR_Review_Alert_Service extends ServiceProvider
 		$sanitized['accent_hue'] = isset($settings['accent_hue'])
 			? (string) min(360, max(0, absint($settings['accent_hue'])))
 			: $defaults['accent_hue'];
+
+		$sanitized['accent_mode'] = isset($settings['accent_mode']) && $settings['accent_mode'] === 'exact'
+			? 'exact'
+			: 'hue';
 
 		// Position - must be valid position
 		$valid_positions = ['bottom-left', 'bottom-right', 'top-left', 'top-right'];
@@ -607,6 +613,26 @@ class SBR_Review_Alert_Service extends ServiceProvider
 		}
 
 		return in_array($tier, $feature_tiers[$feature], true);
+	}
+
+	/**
+	 * Colours for an alert whose accent was typed as an exact hex (SMASH-2220), or null when the
+	 * alert uses the hue palette: a preset, the hue slider, an older alert with no accent_mode, or
+	 * an invalid hex. Not tier-gated, like the hue palette: 'custom_accent_color' is listed in
+	 * can_use_feature() but neither the customizer picker nor the popup enforces it, so gating only
+	 * this mode would make the preview and the live alert disagree.
+	 *
+	 * @since 2.15.1
+	 * @param array $settings Alert settings.
+	 * @return array{color: string, contrast: string, ink: string}|null
+	 */
+	public static function exact_accent(array $settings): ?array
+	{
+		if (($settings['accent_mode'] ?? 'hue') !== 'exact') {
+			return null;
+		}
+
+		return sbr_review_alert_accent_colors($settings['accent_color'] ?? null);
 	}
 
 	/**

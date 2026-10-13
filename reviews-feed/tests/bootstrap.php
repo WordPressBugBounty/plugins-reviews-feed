@@ -55,6 +55,11 @@ if (!defined('SBRVER')) {
 if (!defined('SBR_PLUGIN_NAME')) {
 	define('SBR_PLUGIN_NAME', 'Reviews Feed Pro Test');
 }
+// Templates that print the default avatar (templates/review-alerts/popup.php) read it.
+if (!defined('SB_COMMON_ASSETS')) {
+	define('SB_COMMON_ASSETS', 'https://example.test/wp-content/plugins/sb-reviews/vendor/smashballoon/customizer/sb-common/');
+}
+
 if (!defined('SBR_PRODUCT_ID')) {
 	define('SBR_PRODUCT_ID', 9999999);
 }
@@ -177,6 +182,13 @@ if (!function_exists('esc_html_e')) {
 	function esc_html_e($text, $domain = 'default')
 	{
 		echo esc_html($text);
+	}
+}
+
+if (!function_exists('esc_attr_e')) {
+	function esc_attr_e($text, $domain = 'default')
+	{
+		echo esc_attr($text);
 	}
 }
 
@@ -371,6 +383,14 @@ if (!function_exists('check_ajax_referer')) {
 	}
 }
 
+if (!function_exists('wp_doing_ajax')) {
+	// Controllable via $GLOBALS['sbr_test_doing_ajax'] (SMASH-1606).
+	function wp_doing_ajax()
+	{
+		return (bool) ($GLOBALS['sbr_test_doing_ajax'] ?? false);
+	}
+}
+
 if (!function_exists('current_user_can')) {
 	// Controllable via $GLOBALS['sbr_test_user_can']; the real
 	// sbr_current_user_can() (class/sbr-functions.php) delegates here.
@@ -442,6 +462,22 @@ if (!function_exists('update_option')) {
 		global $wp_options_mock;
 		if (!is_array($wp_options_mock)) {
 			$wp_options_mock = [];
+		}
+		$wp_options_mock[$option] = $value;
+		return true;
+	}
+}
+
+if (!function_exists('add_option')) {
+	// Core contract: false when the option already exists (Feed's refresh lock relies on that).
+	function add_option($option, $value = '', $deprecated = '', $autoload = null)
+	{
+		global $wp_options_mock;
+		if (!is_array($wp_options_mock)) {
+			$wp_options_mock = [];
+		}
+		if (array_key_exists($option, $wp_options_mock)) {
+			return false;
 		}
 		$wp_options_mock[$option] = $value;
 		return true;
