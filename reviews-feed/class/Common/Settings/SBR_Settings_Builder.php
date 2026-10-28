@@ -9,10 +9,12 @@
 namespace SmashBalloon\Reviews\Common\Settings;
 
 use Smashballoon\Customizer\V2\Settings_Builder;
+use SmashBalloon\Reviews\Common\Abilities\SBR_Abilities;
 use SmashBalloon\Reviews\Common\AuthorizationStatusCheck;
 use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
 use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\Services\SBR_Upgrader;
+use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
 use SmashBalloon\Reviews\Common\Util;
 use SmashBalloon\Reviews\Common\Utils\EmailVerification;
 
@@ -59,6 +61,55 @@ class SBR_Settings_Builder extends Settings_Builder {
 	}
 
 	/**
+	 * Extend the vendored customizer's settings-page enqueue with the AI
+	 * Agents card's own progressive-enhancement script/style.
+	 *
+	 * Kept out of the shared smashballoon/customizer package on purpose --
+	 * see the 'aiagents_section' comment in SBR_General_Tab -- so this
+	 * overrides (rather than edits) the parent's hook, which only fires on
+	 * the Reviews Feed settings page (`load-{$hook_suffix}`).
+	 *
+	 * @since SBR-499
+	 *
+	 * @return void
+	 */
+	public function settings_enqueue_admin_scripts()
+	{
+		parent::settings_enqueue_admin_scripts();
+
+		// SBR-499 / SBR-577 (AgDR-9005) — the AI Agents card renders in both
+		// editions whenever the Abilities API can register (see the matching
+		// guard in SBR_General_Tab::tab_sections()); enqueue its assets
+		// under the same condition so no page loads CSS/JS for a card it
+		// never renders (WordPress < 6.9).
+		if (SBR_Abilities::is_available()) {
+			wp_enqueue_style(
+				'sbr-ai-agents',
+				SBR_PLUGIN_URL . 'assets/admin/css/ai-agents.css',
+				[],
+				SBRVER
+			);
+
+			wp_enqueue_script(
+				'sbr-ai-agents',
+				SBR_PLUGIN_URL . 'assets/admin/js/ai-agents.js',
+				['sb-customizer-app'],
+				SBRVER,
+				true
+			);
+
+			wp_localize_script(
+				'sbr-ai-agents',
+				'sbrAiAgentsL10n',
+				[
+					'installing' => __('Installing…', 'reviews-feed'),
+					'activating' => __('Activating…', 'reviews-feed'),
+				]
+			);
+		}
+	}
+
+	/**
 	 * Build the settings-page tab data, then drop the Data Sharing tab when any
 	 * Smash Balloon Pro plugin is active. Pro forces data-sharing consent +
 	 * in-plugin notifications on and governs them centrally, so the tab is hidden.
@@ -92,11 +143,17 @@ class SBR_Settings_Builder extends Settings_Builder {
 	{
 		$verification_result = EmailVerification::catch_email_verification();
 
+		$plugin_settings = sbr_recursive_parse_args(get_option('sbr_settings', []), sbr_plugin_settings_defaults());
+		// What this page load saw for MCP Write Access; posted back with the rest of
+		// pluginSettings so a stale tab cannot overwrite the stored toggle (see
+		// SettingsManagerService::reconcile_ai_write_toggle()).
+		$plugin_settings[SettingsManagerService::AI_WRITE_LOADED_KEY] = !empty($plugin_settings[SettingsManagerService::AI_WRITE_KEY]);
+
 		$settings_data = [
 			'nonce' => wp_create_nonce('sbr-admin'),
 			'apiKeys' => get_option('sbr_apikeys', []),
 			'apiKeyLimits' => get_option('sbr_apikeys_limit', []),
-			'pluginSettings' => sbr_recursive_parse_args(get_option('sbr_settings', []), sbr_plugin_settings_defaults()),
+			'pluginSettings' => $plugin_settings,
 			'currentTab' => 'sb-general-tab',
 			'sourcesList' => SBR_Sources::get_sources_list(),
 			'sourcesCount' => SBR_Sources::get_sources_count(),

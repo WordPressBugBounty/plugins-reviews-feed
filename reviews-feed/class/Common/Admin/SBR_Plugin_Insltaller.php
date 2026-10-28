@@ -16,6 +16,12 @@ use Smashballoon\Stubs\Services\ServiceProvider;
 use SmashBalloon\Reviews\Common\Util;
 
 class SBR_Plugin_Insltaller extends ServiceProvider{
+	/**
+	 * The only place a package may be downloaded from: the WordPress.org
+	 * plugin directory.
+	 */
+	const ALLOWED_PACKAGE_PREFIX = 'https://downloads.wordpress.org/plugin/';
+
 	public function register()
 	{
 		$this->init();
@@ -46,10 +52,34 @@ class SBR_Plugin_Insltaller extends ServiceProvider{
 			wp_send_json_error();
 		}
 
+		// Installing code needs the real plugin-management capability, not just
+		// access to this plugin's settings: delegated users and multisite
+		// sub-site admins hold the latter but not install_plugins.
+		if (!current_user_can('install_plugins')) {
+			wp_send_json_error(
+				esc_html__('You do not have permission to install plugins.', 'reviews-feed')
+			);
+		}
+
+		// DISALLOW_FILE_MODS (and similar) must stop installs from here too.
+		if (!wp_is_file_mod_allowed('sbr_install_plugin')) {
+			wp_send_json_error(
+				esc_html__('Plugin installation is disabled on this site (file modifications are not allowed).', 'reviews-feed')
+			);
+		}
+
 		$error = esc_html__('Could not install addon. Please download from smashballoon.com and install manually.', 'reviews-feed');
 
 		if (empty($_POST['plugin'])) {
 			wp_send_json_error($error);
+		}
+
+		// Only install packages hosted on the WordPress.org plugin directory.
+		$package = sanitize_text_field(wp_unslash($_POST['plugin']));
+		if (strpos($package, self::ALLOWED_PACKAGE_PREFIX) !== 0) {
+			wp_send_json_error(
+				esc_html__('Only plugins from the WordPress.org plugin directory can be installed from here.', 'reviews-feed')
+			);
 		}
 
 		// Set the current screen to avoid undefined notices.
@@ -91,7 +121,7 @@ class SBR_Plugin_Insltaller extends ServiceProvider{
 			wp_send_json_error($error);
 		}
 
-        $installer->install(sanitize_text_field(wp_unslash($_POST['plugin']))); // phpcs:ignore
+		$installer->install($package);
 
 		// Flush the cache and return the newly installed plugin basename.
 		wp_cache_flush();
@@ -99,8 +129,11 @@ class SBR_Plugin_Insltaller extends ServiceProvider{
 		$plugin_basename = $installer->plugin_info();
 
 		if ($plugin_basename) {
-			// Activate the plugin silently.
-			$activated = activate_plugin($plugin_basename);
+			// Activate the plugin silently, but only for a user who may activate
+			// plugins: install_plugins alone must not also switch the code on.
+			$activated = current_user_can('activate_plugins')
+				? activate_plugin($plugin_basename)
+				: new \WP_Error('sbr_activation_not_permitted', 'activate_plugins capability required');
 
 			wp_send_json_success([
 				'plugins' => Util::get_plugins_info(),
@@ -123,6 +156,12 @@ class SBR_Plugin_Insltaller extends ServiceProvider{
 
 		if (!sbr_current_user_can('manage_reviews_feed_options')) {
 			wp_send_json_error();
+		}
+
+		if (!current_user_can('activate_plugins')) {
+			wp_send_json_error(
+				esc_html__('You do not have permission to activate plugins.', 'reviews-feed')
+			);
 		}
 
 		if (isset($_POST['plugin'])) {
@@ -150,6 +189,12 @@ class SBR_Plugin_Insltaller extends ServiceProvider{
 
 		if (!sbr_current_user_can('manage_reviews_feed_options')) {
 			wp_send_json_error();
+		}
+
+		if (!current_user_can('deactivate_plugins')) {
+			wp_send_json_error(
+				esc_html__('You do not have permission to deactivate plugins.', 'reviews-feed')
+			);
 		}
 
 		if (isset($_POST['plugin'])) {

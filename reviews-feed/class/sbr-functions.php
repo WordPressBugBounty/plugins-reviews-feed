@@ -283,6 +283,15 @@ function sbr_plugin_settings_defaults()
 		'feed_issue_reports' => true,
 		// SMASH-1756 — emit schema.org rich-snippet markup for feeds (global, default on).
 		'enableSchema' => true,
+		// SBR-499 — WordPress Abilities API write gate (AgDR-0503). Off by
+		// default: reading feed/settings data through the Abilities API is
+		// always allowed, but an AI assistant may only change settings once a
+		// human explicitly opts in via Settings → General ("MCP Write
+		// Access"). Shared by Free and Pro (SBR-577, AgDR-9005): the same
+		// option gates both editions' abilities, so an upgrade or downgrade
+		// keeps the human's choice. Nothing reads or acts on this gate unless
+		// SBR_Abilities::is_available() is true.
+		'ai_write_enabled' => false,
 		'translations' => [
 			'second' => __('second', 'reviews-feed'),
 			'seconds' => __('seconds', 'reviews-feed'),

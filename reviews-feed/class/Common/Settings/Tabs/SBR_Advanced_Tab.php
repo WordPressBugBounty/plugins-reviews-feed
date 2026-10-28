@@ -116,8 +116,10 @@ class SBR_Advanced_Tab extends SB_SettingsPage_Tab {
 				'options' => [
 					'enabled' => true,
 					'disabled' => false
-				]
+				],
+				'separator' => true
 			],
+			// SBR-499 — moved to the General tab, above Manage Sources (SBR-195).
 			/*
 			'adminnoticeerror_section' => [
 				'id'        => 'admin_error_notices',

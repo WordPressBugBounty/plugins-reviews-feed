@@ -385,6 +385,7 @@ class Feed
 				foreach ($remote_header_data as $key => $entry) {
 					$remote_header_data[$key]['info']['feed_total_review_count'] = $feed_aggregate['count'];
 					$remote_header_data[$key]['info']['feed_average_rating']     = $feed_aggregate['rating'];
+					$remote_header_data[$key]['info']['feed_rated_count']        = $feed_aggregate['rated'];
 					$remote_header_data[$key]['info']['feed_aggregated']         = true;
 				}
 			}
@@ -485,7 +486,7 @@ class Feed
 			if (empty($source_info)) {
 				continue;
 			}
-			$remote_header_data[] = [
+			$entry = [
 				'info' => [
 					'id'           => $source_info['id'] ?? $s_source['account_id'] ?? '',
 					'name'         => $source_info['name'] ?? $source_info['source_name'] ?? $s_source['name'] ?? 'Unknown',
@@ -494,6 +495,11 @@ class Feed
 					'url'          => $source_info['url'] ?? ''
 				]
 			];
+			// SMASH-2477: keep the count the rating covers, or this path weights the header differently.
+			if (isset($source_info['rated_count'])) {
+				$entry['info']['rated_count'] = (int) $source_info['rated_count'];
+			}
+			$remote_header_data[] = $entry;
 		}
 
 		// SMASH-1412: per-source counts double-count when two EDD (or Woo) sources
@@ -508,6 +514,7 @@ class Feed
 			foreach ($remote_header_data as $key => $entry) {
 				$remote_header_data[$key]['info']['feed_total_review_count'] = $feed_aggregate['count'];
 				$remote_header_data[$key]['info']['feed_average_rating']     = $feed_aggregate['rating'];
+				$remote_header_data[$key]['info']['feed_rated_count']        = $feed_aggregate['rated'];
 				$remote_header_data[$key]['info']['feed_aggregated']         = true;
 			}
 		}
@@ -542,7 +549,7 @@ class Feed
 	 *
 	 * @since SMASH-1412
 	 * @param array $sources Sources array from feed settings
-	 * @return array{count:int,rating:float}|null
+	 * @return array{count:int,rating:float,rated:int}|null
 	 */
 	private function compute_feed_level_aggregate(array $sources)
 	{
@@ -564,6 +571,7 @@ class Feed
 
 		$total_count = 0;
 		$weighted_sum = 0.0;
+		$weighted_n = 0;
 		$any_dedup = false;
 
 		foreach ($by_provider as $provider => $provider_sources) {
@@ -579,12 +587,19 @@ class Feed
 					$count  = (int) ($info['review_count'] ?? $info['total_rating'] ?? 0);
 					$rating = (float) ($info['rating'] ?? $info['average_rating'] ?? 0);
 					$total_count  += $count;
-					$weighted_sum += $rating * $count;
+					// SMASH-2477: weight by the reviews the average covers; an unrated source adds none.
+					if ($rating > 0) {
+						$weight        = (int) ($info['rated_count'] ?? $count);
+						$weighted_sum += $rating * $weight;
+						$weighted_n   += $weight;
+					}
 				}
 			} else {
 				$any_dedup = true;
 				$total_count  += $agg['count'];
-				$weighted_sum += $agg['rating'] * $agg['count'];
+				$weight        = (int) ($agg['rated'] ?? $agg['count']);
+				$weighted_sum += $agg['rating'] * $weight;
+				$weighted_n   += $weight;
 			}
 		}
 
@@ -597,7 +612,8 @@ class Feed
 
 		return [
 			'count'  => $total_count,
-			'rating' => $total_count > 0 ? round($weighted_sum / $total_count, 1) : 0.0,
+			'rating' => $weighted_n > 0 ? round($weighted_sum / $weighted_n, 1) : 0.0,
+			'rated'  => $weighted_n,
 		];
 	}
 
@@ -612,7 +628,7 @@ class Feed
 	 * @since SMASH-1412
 	 * @param string $provider Provider name (edd, woocommerce, …)
 	 * @param array  $sources  Subset of feed sources matching this provider
-	 * @return array{count:int,rating:float}|null
+	 * @return array{count:int,rating:float,rated?:int}|null   rated: the reviews the rating covers (SMASH-2477)
 	 */
 	public static function compute_provider_aggregate(string $provider, array $sources)
 	{
@@ -679,6 +695,7 @@ class Feed
 			return [
 				'count'  => (int) ($info['review_count'] ?? 0),
 				'rating' => (float) ($info['average_rating'] ?? $info['rating'] ?? 0),
+				'rated'  => (int) ($info['rated_count'] ?? $info['review_count'] ?? 0),
 			];
 		}
 

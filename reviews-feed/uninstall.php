@@ -28,6 +28,14 @@ foreach ($cron_keys as $key) {
 	wp_clear_scheduled_hook($key);
 }
 
+// Abilities API state tokens + slots (SBR_State_Token::PREFIX) are 15-minute
+// transients, i.e. runtime state, so they are removed even when settings are
+// preserved. They deliberately do not start with `sbr_`, so no cache-wipe
+// pattern reaches them; remove the transient and its timeout row explicitly.
+global $wpdb;
+$wpdb->query("DELETE FROM {$wpdb->options} WHERE `option_name` LIKE ('\_transient\_sb\_abilities\_sbr\_state\_%')");
+$wpdb->query("DELETE FROM {$wpdb->options} WHERE `option_name` LIKE ('\_transient\_timeout\_sb\_abilities\_sbr\_state\_%')");
+
 if (! $preserve_settings) {
 	// wp_options
 	$wp_options_keys = array(
@@ -91,3 +99,9 @@ if (! $preserve_settings) {
 		$wp_filesystem->delete($folder, true);
 	}
 }
+
+// Gate epoch (SBR_Write_Gate::EPOCH_OPTION). Deleted LAST, after sbr_settings: if the
+// plugin's hooks were ever live in this request, deleting the settings option fires
+// delete_option_sbr_settings, which re-creates the epoch. Runtime state, so removed
+// even when settings are preserved (the tokens it guards are already gone).
+delete_option('sb_abilities_sbr_gate_epoch');

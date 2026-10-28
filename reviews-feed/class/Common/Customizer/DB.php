@@ -287,6 +287,34 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 
 
 	/**
+	 * Narrow a (possibly empty) WHERE clause to an allowlist of providers.
+	 * An empty allowlist matches nothing.
+	 *
+	 * @param string[] $providers Provider slugs.
+	 * @param string   $column    Qualified column name (literal, never user input).
+	 * @param string   $existing  Existing prepared WHERE clause (may be '').
+	 * @return string
+	 */
+	private function providers_where_clause(array $providers, $column, $existing)
+	{
+		global $wpdb;
+		if (empty($providers)) {
+			$in = '1 = 0';
+		} else {
+			$placeholders = implode(', ', array_fill(0, count($providers), '%s'));
+			// $column is a literal passed by this class; every provider value is bound by prepare().
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$in = $wpdb->prepare("{$column} IN ({$placeholders})", ...$providers);
+		}
+		if (trim($existing) === '') {
+			return " WHERE {$in} ";
+		}
+		// Parenthesise the existing search condition: it is an OR of two LIKEs.
+		$condition = preg_replace('/^\s*WHERE\s+/i', '', $existing);
+		return " WHERE ({$condition}) AND ({$in}) ";
+	}
+
+	/**
 	 * Query the sbi_sources table
 	 *
 	 * @param array $args
@@ -315,8 +343,20 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 			unset($args['search']);
 		}
 
+		// SBR-577: optional provider allowlist for the bare list query (the
+		// Abilities API's list-sources limits rows to the edition's providers).
+		// Extracted BEFORE the empty($args) test so passing it keeps the
+		// listing branch; omitted by every other caller.
+		$providers = null;
+		if (isset($args['providers']) && is_array($args['providers'])) {
+			$providers = array_values(array_filter(array_map('strval', $args['providers']), static function ($provider) {
+				return $provider !== '';
+			}));
+			unset($args['providers']);
+		}
+
 		if (empty($args)) {
-			// Build WHERE clause for search
+			// Build WHERE clause for search / provider allowlist
 			$where_clause = '';
 			if (! empty($search)) {
 				$search_term = '%' . $wpdb->esc_like($search) . '%';
@@ -325,6 +365,9 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 					$search_term,
 					$search_term
 				);
+			}
+			if ($providers !== null) {
+				$where_clause = $this->providers_where_clause($providers, 's.provider', $where_clause);
 			}
 
 			$sql = "SELECT s.id, s.account_id, s.provider, s.access_token, s.name, s.info, s.error, s.expires, count(f.id) as used_in,
@@ -438,6 +481,13 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 				$search_term
 			);
 		}
+		// SBR-577: same optional provider allowlist as source_query().
+		if (isset($args['providers']) && is_array($args['providers'])) {
+			$providers    = array_values(array_filter(array_map('strval', $args['providers']), static function ($provider) {
+				return $provider !== '';
+			}));
+			$where_clause = $this->providers_where_clause($providers, 'provider', $where_clause);
+		}
 
 		$source_count = $wpdb->get_var("SELECT count(*) FROM $this->sources_table {$where_clause}");
 		return (int) $source_count;
@@ -487,8 +537,16 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 				);
 			}
 
+			// AgDR-0504 finding C6: `last_modified` alone is not a stable sort
+			// key — two feeds saved within the same second (bulk creation, a
+			// migration import) tie, and MySQL does not guarantee a
+			// consistent order among ties across separate LIMIT/OFFSET calls.
+			// `id DESC` as a tiebreaker makes the order of tied rows stable between
+			// pages. It does NOT make paging a snapshot: a feed created, deleted or
+			// re-saved between two page requests still shifts later offsets, so a
+			// caller walking the pages can see a row twice or miss one.
 			$sql = $wpdb->prepare(
-				"SELECT * FROM $this->feeds_table {$where_clause} ORDER BY last_modified DESC LIMIT %d OFFSET %d;",
+				"SELECT * FROM $this->feeds_table {$where_clause} ORDER BY last_modified DESC, id DESC LIMIT %d OFFSET %d;",
 				self::RESULTS_PER_PAGE,
 				$offset
 			);

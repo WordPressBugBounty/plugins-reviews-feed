@@ -2362,8 +2362,14 @@ class SBR_Feed_Saver_Manager
 			SBR_Sources::update_or_insert($collection_insert);
 
 			$collection_reviews = PostAggregator::get_source_all_posts($collection_id);
+			$encryption         = new Data_Encryption();
 
 			foreach ($collection_reviews as $s_review) {
+				// SMASH-2480: Facebook rows are stored encrypted (SinglePostCache::should_encrypt()); undecrypted,
+				// decode_review_json() returned null and the copy dropped every Facebook review.
+				if (($s_review['provider'] ?? '') === 'facebook' && isset($s_review['json_data']) && is_string($s_review['json_data'])) {
+					$s_review['json_data'] = $encryption->maybe_decrypt($s_review['json_data']);
+				}
 				// SMASH-2028: this reads the same table as SMASH-2024, so the same
 				// non-review row arrives here. normalize_review_shape() returns a
 				// non-array untouched, so it reached the reads below as a scalar —
@@ -2380,7 +2386,8 @@ class SBR_Feed_Saver_Manager
 
 				$sanitized_review = [
 					'time' 			=> absint($review_json['time']),
-					'rating' 		=> absint($review_json['rating']),
+					// SMASH-2480: json_data keeps Facebook's 'positive'/'negative'; absint() made them 0.
+					'rating' 		=> absint(Util::facebook_collection_rating(['rating' => $review_json['rating'] ?? 0])),
 					'provider_id' 	=> $id,
 					'review_id'		=> $review_id,
 					'text' 			=> sanitize_text_field($review_json['text']),
@@ -2414,6 +2421,8 @@ class SBR_Feed_Saver_Manager
 				// (Pro\Feed::find_and_resize_media(), 150 rows a call), not this one request.
 				$single_post_cache->store();
 			}
+			// SMASH-2477: recalculate the copy from its own rows (rating, total_rating, rated_count), as import does.
+			SBR_Sources::update_collection_ratings($id);
 			echo sbr_json_encode(
 				[
 					'sourcesCount' => SBR_Sources::get_sources_count(),

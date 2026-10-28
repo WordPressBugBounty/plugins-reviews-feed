@@ -15,6 +15,7 @@ use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\NewUserRatingRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\ReconcileMigratedLicenseRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RepairFacebookCollectionRatingsRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RecalculateCollectionRatingsRoutine;
+use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RecalculateUnratedCollectionRatingsRoutine;
 
 class RoutineManagerService extends ServiceProvider{
 	/**
@@ -45,6 +46,8 @@ class RoutineManagerService extends ServiceProvider{
 		// SMASH-1685 — collection ratings were saved rounded up (ceil); recalculate every collection once.
 		// After the SMASH-2288 repair, so the recalculation reads the corrected stars.
 		RecalculateCollectionRatingsRoutine::class,
+		// SMASH-2468 — unrated reviews counted as 0 in collection averages; recalculate every collection once more.
+		RecalculateUnratedCollectionRatingsRoutine::class,
 	];
 
 	public function register()

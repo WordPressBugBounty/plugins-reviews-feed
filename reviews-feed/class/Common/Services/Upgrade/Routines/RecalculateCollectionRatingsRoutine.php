@@ -19,9 +19,11 @@ class RecalculateCollectionRatingsRoutine extends ServiceProvider
 	/** @return void */
 	public function register()
 	{
-		if (!get_option(self::DONE_OPTION)) {
+		if (!get_option(static::DONE_OPTION)) {
 			// Marked done first, so a fatal mid-run can't re-fire it on every load.
-			update_option(self::DONE_OPTION, time());
+			update_option(static::DONE_OPTION, time());
+			// This pass already skips unrated reviews, so the SMASH-2468 one has nothing left to do.
+			update_option(RecalculateUnratedCollectionRatingsRoutine::DONE_OPTION, time());
 			$this->run();
 		}
 	}

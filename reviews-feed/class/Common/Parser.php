@@ -86,6 +86,27 @@ class Parser {
 		return 1;
 	}
 
+	/**
+	 * Whether the author actually gave a rating. get_rating() floors a missing one to 1,
+	 * and WooCommerce/EDD/collections store 0 for a review left without stars.
+	 *
+	 * @since 2.16.0
+	 *
+	 * @param  array $post
+	 * @return bool  true for a positive number or Facebook's 'positive'/'negative'
+	 */
+	public function has_author_rating($post)
+	{
+		$raw = is_array($post) ? ($post['rating'] ?? null) : null;
+		// trim(): PHP 7.4's is_numeric() rejects trailing whitespace ('5 '), PHP 8 accepts it.
+		$raw = is_string($raw) ? trim($raw) : $raw;
+		if ($raw === 'positive' || $raw === 'negative') {
+			return true;
+		}
+
+		return is_numeric($raw) && (float) $raw > 0;
+	}
+
 	public function get_time($post)
 	{
 		if (empty($post['time'])) {
@@ -150,6 +171,60 @@ class Parser {
 		return '';
 	}
 
+	/**
+	 * The count get_average_rating() weights by: the feed aggregate's rated count when stamped, else the
+	 * sum of each rated source's rated_count (falling back to its review count), else — no counts at all,
+	 * where it takes the plain mean — the number of rated sources. SMASH-2477.
+	 *
+	 * @since 2.16.0
+	 *
+	 * @param  array $businesses
+	 * @return int
+	 */
+	public function get_rating_weight($businesses)
+	{
+		if (! is_array($businesses)) {
+			return 0;
+		}
+		foreach ($businesses as $business) {
+			if (! empty($business['info']['feed_aggregated'])) {
+				return intval($business['info']['feed_rated_count'] ?? $business['info']['feed_total_review_count'] ?? 0);
+			}
+		}
+		$weights = array_map([$this, 'source_rating_weight'], $businesses);
+		$sum     = (int) array_sum($weights);
+		// No counts at all: get_average_rating() takes the plain mean of the rated sources, so one each.
+		return $sum > 0 ? $sum : count(array_filter($businesses, [$this, 'is_rated_source']));
+	}
+
+	/**
+	 * Whether a source carries a rating (the ones get_average_rating() averages).
+	 *
+	 * @param  mixed $business
+	 * @return bool
+	 */
+	private function is_rated_source($business)
+	{
+		$info = is_array($business) && is_array($business['info'] ?? null) ? $business['info'] : [];
+		return ! empty($info['rating'] ?? $info['average_rating'] ?? 0);
+	}
+
+	/**
+	 * One source's share of get_rating_weight(): 0 when it carries no rating.
+	 *
+	 * @param  mixed $business
+	 * @return int
+	 */
+	private function source_rating_weight($business)
+	{
+		if (! $this->is_rated_source($business)) {
+			return 0;
+		}
+		$info  = is_array($business) && is_array($business['info'] ?? null) ? $business['info'] : [];
+		$count = $info['rated_count'] ?? $info['total_rating'] ?? $info['review_count'] ?? 0;
+		return is_numeric($count) ? (int) $count : 0;
+	}
+
 	public function get_average_rating($businesses)
 	{
 		if (is_array($businesses)) {
@@ -183,7 +258,8 @@ class Parser {
 				if (empty($rating)) {
 					continue;
 				}
-				$count         = intval($business['info']['total_rating'] ?? $business['info']['review_count'] ?? 0);
+				// SMASH-2477: weight by the reviews the average covers (rated_count) when the source says so.
+				$count         = intval($business['info']['rated_count'] ?? $business['info']['total_rating'] ?? $business['info']['review_count'] ?? 0);
 				$weighted_sum += floatval($rating) * $count;
 				$weighted_n   += $count;
 				$simple_sum   += floatval($rating);

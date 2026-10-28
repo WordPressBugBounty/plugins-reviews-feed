@@ -581,15 +581,12 @@ class Smash1756SchemaServiceTest extends TestCase
 	public function test_map_on_lite_emits_nothing_when_no_review_is_ratable(): void
 	{
 		// The consequence worth pinning: gating the aggregate can remove the whole
-		// node. Booking cards are the only reviews that resolve to no rating, and
-		// they only do so on Lite (substituted_slot_rating()). With a header that
-		// carries a 5-star average but no native review_score — so is_booking_only
-		// is false and the 5-star branch is taken — a Lite page now emits nothing.
-		// Before SMASH-1825 it published a 4.5 aggregate with no surface behind it.
-		//
-		// NOT written with `rating => 0` on a star review: Parser::get_rating()
-		// floors an empty rating to 1 (class/Common/Parser.php:86), so a star card
-		// always carries a rating and that input cannot reach this path.
+		// node. Booking cards resolve to no rating on Lite (substituted_slot_rating()).
+		// With a header that carries a 5-star average but no native review_score — so
+		// is_booking_only is false and the 5-star branch is taken — a Lite page now
+		// emits nothing. Before SMASH-1825 it published a 4.5 aggregate with no
+		// surface behind it. The star-review form of this case (`rating => 0`) is
+		// pinned in Smash2465SchemaUnratedReviewTest.
 		$this->assertSame(
 			[],
 			$this->service->map_feed_to_schema(

@@ -1,0 +1,104 @@
+/**
+ * AI Agents card -- Settings > General.
+ *
+ * @since 2.12.0
+ */
+
+.sbr-ai-agents-apps {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 14px;
+}
+
+.sbr-ai-agents-app {
+	display: flex;
+	flex: none;
+	color: #1D2327;
+}
+
+.sbr-ai-agents-app svg {
+	width: 28px;
+	height: 28px;
+}
+
+.sbr-ai-agents-app-claude {
+	color: #D97757;
+}
+
+.sbr-ai-agents-heading {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 22px;
+	color: #141B38;
+	margin-bottom: 4px;
+}
+
+#sbr-settings-ai-agents .help-text {
+	display: block;
+	margin-bottom: 16px;
+}
+
+.sbr-ai-agents-action {
+	display: flex;
+	margin-top: 4px;
+}
+
+.sbr-ai-agents-action .sbr-ai-agents-action-btn {
+	transform: none;
+}
+
+.sbr-ai-agents-action .sbr-ai-agents-action-btn:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.sbr-ai-agents-error:not([hidden]) {
+	display: block;
+	font-size: 12px;
+	line-height: 20px;
+	color: #D72C2C;
+	margin: 10px 0 0;
+}
+
+.sbr-ai-agents-error a {
+	color: inherit;
+	font-weight: 500;
+}
+
+/**
+ * "Do more with AI on Pro" strip (free edition only, AgDR-9006). Rendered by
+ * SBR_General_Tab::ai_pro_upsell_html() as its own row under MCP Write Access.
+ */
+
+.sbr-ai-pro-upsell {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.sbr-ai-pro-upsell-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: 13px;
+	line-height: 20px;
+	color: #434960;
+}
+
+.sbr-ai-pro-upsell-text strong {
+	font-size: 14px;
+	color: #141B38;
+}
+
+/* A real <a>: undo the link underline and the generic button nudge. */
+.sbr-ai-pro-upsell .sbr-ai-pro-upsell-btn {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	text-decoration: none;
+	transform: none;
+}

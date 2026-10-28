@@ -259,12 +259,17 @@ class SBR_Badge_Renderer
 				// A product with no reviews yet carries review_count 0; keep it
 				// rather than skipping, so the badge can say "No reviews yet"
 				// for that product instead of vanishing.
-				return array(
+				$row = array(
 					'id'             => (string) $product['id'],
 					'name'           => isset($product['name']) ? $product['name'] : '',
 					'average_rating' => isset($product['average_rating']) ? (float) $product['average_rating'] : 0.0,
 					'review_count'   => isset($product['review_count']) ? (int) $product['review_count'] : 0,
 				);
+				// SMASH-2477: the reviews the product's average covers, so Parser weights by it.
+				if (isset($product['rated_count'])) {
+					$row['rated_count'] = (int) $product['rated_count'];
+				}
+				return $row;
 			}
 		}
 
@@ -503,6 +508,10 @@ class SBR_Badge_Renderer
 			'count'     => isset($aggregate['count']) && is_numeric($aggregate['count'])
 				? max(0, (int) $aggregate['count'])
 				: 0,
+			// SMASH-2477: absent on aggregates built before it; then the count is the weight, as before.
+			'rated'     => isset($aggregate['rated']) && is_numeric($aggregate['rated'])
+				? max(0, (int) $aggregate['rated'])
+				: ( isset($aggregate['count']) && is_numeric($aggregate['count']) ? max(0, (int) $aggregate['count']) : 0 ),
 			'resolved'  => ! empty($aggregate['resolved']),
 			// A zero or negative scale would divide by nothing downstream.
 			'scale'     => $scale > 0 ? $scale : 5,
@@ -1249,6 +1258,7 @@ class SBR_Badge_Renderer
 			return array(
 				'rating'    => (float) $booking['score'],
 				'count'     => $count,
+				'rated'     => $count,
 				'resolved'  => true,
 				'scale'     => 10,
 				'word'      => (string) $booking['word'],
@@ -1264,6 +1274,8 @@ class SBR_Badge_Renderer
 		return array(
 			'rating'    => (float) $parser->get_average_rating($rows),
 			'count'     => $count,
+			// SMASH-2477: what the rating is over, so combine() weights feeds like Parser weights sources.
+			'rated'     => (int) $parser->get_rating_weight($rows),
 			'resolved'  => true,
 			'scale'     => 5,
 			'word'      => '',
@@ -1319,7 +1331,9 @@ class SBR_Badge_Renderer
 			// and 5.0 from five reviews beside two empty ones reported 3.6. Large
 			// siblings hide it, which is why it survived — a new site with few
 			// reviews is where it shows.
-			$weight = $count > 0 ? $count : ( $rating > 0 ? 1 : 0 );
+			// SMASH-2477: weight by the reviews the rating covers when the contribution says so.
+			$basis  = isset($c['rated']) ? max(0, (int) $c['rated']) : $count;
+			$weight = $basis > 0 ? $basis : ( $rating > 0 ? 1 : 0 );
 
 			$sum     += $rating * $weight;
 			$total   += $count;
@@ -1334,6 +1348,7 @@ class SBR_Badge_Renderer
 		return array(
 			'rating'    => $weights > 0 ? round($sum / $weights, 1) : 0.0,
 			'count'     => $total,
+			'rated'     => $weights,
 			'resolved'  => true,
 			'scale'     => $all_ten ? 10 : 5,
 			'word'      => $all_ten ? $word : '',
@@ -1493,14 +1508,17 @@ class SBR_Badge_Renderer
 						continue;
 					}
 
-					$products[] = array(
-						'info' => array(
-							'id'             => (string) $product['id'],
-							'name'           => isset($product['name']) ? $product['name'] : '',
-							'average_rating' => isset($product['average_rating']) ? (float) $product['average_rating'] : 0.0,
-							'review_count'   => isset($product['review_count']) ? (int) $product['review_count'] : 0,
-						),
+					$row = array(
+						'id'             => (string) $product['id'],
+						'name'           => isset($product['name']) ? $product['name'] : '',
+						'average_rating' => isset($product['average_rating']) ? (float) $product['average_rating'] : 0.0,
+						'review_count'   => isset($product['review_count']) ? (int) $product['review_count'] : 0,
 					);
+					// SMASH-2477: the reviews the product's average covers, so Parser weights by it.
+					if (isset($product['rated_count'])) {
+						$row['rated_count'] = (int) $product['rated_count'];
+					}
+					$products[] = array( 'info' => $row );
 				}
 			}
 
@@ -1793,6 +1811,7 @@ class SBR_Badge_Renderer
 			$aggregate = array(
 				'rating'    => (float) $booking['score'],
 				'count'     => (int) $parser->get_num_ratings($header_data),
+				'rated'     => (int) $parser->get_num_ratings($header_data),
 				'resolved'  => true,
 				'scale'     => 10,
 				'word'      => (string) $booking['word'],
@@ -1802,6 +1821,8 @@ class SBR_Badge_Renderer
 			$aggregate = array(
 				'rating'    => (float) $parser->get_average_rating($header_data),
 				'count'     => (int) $parser->get_num_ratings($header_data),
+				// SMASH-2477: what the rating is over, so combine() weights this feed like Parser does.
+				'rated'     => (int) $parser->get_rating_weight($header_data),
 				'resolved'  => true,
 				'scale'     => 5,
 				'word'      => '',
@@ -1867,7 +1888,8 @@ class SBR_Badge_Renderer
 		// TTL. The whole key is ~77 chars, far under WP's 172-char limit.
 		$scope = $source_id !== '' ? '_s' . md5((string) $source_id) : '';
 
-		return self::CACHE_PREFIX . $feed_id . '_' . sanitize_key($language) . '_' . $tier . $scope . '_v' . self::cache_version($feed_id);
+		// '_w2' (SMASH-2477): aggregates now weigh by rated reviews and carry `rated`; older entries expire unread.
+		return self::CACHE_PREFIX . $feed_id . '_' . sanitize_key($language) . '_' . $tier . $scope . '_v' . self::cache_version($feed_id) . '_w2';
 	}
 
 	/**
@@ -1901,6 +1923,7 @@ class SBR_Badge_Renderer
 		return array(
 			'rating'   => (float) $cached['rating'],
 			'count'    => (int) $cached['count'],
+			'rated'    => isset($cached['rated']) && is_numeric($cached['rated']) ? (int) $cached['rated'] : (int) $cached['count'],
 			'scale'    => isset($cached['scale']) ? (int) $cached['scale'] : 5,
 			'word'     => isset($cached['word']) ? (string) $cached['word'] : '',
 			// Fail SAFE on a missing flag. An entry written before `resolved`

@@ -212,6 +212,8 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				'rating' => floatval($product->get_average_rating()),
 				'total_rating' => $review_count,
 				'review_count' => $review_count,
+				// SMASH-2477: get_average_rating() covers rated reviews only; this is its denominator.
+				'rated_count' => intval($product->get_rating_count()),
 				'provider' => 'woocommerce',
 				// Additional WooCommerce-specific data
 				'type' => 'product',
@@ -340,6 +342,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 		// Validate all products and collect their data
 		$products_info = [];
 		$total_review_count = 0;
+		$total_rating_count = 0;
 		$weighted_rating_sum = 0;
 
 		if (!function_exists('wc_get_product')) {
@@ -358,6 +361,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			}
 
 			$review_count = $product->get_review_count();
+			$rating_count = $product->get_rating_count();
 			$average_rating = floatval($product->get_average_rating());
 			$image_id = $product->get_image_id();
 			$image_url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
@@ -371,16 +375,17 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				'image' => $image_url,
 				'url' => get_permalink($product_id),
 				'review_count' => $review_count,
+				'rated_count' => $rating_count,
 				'average_rating' => $average_rating
 			];
 
 			$total_review_count += $review_count;
-			// Use weighted sum: rating * review_count for proper weighted average
-			$weighted_rating_sum += $average_rating * $review_count;
+			// SMASH-2477: weight by rated reviews; a product's average covers only those.
+			$total_rating_count  += $rating_count;
+			$weighted_rating_sum += $average_rating * $rating_count;
 		}
 
-		// Calculate weighted average rating across all products
-		$average_rating = $total_review_count > 0 ? round($weighted_rating_sum / $total_review_count, 1) : 0;
+		$average_rating = $total_rating_count > 0 ? round($weighted_rating_sum / $total_rating_count, 1) : 0;
 
 		// Use first product's image as the source image, or empty if none
 		$source_image = !empty($products_info[0]['image']) ? $products_info[0]['image'] : '';
@@ -444,6 +449,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				'product_count' => count($products_info),
 				'total_rating' => $total_review_count,
 				'review_count' => $total_review_count,
+				'rated_count' => $total_rating_count,
 				'average_rating' => $average_rating,
 				'provider' => 'woocommerce'
 			]),
@@ -601,6 +607,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 		// Validate all products and collect their data
 		$products_info = [];
 		$total_review_count = 0;
+		$total_rating_count = 0;
 		$weighted_rating_sum = 0;
 
 		if (!function_exists('wc_get_product')) {
@@ -619,6 +626,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 			}
 
 			$review_count = $product->get_review_count();
+			$rating_count = $product->get_rating_count();
 			$average_rating = floatval($product->get_average_rating());
 			$image_id = $product->get_image_id();
 			$image_url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : '';
@@ -632,16 +640,17 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				'image' => $image_url,
 				'url' => get_permalink($product_id),
 				'review_count' => $review_count,
+				'rated_count' => $rating_count,
 				'average_rating' => $average_rating
 			];
 
 			$total_review_count += $review_count;
-			// Use weighted sum: rating * review_count for proper weighted average
-			$weighted_rating_sum += $average_rating * $review_count;
+			// SMASH-2477: weight by rated reviews; a product's average covers only those.
+			$total_rating_count  += $rating_count;
+			$weighted_rating_sum += $average_rating * $rating_count;
 		}
 
-		// Calculate weighted average rating across all products
-		$average_rating = $total_review_count > 0 ? round($weighted_rating_sum / $total_review_count, 1) : 0;
+		$average_rating = $total_rating_count > 0 ? round($weighted_rating_sum / $total_rating_count, 1) : 0;
 
 		// Use first product's image as the source image, or empty if none
 		$source_image = !empty($products_info[0]['image']) ? $products_info[0]['image'] : '';
@@ -705,6 +714,7 @@ class SBR_New_Providers_Manager extends ServiceProvider
 				'product_count' => count($products_info),
 				'total_rating' => $total_review_count,
 				'review_count' => $total_review_count,
+				'rated_count' => $total_rating_count,
 				'average_rating' => $average_rating,
 				'provider' => 'woocommerce'
 			]),

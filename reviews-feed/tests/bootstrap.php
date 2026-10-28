@@ -398,7 +398,22 @@ if (!function_exists('current_user_can')) {
 	function current_user_can($capability)
 	{
 		$GLOBALS['sbr_test_caps_checked'][] = $capability;
-		return $GLOBALS['sbr_test_user_can'] ?? false;
+		$can = $GLOBALS['sbr_test_user_can'] ?? false;
+		// An array is the exact list of capabilities the user holds (SBR-577).
+		if (is_array($can)) {
+			return in_array($capability, $can, true);
+		}
+		return $can;
+	}
+}
+
+if (!function_exists('wp_is_file_mod_allowed')) {
+	// Controllable via $GLOBALS['sbr_test_file_mods_allowed'] (default: allowed);
+	// records the context so tests can assert it (SBR-577).
+	function wp_is_file_mod_allowed($context)
+	{
+		$GLOBALS['sbr_test_file_mod_contexts'][] = $context;
+		return $GLOBALS['sbr_test_file_mods_allowed'] ?? true;
 	}
 }
 
@@ -666,15 +681,26 @@ if (!function_exists('set_transient')) {
 			$wp_transients_mock = [];
 		}
 		$wp_transients_mock[$key] = $value;
+		// Test seam: lets a test play a concurrent request that writes right after us.
+		if (isset($GLOBALS['sbr_test_after_set_transient']) && is_callable($GLOBALS['sbr_test_after_set_transient'])) {
+			($GLOBALS['sbr_test_after_set_transient'])($key, $value);
+		}
 		return true;
 	}
 }
 if (!function_exists('delete_transient')) {
+	// Like core: true only when the row existed and was removed. A test can set
+	// $GLOBALS['sbr_test_delete_transient_loses'] to play the request that lost a
+	// delete race (the row is already gone by the time it deletes).
 	function delete_transient($key)
 	{
 		global $wp_transients_mock;
-		if (!is_array($wp_transients_mock)) {
-			return true;
+		if (!empty($GLOBALS['sbr_test_delete_transient_loses'])) {
+			unset($wp_transients_mock[$key]);
+			return false;
+		}
+		if (!is_array($wp_transients_mock) || !array_key_exists($key, $wp_transients_mock)) {
+			return false;
 		}
 		unset($wp_transients_mock[$key]);
 		return true;

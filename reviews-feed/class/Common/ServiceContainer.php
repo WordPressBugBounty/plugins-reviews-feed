@@ -38,6 +38,7 @@ use SmashBalloon\Reviews\Common\Tooltip_Wizard;
 use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
 use SmashBalloon\Reviews\Common\Integrations\Elementor\SBR_Elementor_Base;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Service;
+use SmashBalloon\Reviews\Common\Abilities\SBR_Abilities;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_Review_Alert_Frontend;
 use SmashBalloon\Reviews\Common\ReviewAlerts\SBR_ReviewAlert_Builder;
 use SmashBalloon\Reviews\Common\UsageTracking\SmashUsageTracking;
@@ -101,6 +102,9 @@ class ServiceContainer extends ServiceProvider
 		// and the first native WP_Widget. Purely additive; registers new rails only.
 		SBR_Badge_Service::class,
 		SBR_Trust_Badge_Builder::class,
+		// SBR-577 — WordPress Abilities API integration (AgDR-0503, AgDR-9005).
+		// Edition-filtered: the free build exposes the free subset only.
+		SBR_Abilities::class,
 	];
 
 	public function register(): void

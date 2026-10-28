@@ -14,6 +14,9 @@ trait SBR_Feed_Templates_Settings {
 	 * Get feed settings depending on feed templates.
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_feed_settings_by_feed_templates($settings)
 	{
@@ -45,6 +48,9 @@ trait SBR_Feed_Templates_Settings {
 	 * default Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_default_template_settings($settings)
 	{
@@ -93,6 +99,9 @@ trait SBR_Feed_Templates_Settings {
 	 * simplecards Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_simplecards_template_settings($settings)
 	{
@@ -153,6 +162,9 @@ trait SBR_Feed_Templates_Settings {
 	 * masonry Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_masonry_template_settings($settings)
 	{
@@ -219,6 +231,9 @@ trait SBR_Feed_Templates_Settings {
 	 * grid Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_grid_template_settings($settings)
 	{
@@ -283,6 +298,9 @@ trait SBR_Feed_Templates_Settings {
 	 * singlereview Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_singlereview_template_settings($settings)
 	{
@@ -314,6 +332,9 @@ trait SBR_Feed_Templates_Settings {
 	 * showcasecarousel Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_showcasecarousel_template_settings($settings)
 	{
@@ -358,6 +379,9 @@ trait SBR_Feed_Templates_Settings {
 	 * carousel Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_carousel_template_settings($settings)
 	{
@@ -405,6 +429,9 @@ trait SBR_Feed_Templates_Settings {
 	 * gridcarousel Template
 	 *
 	 * @since 1.0
+	 *
+	 * @param array<string, mixed> $settings Feed settings.
+	 * @return array<string, mixed>
 	 */
 	public static function get_gridcarousel_template_settings($settings)
 	{

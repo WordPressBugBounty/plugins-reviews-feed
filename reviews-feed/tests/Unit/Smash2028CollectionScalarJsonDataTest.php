@@ -96,6 +96,66 @@ final class Smash2028CollectionScalarJsonDataTest extends TestCase
 
 	/*
 	|--------------------------------------------------------------------------
+	| SMASH-2480 — duplicating keeps a Facebook recommendation's stars
+	|--------------------------------------------------------------------------
+	| Facebook rows are stored encrypted and were never decrypted, so the copy
+	| dropped them; json_data keeps 'positive'/'negative', and absint() made them 0.
+	*/
+
+	public function test_duplicate_collection_keeps_facebook_recommendation_stars(): void
+	{
+		$facebook = function (string $id, string $name, $rating): array {
+			$review = $this->review($id, $name, 5);
+			$review['rating']   = $rating;
+			$review['provider'] = ['name' => 'facebook'];
+			return $review;
+		};
+		// As stored: Facebook rows carry provider 'facebook' and encrypted json_data (should_encrypt()).
+		$stored = function (int $id, array $review): array {
+			$row = $this->collection_row($id, $review);
+			$row['provider']  = 'facebook';
+			$row['json_data'] = (new \SmashBalloon\Reviews\Common\Helpers\Data_Encryption())->maybe_encrypt($row['json_data']);
+			return $row;
+		};
+		$wpdb = $this->drive_duplicate_collection([
+			$stored(1, $facebook('r1', 'Ada', 'positive')),
+			$stored(2, $facebook('r2', 'Ben', 'negative')),
+			$this->collection_row(3, $this->review('r3', 'Cyd', 4)),
+			$stored(4, $facebook('r4', 'Dee', '')),
+		]);
+
+		// Rows are copied in order and Facebook rows are stored encrypted, so they're matched by position.
+		$this->assertCount(4, $wpdb->inserted_post_ids(), 'every review is copied, Facebook ones included');
+		$this->assertSame(
+			[5, 1, 4, 0],
+			$this->copied_ratings($wpdb),
+			'positive 5, negative 1, stars unchanged, no rating stays unrated'
+		);
+	}
+
+	/**
+	 * The rating of each copied review, in INSERT order: the first unquoted integer in the VALUES list
+	 * (Pro\SinglePostCache::store(): created_on, post_id, time_stamp, json_data, post_content, rating, …).
+	 *
+	 * @param  object $wpdb
+	 * @return list<int>
+	 */
+	private function copied_ratings($wpdb): array
+	{
+		$out = [];
+		foreach ($wpdb->queries as $sql) {
+			if (
+				strpos($sql, 'sbr_reviews_posts') !== false && strpos($sql, 'INSERT INTO') !== false
+				&& preg_match("/', (\\d+), '/", $sql, $m) === 1
+			) {
+				$out[] = (int) $m[1];
+			}
+		}
+		return $out;
+	}
+
+	/*
+	|--------------------------------------------------------------------------
 	| imported_collection_review() — the shared gate for an uploaded entry
 	|--------------------------------------------------------------------------
 	*/

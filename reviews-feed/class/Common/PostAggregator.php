@@ -437,9 +437,9 @@ class PostAggregator {
 				$s_post['json_data'] = $encryption->maybe_decrypt($s_post['json_data']);
 				$json_data = json_decode($s_post['json_data'], true);
 
-				if (isset($json_data['rating']) && !is_numeric($json_data['rating'])) {
-					$rating = isset($json_data['rating']) && $json_data['rating'] === 'negative' ? 1 : 5;
-					$json_data['rating'] = $rating;
+				// SMASH-2476: only 'positive'/'negative' map to stars; '' stays unrated instead of becoming 5.
+				if (is_array($json_data) && isset($json_data['rating']) && !is_numeric($json_data['rating'])) {
+					$json_data['rating'] = Util::facebook_collection_rating($json_data);
 				}
 
 				$s_post['json_data'] = wp_json_encode($json_data);

@@ -267,13 +267,16 @@ class SBR_Schema_Service extends ServiceProvider
 			$settings = $feed->get_settings();
 			$sources  = isset($settings['sources']) && is_array($settings['sources']) ? $settings['sources'] : [];
 
-			$posts  = (array) $feed->get_posts();
+			$all_posts = (array) $feed->get_posts();
+			// SMASH-2478: Review markup only for the set the page renders first (FeedDisplay.php:30).
+			// A single manual review isn't in get_posts() and published nothing before; that stays.
+			$posts = $feed->is_single_manual_review() ? $all_posts : (array) $feed->get_post_set_page(1);
 			// Backfill per-source counts from the actual reviews BEFORE computing the
 			// aggregate — the visible feed header does the same (FeedDisplay), so the
 			// schema reviewCount/ratingValue must match what the page shows (Google
 			// flags structured-data ≠ visible-content). Matters for under-reporting
 			// sources like Facebook in multi-source feeds (SMASH-1583).
-			$header = (new Parser())->backfill_review_counts((array) $feed->get_header_data(), $posts);
+			$header = (new Parser())->backfill_review_counts((array) $feed->get_header_data(), $all_posts);
 
 			foreach ($this->map_feed_to_schema($header, $posts, $sources, $is_pro) as $node) {
 				$all[] = $node;
@@ -343,7 +346,7 @@ class SBR_Schema_Service extends ServiceProvider
 	 * emit (Google needs a rating/review to render a snippet).
 	 *
 	 * @param  array $header_data Per-source aggregate (Feed::get_header_data()).
-	 * @param  array $posts       Review list (Feed::get_posts()).
+	 * @param  array $posts       The reviews the page renders first (Feed::get_post_set_page(1), SMASH-2478).
 	 * @param  array $sources     Hydrated sources (for the entity-type decision).
 	 * @param  bool  $is_pro      Whether the Pro build is active. Gates the whole
 	 *                            aggregateRating: the feed header is where a visitor
@@ -416,7 +419,7 @@ class SBR_Schema_Service extends ServiceProvider
 		// star-provider cards emit their own 1-5 rating while the Booking cards emit
 		// their own 0-10 score. Each Review carries its own bestRating, so the two
 		// scales coexist. Reviews we can't honestly rate are never attached.
-		$reviews = $this->map_reviews($posts, $parser, $is_pro);
+		$reviews = $this->limit_reviews_to_aggregate($node, $this->map_reviews($posts, $parser, $is_pro));
 		if (! empty($reviews)) {
 			$node['review'] = $reviews;
 		}
@@ -524,6 +527,30 @@ class SBR_Schema_Service extends ServiceProvider
 	}
 
 	/**
+	 * SMASH-2463: Google rejects multiple reviews without an aggregateRating
+	 * ("Multiple reviews without aggregateRating object"), so keep only the first
+	 * one with an author — a lone Review without one is "Missing field author".
+	 *
+	 * @param  array            $node
+	 * @param  array<int,array> $reviews
+	 * @return array<int,array>
+	 */
+	private function limit_reviews_to_aggregate(array $node, array $reviews): array
+	{
+		if (! empty($node['aggregateRating'])) {
+			return $reviews;
+		}
+
+		foreach ($reviews as $review) {
+			if (! empty($review['author'])) {
+				return [$review];
+			}
+		}
+
+		return [];
+	}
+
+	/**
 	 * @param  array  $posts
 	 * @param  Parser $parser
 	 * @param  bool   $is_pro
@@ -564,11 +591,7 @@ class SBR_Schema_Service extends ServiceProvider
 
 			// Google requires a reviewRating per Review, so a review we can't rate is
 			// dropped rather than attached rating-less (which would invalidate the node).
-			// Caveat worth knowing: Parser::get_rating() returns 1, not 0, for a review
-			// with no rating, so for star providers the `<= 0` arm below is effectively
-			// unreachable and an unrated review publishes as 1 star. Pre-existing since
-			// SMASH-1756, left alone here on purpose — it needs its own ticket and its
-			// own QA, and widening this fix to cover it would hide the Booking change.
+			// A review with no rating is one of those (Parser::has_author_rating(), SMASH-2465).
 			$rating = $this->review_rating($post, $parser, $is_pro);
 			if ($rating === null) {
 				continue;
@@ -630,6 +653,12 @@ class SBR_Schema_Service extends ServiceProvider
 		$provider = strtolower((string) $parser->get_provider_name($post));
 		if (in_array($provider, self::RATING_SLOT_SUBSTITUTED_PROVIDERS, true)) {
 			return $this->substituted_slot_rating($provider, $post, $is_pro);
+		}
+
+		// SMASH-2465: Parser::get_rating() floors a missing rating to 1, and Woo/EDD store
+		// 0 for a review left without stars, so read the raw value before trusting it.
+		if (! $parser->has_author_rating($post)) {
+			return null;
 		}
 
 		// Star providers carry a per-review rating the card actually renders.

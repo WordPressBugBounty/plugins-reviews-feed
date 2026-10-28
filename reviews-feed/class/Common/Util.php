@@ -546,6 +546,53 @@ class Util
 	}
 
 	/**
+	 * Determine WPVibe's install/activation status.
+	 *
+	 * Scans the installed-plugins list for a plugin whose folder is
+	 * `vibe-ai/`, rather than assuming a specific main-file name -- a
+	 * plugin's wp.org slug and its main file are not guaranteed to match.
+	 * Mirrors Instagram Feed Pro's SBI_Global_Settings::get_wpvibe_status()
+	 * (cascaded to Reviews Feed per SBR-499 / SMASH-1994).
+	 *
+	 * @since SBR-499
+	 *
+	 * @return array{status: string, basename: string|null} status is one
+	 *               of 'not_installed' | 'inactive' | 'active'.
+	 */
+	public static function get_wpvibe_status()
+	{
+		if (!function_exists('get_plugins')) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$wpvibe_basename = null;
+		foreach (array_keys(get_plugins()) as $plugin_file) {
+			// get_plugins() keys are always strings (relative plugin file
+			// paths); array_keys() types them int|string only because PHP's
+			// array key type is inherently mixed. The cast keeps phpstan
+			// (local phpstan.neon, level 9) satisfied for strtok() and
+			// is_plugin_active() below without widening the real contract.
+			$plugin_file = (string) $plugin_file;
+			if (strtok($plugin_file, '/') === 'vibe-ai') {
+				$wpvibe_basename = $plugin_file;
+				break;
+			}
+		}
+
+		if (null === $wpvibe_basename) {
+			return array(
+				'status' => 'not_installed',
+				'basename' => null,
+			);
+		}
+
+		return array(
+			'status' => is_plugin_active($wpvibe_basename) ? 'active' : 'inactive',
+			'basename' => $wpvibe_basename,
+		);
+	}
+
+	/**
 	 * Get Smahballoon Recommended Plugins Info
 	 *
 	 * @since 1.0

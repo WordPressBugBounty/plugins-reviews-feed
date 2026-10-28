@@ -13,7 +13,7 @@ use SmashBalloon\Reviews\Common\Customizer\DB;
 
 class SBR_Feed_Saver{
 	/**
-	 * @var int
+	 * @var int|string|false
 	 *
 	 * @since 2.0
 	 */
@@ -79,7 +79,11 @@ class SBR_Feed_Saver{
 	/**
 	 * SBY_Feed_Saver constructor.
 	 *
-	 * @param int $insert_id
+	 * @param int|string|false $insert_id Existing feed id (callers may pass the
+	 *                                    numeric string read from the request or
+	 *                                    the DB), `false` for a new (not yet
+	 *                                    inserted) feed, or 'legacy' for the
+	 *                                    pre-2.0 feed.
 	 *
 	 * @since 1.0
 	 */
@@ -99,7 +103,7 @@ class SBR_Feed_Saver{
 	/**
 	 * Feed insert ID if it exists
 	 *
-	 * @return bool|int
+	 * @return int|string|false
 	 *
 	 * @since 2.0
 	 */

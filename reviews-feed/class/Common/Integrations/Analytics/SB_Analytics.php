@@ -17,6 +17,7 @@ use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\Feed;
 use SmashBalloon\Reviews\Common\Helpers\Data_Encryption;
 use SmashBalloon\Reviews\Common\PostAggregator;
+use SmashBalloon\Reviews\Common\Util;
 
 class SB_Analytics
 {
@@ -195,6 +196,8 @@ class SB_Analytics
 				'name'               => !empty($row['name']) ? $row['name'] : '',
 				'rating'             => (float) $rating,
 				'count'              => (int) $count,
+				// SMASH-2477: the reviews the rating covers; weights the headline average.
+				'rated'              => isset($info['rated_count']) ? (int) $info['rated_count'] : (int) $count,
 				'newest_review_date' => $live['newest'],
 			];
 		}
@@ -291,7 +294,7 @@ class SB_Analytics
 	 * Return the aggregate rating summary.
 	 *
 	 * The headline rating/total is the weighted average of each source's
-	 * OFFICIAL aggregate (info.rating × total_rating) — the same math the
+	 * OFFICIAL aggregate (info.rating × its rated count, SMASH-2477) — the same math the
 	 * feed header's compute_feed_level_aggregate() uses — so the analytics
 	 * Reputation card agrees with the sources table and with what the feed
 	 * itself displays, instead of averaging only the reviews cached
@@ -358,11 +361,12 @@ class SB_Analytics
 
 		$result['distribution_total'] = $stored_total;
 
-		list($source_total, $source_sum) = $this->get_sources_official_aggregate();
+		list($source_total, $source_sum, $source_weight) = $this->get_sources_official_aggregate();
 
 		if ($source_total > 0) {
+			// The total counts every review even when none is rated (SMASH-2477); then there's no average.
 			$result['total']  = $source_total;
-			$result['rating'] = round($source_sum / $source_total, 1);
+			$result['rating'] = $source_weight > 0 ? round($source_sum / $source_weight, 1) : 0.0;
 		} elseif ($stored_total > 0) {
 			$result['total']  = $stored_total;
 			$result['rating'] = round($weighted_sum / $stored_total, 1);
@@ -409,7 +413,7 @@ class SB_Analytics
 	 * those twice (SMASH-1412). Providers without a dedup hook fall back
 	 * to the per-source sum, which is correct for independent businesses.
 	 *
-	 * @return array{0:int,1:float} [ total review count, sum of rating × count ].
+	 * @return array{0:int,1:float,2:int} [ total review count, sum of rating × rated count, the rated count it is over ].
 	 */
 	private function get_sources_official_aggregate()
 	{
@@ -424,15 +428,18 @@ class SB_Analytics
 			$records_by_provider[$record['provider']][] = $record;
 		}
 
-		$total = 0;
-		$sum   = 0.0;
+		$total  = 0;
+		$sum    = 0.0;
+		$weight = 0;
 
 		foreach ($records_by_provider as $provider => $provider_records) {
 			$agg = Feed::compute_provider_aggregate((string) $provider, $rows_by_provider[$provider] ?? []);
 
 			if ($agg !== null && $agg['count'] > 0) {
-				$total += (int) $agg['count'];
-				$sum   += (float) $agg['rating'] * (int) $agg['count'];
+				$rated   = (int) ($agg['rated'] ?? $agg['count']);
+				$total  += (int) $agg['count'];
+				$sum    += (float) $agg['rating'] * $rated;
+				$weight += $rated;
 				continue;
 			}
 
@@ -440,13 +447,15 @@ class SB_Analytics
 				$count  = isset($record['count']) ? (int) $record['count'] : 0;
 				$rating = isset($record['rating']) ? (float) $record['rating'] : 0.0;
 				if ($count > 0 && $rating > 0) {
-					$total += $count;
-					$sum   += $rating * $count;
+					$rated   = isset($record['rated']) ? (int) $record['rated'] : $count;
+					$total  += $count;
+					$sum    += $rating * $rated;
+					$weight += $rated;
 				}
 			}
 		}
 
-		return [$total, $sum];
+		return [$total, $sum, $weight];
 	}
 
 	/**
@@ -624,10 +633,8 @@ class SB_Analytics
 		$decoded = !empty($json_data) ? json_decode($json_data, true) : [];
 		$decoded = is_array($decoded) ? $decoded : [];
 
-		$rating = $row['rating'] ?? 0;
-		if (!is_numeric($rating)) {
-			$rating = $rating === 'negative' ? 1 : 5;
-		}
+		// SMASH-2476: same mapping as the editor list; only 'positive'/'negative' become stars.
+		$rating = Util::facebook_collection_rating(['rating' => $row['rating'] ?? 0]);
 
 		$text = $post_content !== '' ? $post_content : ($decoded['text'] ?? '');
 
@@ -640,7 +647,7 @@ class SB_Analytics
 			// into href/src on the wp-admin dashboard (React doesn't strip a
 			// javascript: scheme), so run them through esc_url_raw().
 			'avatar'             => !empty($decoded['reviewer']['avatar']) ? esc_url_raw($decoded['reviewer']['avatar']) : null,
-			'rating'             => (int) round((float) $rating),
+			'rating'             => is_numeric($rating) ? (int) round((float) $rating) : 0,
 			'text'               => $this->make_text_snippet($text),
 			'provider'           => $row['provider'] ?? '',
 			'date'               => $row['time_stamp'] ?? '',

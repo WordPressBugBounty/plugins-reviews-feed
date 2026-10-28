@@ -217,7 +217,8 @@ class FeedDisplay {
 
 	public function star_rating_display($post, $settings)
 	{
-		$star_rating = intval($this->parser->get_rating($post));
+		// SMASH-2467: no rating reads "Not rated" with five grey stars, as the editor preview shows it.
+		$star_rating = $this->parser->has_author_rating($post) ? intval($this->parser->get_rating($post)) : 0;
 		if ($star_rating <= 0) {
 			$aria_label = __('Not rated', 'reviews-feed');
 		} else {

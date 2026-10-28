@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.15.1
+Stable tag: 2.16.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,14 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.16.0 =
+* New: Ask AI assistants about your Reviews Feed settings, feeds and connected Google and Yelp sources through the WordPress Abilities API (WordPress 6.9 or later). Turn on the new "MCP Write Access" setting under Settings > General to also let them change settings and create feeds. It is off by default. [See what Reviews Feed Pro adds](https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_source=changelog&utm_medium=aiagents&utm_campaign=reviews-free-readme)
+* Fix: Google Search Console no longer reports "Multiple reviews without aggregateRating object" for pages with a feed. The page's rich snippet data now includes one review, which Google accepts without an average rating.
+* Fix: A review that has no star rating is no longer sent to Google as a 1-star review in your page's rich snippet data.
+* Fix: A review that has no star rating now shows five grey stars and reads "Not rated" to screen readers, instead of looking like a 1-star review.
+* Fix: The review in your page's rich snippet data is now one that is shown on the page.
+* Fix: Plugin security hardening.
+
 = 2.15.1 =
 * Fix: Empty and half stars in a feed are shown in grey whatever star colour you choose, so a half star or a 3-star review no longer looks like a full rating with black or dark stars.
 * Fix: Review rich snippets now appear for feeds placed with SiteOrigin Page Builder, Beaver Builder or Bricks.
