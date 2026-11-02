@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.16.0
+Stable tag: 2.16.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,11 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.16.1 =
+* Fix: The data-sharing popup no longer locks you out of your WordPress admin when your choice can't be saved. You can always close it and keep working.
+* Fix: A feed created by an AI assistant now shows its fonts, colors and spacing straight away. Before, it looked unstyled until you opened it in the feed editor and saved it.
+* Tweak: The confirmation shown when you delete a source now says that the reviews stored for it are deleted too.
+
 = 2.16.0 =
 * New: Ask AI assistants about your Reviews Feed settings, feeds and connected Google and Yelp sources through the WordPress Abilities API (WordPress 6.9 or later). Turn on the new "MCP Write Access" setting under Settings > General to also let them change settings and create feeds. It is off by default. [See what Reviews Feed Pro adds](https://smashballoon.com/reviews-feed/reviews-lite-upgrade/?utm_source=changelog&utm_medium=aiagents&utm_campaign=reviews-free-readme)
 * Fix: Google Search Console no longer reports "Multiple reviews without aggregateRating object" for pages with a feed. The page's rich snippet data now includes one review, which Google accepts without an average rating.

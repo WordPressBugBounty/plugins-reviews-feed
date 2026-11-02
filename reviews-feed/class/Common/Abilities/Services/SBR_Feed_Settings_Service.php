@@ -5,6 +5,7 @@ namespace SmashBalloon\Reviews\Common\Abilities\Services;
 use SmashBalloon\Reviews\Common\Builder\SBR_Feed_Saver;
 use SmashBalloon\Reviews\Common\Clear_Cache;
 use SmashBalloon\Reviews\Common\Customizer\DB;
+use SmashBalloon\Reviews\Common\Customizer\SBR_Feed_Style_Generator;
 use SmashBalloon\Reviews\Common\Traits\SBR_Feed_Templates_Settings;
 
 if (!defined('ABSPATH')) {
@@ -27,8 +28,9 @@ if (!defined('ABSPATH')) {
  * unconditionally re-writes both from SBR_Feed_Saver's $feed_name/$feed_style
  * properties (SBR_Feed_Saver.php:274-282) — never touching set_feed_name()/
  * set_feed_style() would silently blank the feed's name and its pre-rendered
- * CSS on every settings-only save, so both are re-set here from the current
- * row before calling update_or_insert().
+ * CSS on every settings-only save, so both are re-set before calling
+ * update_or_insert(): the name from the current row, the CSS regenerated from
+ * the merged settings the way a Feed Builder save does (SMASH-2598).
  *
  * @since SBR-499
  */
@@ -182,6 +184,9 @@ class SBR_Feed_Settings_Service
 			);
 		}
 
+		// The Builder writes a new feed's CSS on its first save; an agent's feed gets it here (SMASH-2598).
+		SBR_Feed_Style_Generator::ensure_stored((int) $feed_id, array_merge($settings, array('feed_name' => sanitize_text_field($feed_name))));
+
 		return array('feed_id' => (int) $feed_id);
 	}
 
@@ -211,10 +216,13 @@ class SBR_Feed_Settings_Service
 		$settings = $this->decode_settings_column($row['settings']);
 		$settings = array_merge($settings, $partial);
 
+		// A Builder save regenerates feed_style from the settings, so this does too (SMASH-2598).
+		$feed_style = SBR_Feed_Style_Generator::generate(array_merge($settings, array('feed_name' => $row['feed_name'])), (int) $feed_id);
+
 		$saver = new SBR_Feed_Saver((int) $feed_id);
-		// Preserve name/style — see the raw-row-merge note in the class docblock.
+		// Preserve the name — see the raw-row-merge note in the class docblock.
 		$saver->set_feed_name($row['feed_name']);
-		$saver->set_feed_style($row['feed_style']);
+		$saver->set_feed_style($feed_style !== '' ? $feed_style : $row['feed_style']);
 		$saver->set_data($settings);
 
 		// update() (an existing feed, the path taken here) returns

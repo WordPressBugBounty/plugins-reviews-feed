@@ -25,7 +25,7 @@ $privacy_url = \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Cons
 // Default to the Consent package's bundled balloon icon. Consumers can override.
 $icon_url = \apply_filters('sbc_consent_modal_icon_url', \plugins_url('assets/img/balloon.svg', \dirname(__DIR__) . '/ConsentAssets.php'));
 ?>
-<div id="sbc-consent-reprompt-overlay" class="sbc-consent-reprompt-overlay" data-active="false" tabindex="-1">
+<div id="sbc-consent-reprompt-overlay" class="sbc-consent-reprompt-overlay" data-active="false" tabindex="-1" hidden>
 	<div class="sbc-consent-reprompt-popup" role="dialog" aria-modal="true" aria-labelledby="sbc-consent-reprompt-title">
 		<div class="sbc-consent-reprompt-icon">
 			<?php 

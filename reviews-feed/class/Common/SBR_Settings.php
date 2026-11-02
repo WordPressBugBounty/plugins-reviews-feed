@@ -3,6 +3,7 @@
 namespace SmashBalloon\Reviews\Common;
 
 use Smashballoon\Customizer\V2\Feed_Saver;
+use SmashBalloon\Reviews\Common\Customizer\SBR_Feed_Style_Generator;
 
 class SBR_Settings {
 	/**
@@ -102,8 +103,10 @@ class SBR_Settings {
 		$container = Container::get_instance();
 		$feed_saver = $container->get(Feed_Saver::class);
 		$feed_saver->set_feed_id($feed_id);
+		$settings = $feed_saver->get_feed_settings();
 
-		return $feed_saver->get_feed_settings();
+		// A feed never saved in the Feed Builder has no CSS yet (SMASH-2598).
+		return is_array($settings) ? SBR_Feed_Style_Generator::ensure_stored($feed_id, $settings) : $settings;
 	}
 
 	/**

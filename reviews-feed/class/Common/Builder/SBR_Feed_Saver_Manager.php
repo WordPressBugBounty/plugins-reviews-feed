@@ -666,6 +666,14 @@ class SBR_Feed_Saver_Manager
 				// source's reviews (verified: sibling source's posts untouched). Mirrors the
 				// cleanup the collection branch above already performs.
 				PostAggregator::delete_reviews_by_provide_id($source_account_id);
+
+				// The reviews are gone, so a re-add must import the history again (SMASH-2525).
+				if (class_exists(Bulk_Reviews_Update::class)) {
+					Bulk_Reviews_Update::forget_source($source_account_id, $provider);
+				}
+				if (class_exists(Bulk_External_Reviews_Update::class)) {
+					Bulk_External_Reviews_Update::forget_source($source_account_id, $provider);
+				}
 			}
 		}
 		echo sbr_json_encode([

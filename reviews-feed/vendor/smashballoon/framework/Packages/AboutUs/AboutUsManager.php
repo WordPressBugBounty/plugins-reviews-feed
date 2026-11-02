@@ -91,6 +91,7 @@ class AboutUsManager
         // review never sees a scheduled hook that contacts an external URL for a
         // user who has not opted in.
         add_action(ContentProvider::CRON_HOOK, [ContentProvider::class, 'refresh']);
+        add_action(ContentProvider::REFRESH_ONCE_HOOK, [ContentProvider::class, 'refresh']);
         ContentProvider::reconcile_cron();
         // The moment a user opts in to data sharing (for any Smash Balloon feed
         // plugin), force-fetch the About Us content if the cache is empty or

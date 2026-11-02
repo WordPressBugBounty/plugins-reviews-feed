@@ -32,7 +32,7 @@ class SBR_Create_Feed extends SBR_Ability
 
 		return array(
 			'label'               => __('Create a Reviews Feed', 'reviews-feed'),
-			'description'         => __('Creates a new feed from already-connected review sources (see list-sources), with optional quick settings. Returns the new feed id. Requires AI write access.', 'reviews-feed') . ' ' . $this->source_tier_note() . ' ' . SBR_Update_Feed_Settings::feed_style_note() . $this->pro_settings_note(), // phpcs:ignore Generic.Files.LineLength.TooLong -- single literal for make-pot
+			'description'         => __('Creates a new feed from already-connected review sources (see list-sources), with optional quick settings. Returns the new feed id. Requires AI write access.', 'reviews-feed') . ' ' . $this->source_tier_note() . $this->pro_settings_note(), // phpcs:ignore Generic.Files.LineLength.TooLong -- single literal for make-pot
 			'input_schema'        => array(
 				'type'                 => 'object',
 				'properties'           => array(
@@ -137,10 +137,6 @@ class SBR_Create_Feed extends SBR_Ability
 			}
 			$clean[$key] = $v;
 		}
-		// Keys the agent asked for, before the template adds its own: only these
-		// warrant the Feed Builder warning (SBR-577).
-		$requested_keys = array_keys($clean);
-
 		// AgDR-0504 finding C2 / B4 (Rex round-3): create-feed used to
 		// store \`feedTemplate\` and apply none of it, AND only applied a
 		// template at all when one was explicitly requested. The native
@@ -204,13 +200,6 @@ class SBR_Create_Feed extends SBR_Ability
 		if (is_wp_error($result)) {
 			return $result;
 		}
-
-		// A new feed has no feed_style yet, so styling keys the agent set are
-		// saved but inert until the feed is saved once in the Feed Builder.
-		$warnings = array_merge(
-			$warnings,
-			SBR_Update_Feed_Settings::feed_style_warnings(isset($result['feed_id']) ? (int) $result['feed_id'] : 0, $requested_keys)
-		);
 
 		return array_merge(
 			$result,

@@ -20,6 +20,7 @@ if (!defined('ABSPATH')) {
 class ConsentAssets
 {
     const ASSET_HANDLE = 'sbc-consent';
+    const ASSET_VERSION = '1.0.9';
     /**
      * @var bool
      */
@@ -69,14 +70,39 @@ class ConsentAssets
         if (!current_user_can('manage_options')) {
             return;
         }
-        wp_enqueue_style(self::ASSET_HANDLE, self::asset_url('assets/css/consent.css'), array(), '1.0.3');
-        wp_enqueue_script(self::ASSET_HANDLE, self::asset_url('assets/js/consent.js'), array(), '1.0.3', \true);
+        // Every active Smash Balloon plugin ships its own copy of this package
+        // and the first one to enqueue owns the shared handle. Replace an older
+        // copy's assets so the newest JS and CSS run whatever the load order.
+        $script = wp_scripts()->query(self::ASSET_HANDLE);
+        if (\false !== $script && \true === version_compare((string) $script->ver, (string) self::ASSET_VERSION, '<')) {
+            wp_deregister_script(self::ASSET_HANDLE);
+        }
+        $style = wp_styles()->query(self::ASSET_HANDLE);
+        if (\false !== $style && \true === version_compare((string) $style->ver, (string) self::ASSET_VERSION, '<')) {
+            wp_deregister_style(self::ASSET_HANDLE);
+        }
+        wp_enqueue_style(self::ASSET_HANDLE, self::asset_url('assets/css/consent.css'), array(), self::ASSET_VERSION);
+        wp_enqueue_script(self::ASSET_HANDLE, self::asset_url('assets/js/consent.js'), array(), self::ASSET_VERSION, \true);
         $show_modal = self::should_show_reprompt_modal();
         // Localize on the first registered slug (consent is shared, so any
         // slug is fine for the diagnostic field).
         $slugs = ConsentManager::get_registered_slugs();
         $plugin_slug = !empty($slugs) ? reset($slugs) : '';
-        wp_localize_script(self::ASSET_HANDLE, 'sbcConsent', array('ajaxUrl' => admin_url('admin-ajax.php'), 'nonce' => wp_create_nonce(ConsentManager::NONCE_ACTION), 'showRepromptModal' => $show_modal, 'plugin_slug' => $plugin_slug, 'restRoot' => esc_url_raw(rest_url('sbc/v1/')), 'restNonce' => wp_create_nonce('wp_rest'), 'isPro' => ConsentManager::is_pro()));
+        wp_localize_script(self::ASSET_HANDLE, 'sbcConsent', array(
+            // Relative, like core's own ajaxurl, so the save stays same-origin
+            // (cookies sent, no CORS) when wp-admin is opened on a host other
+            // than siteurl, e.g. www vs non-www.
+            'ajaxUrl' => admin_url('admin-ajax.php', 'relative'),
+            'fallbackUrl' => admin_url('index.php', 'relative'),
+            'nonce' => wp_create_nonce(ConsentManager::NONCE_ACTION),
+            'showRepromptModal' => $show_modal,
+            // Lets the JS drop a stale pending Skip once nothing is pending.
+            'consentResolved' => ConsentManager::is_modal_dismissed() || ConsentManager::is_dsc_enabled(),
+            'plugin_slug' => $plugin_slug,
+            'restRoot' => esc_url_raw(rest_url('sbc/v1/')),
+            'restNonce' => wp_create_nonce('wp_rest'),
+            'isPro' => ConsentManager::is_pro(),
+        ));
     }
     /**
      * The re-prompt modal targets EXISTING users who upgraded into the

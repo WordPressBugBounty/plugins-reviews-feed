@@ -954,7 +954,9 @@ if (!function_exists('wp_next_scheduled')) {
 if (!function_exists('wp_clear_scheduled_hook')) {
 	function wp_clear_scheduled_hook($hook, $args = [], $wp_error = false)
 	{
-		global $wp_scheduled_events_mock;
+		global $wp_scheduled_events_mock, $wp_cleared_hooks_mock;
+		// Real WP clears only events whose args match; record them so tests can assert the scope.
+		$wp_cleared_hooks_mock[] = ['hook' => $hook, 'args' => $args];
 		if (is_array($wp_scheduled_events_mock)) {
 			unset($wp_scheduled_events_mock[$hook]);
 		}

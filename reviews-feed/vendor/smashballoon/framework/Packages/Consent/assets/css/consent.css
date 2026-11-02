@@ -28,19 +28,90 @@
 }
 
 /* ── Vanilla modal visibility (replaces v-if) ──────────────────── */
+.sbc-consent-reprompt-overlay[hidden],
 .sbc-consent-reprompt-overlay[data-active="false"] {
     display: none;
 }
 
 .sbc-consent-reprompt-overlay {
+    /* Covers only the content area: never the admin bar or the admin menu.
+       Offsets follow core's admin bar heights and menu widths, keyed on
+       core's own body classes. z-index stays below #adminmenuwrap (9990) so
+       the menu and its flyouts sit above it, and below #wpadminbar (99999). */
     position: fixed;
-    inset: 0;
+    top: 32px;
+    right: 0;
+    bottom: 0;
+    left: 160px;
     background: var(--sbc-color-overlay);
-    z-index: 100000;
+    z-index: 9980;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    /* Scrolls when the card is taller than the content area (short windows,
+       browser zoom), so the X and the buttons can always be reached. */
+    overflow-y: auto;
+}
+
+/* Auto margins center the card like before but, unlike flex centering,
+   never push its top out of reach when it overflows. */
+.sbc-consent-reprompt-overlay > .sbc-consent-reprompt-popup {
+    margin: auto;
+}
+
+.folded .sbc-consent-reprompt-overlay {
+    left: 36px;
+}
+
+.rtl .sbc-consent-reprompt-overlay {
+    right: 160px;
+    left: 0;
+}
+
+.rtl.folded .sbc-consent-reprompt-overlay {
+    right: 36px;
+}
+
+@media only screen and (max-width: 960px) {
+    .auto-fold .sbc-consent-reprompt-overlay {
+        left: 36px;
+    }
+
+    .rtl.auto-fold .sbc-consent-reprompt-overlay {
+        right: 36px;
+        left: 0;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .sbc-consent-reprompt-overlay,
+    .folded .sbc-consent-reprompt-overlay,
+    .auto-fold .sbc-consent-reprompt-overlay,
+    .rtl .sbc-consent-reprompt-overlay,
+    .rtl.folded .sbc-consent-reprompt-overlay,
+    .rtl.auto-fold .sbc-consent-reprompt-overlay {
+        top: 46px;
+        right: 0;
+        left: 0;
+    }
+
+    /* The menu opened from the admin bar toggle sits at z-index 100 here. */
+    .wp-responsive-open .sbc-consent-reprompt-overlay {
+        z-index: 99;
+    }
+}
+
+/* Block editor fullscreen mode hides the admin bar and the admin menu. */
+.is-fullscreen-mode .sbc-consent-reprompt-overlay,
+.is-fullscreen-mode.folded .sbc-consent-reprompt-overlay,
+.is-fullscreen-mode.auto-fold .sbc-consent-reprompt-overlay,
+.is-fullscreen-mode.rtl .sbc-consent-reprompt-overlay,
+.is-fullscreen-mode.rtl.folded .sbc-consent-reprompt-overlay,
+.is-fullscreen-mode.rtl.auto-fold .sbc-consent-reprompt-overlay {
+    top: 0;
+    right: 0;
+    left: 0;
 }
 
 .sbc-consent-reprompt-popup {

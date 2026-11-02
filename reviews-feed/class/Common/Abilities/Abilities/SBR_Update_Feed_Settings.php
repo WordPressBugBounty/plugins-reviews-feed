@@ -53,7 +53,7 @@ class SBR_Update_Feed_Settings extends SBR_Ability
 
 		return array(
 			'label'               => __('Update a Reviews Feed', 'reviews-feed'),
-			'description'         => $this->description_text() . ' ' . self::feed_style_note() . $this->pro_settings_note(),
+			'description'         => $this->description_text() . $this->pro_settings_note(),
 			'input_schema'        => array(
 				'type'                 => 'object',
 				'properties'           => $props,
@@ -82,41 +82,29 @@ class SBR_Update_Feed_Settings extends SBR_Ability
 	}
 
 	/**
-	 * Tells the agent up front which keys are saved but not visible until the
-	 * feed is re-saved in the Feed Builder (see SBR_Settings_Schema::FEED_STYLE_ONLY_KEYS).
+	 * Kept for callers outside the plugin; nothing needs a Feed Builder save any more.
 	 *
-	 * @return string
+	 * @deprecated 2.16.1 The feed's CSS is generated server-side (SMASH-2598).
+	 *
+	 * @return string Always ''.
 	 */
 	public static function feed_style_note()
 	{
-		return sprintf(
-			/* translators: %s: comma-separated setting keys */
-			__('Colors and spacing (%s) are saved, but they only show on the live page after someone opens the feed in the Feed Builder and clicks Save, because the Feed Builder generates their CSS. Tell the user this before you change them.', 'reviews-feed'), // phpcs:ignore Generic.Files.LineLength.TooLong -- single literal for make-pot
-			implode(', ', SBR_Settings_Schema::FEED_STYLE_ONLY_KEYS)
-		);
+		return '';
 	}
 
 	/**
-	 * One warning when any written key needs a Feed Builder save to render.
+	 * Kept for callers outside the plugin; nothing needs a Feed Builder save any more.
+	 *
+	 * @deprecated 2.16.1 The feed's CSS is generated server-side (SMASH-2598).
 	 *
 	 * @param int      $feed_id
 	 * @param string[] $written Keys that were written.
-	 * @return string[]
+	 * @return string[] Always empty.
 	 */
 	public static function feed_style_warnings($feed_id, array $written)
 	{
-		$affected = array_values(array_intersect($written, SBR_Settings_Schema::FEED_STYLE_ONLY_KEYS));
-		if (empty($affected)) {
-			return array();
-		}
-		return array(
-			sprintf(
-				/* translators: 1: comma-separated setting keys, 2: Feed Builder URL */
-				__('%1$s saved, but the change will not appear on the live page yet. These settings are rendered from CSS that only the Feed Builder generates. Open this feed in the Feed Builder (%2$s) and click Save to apply it.', 'reviews-feed'), // phpcs:ignore Generic.Files.LineLength.TooLong -- single literal for make-pot
-				implode(', ', $affected),
-				admin_url('admin.php?page=sbr&feed_id=' . (int) $feed_id)
-			),
-		);
+		return array();
 	}
 
 	/**
@@ -171,7 +159,7 @@ class SBR_Update_Feed_Settings extends SBR_Ability
 			$result,
 			array(
 				'ignored'  => (object) $ignored,
-				'warnings' => self::feed_style_warnings($feed_id, isset($result['updated']) ? (array) $result['updated'] : array()),
+				'warnings' => array(),
 			)
 		);
 	}

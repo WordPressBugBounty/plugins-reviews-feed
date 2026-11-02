@@ -14,10 +14,9 @@ use SmashBalloon\Reviews\Common\Abilities\Services\SBR_Settings_Schema;
  * silent success for styling the live page cannot show, and the free copy must
  * not promise more than free does.
  *
- * Colours and vertical spacing render from the pre-rendered `feed_style` CSS,
- * which only the Feed Builder generates (in the browser, posted on save). PHP has
- * no generator, so a write through the ability is saved but inert until the feed
- * is re-saved in the builder.
+ * Colours and vertical spacing render from the pre-rendered `feed_style` CSS.
+ * Since SMASH-2598 PHP generates it on save, so the "re-save it in the Feed
+ * Builder" warning is gone; the key list stays pinned as documentation.
  */
 final class Sbr577FeedStyleOnlyWarningTest extends TestCase
 {
@@ -86,24 +85,13 @@ final class Sbr577FeedStyleOnlyWarningTest extends TestCase
 		}
 	}
 
-	public function test_a_styling_key_adds_one_warning_naming_it_and_the_builder_url(): void
-	{
-		$warnings = SBR_Update_Feed_Settings::feed_style_warnings(7, array('layout', 'ratingIconColor', 'headingColor'));
-
-		$this->assertCount(1, $warnings);
-		$this->assertStringContainsString('ratingIconColor, headingColor', $warnings[0]);
-		$this->assertStringNotContainsString('layout', $warnings[0]);
-		$this->assertStringContainsString('Feed Builder', $warnings[0]);
-		$this->assertStringContainsString('Save', $warnings[0]);
-		$this->assertStringContainsString('admin.php?page=sbr&feed_id=7', $warnings[0]);
-	}
-
 	/**
 	 * @dataProvider styling_keys
 	 */
-	public function test_each_listed_key_triggers_the_warning(string $key): void
+	public function test_a_styling_key_no_longer_warns_since_php_writes_its_css(string $key): void
 	{
-		$this->assertCount(1, SBR_Update_Feed_Settings::feed_style_warnings(3, array($key)));
+		$this->assertSame(array(), SBR_Update_Feed_Settings::feed_style_warnings(3, array($key)));
+		$this->assertSame('', SBR_Update_Feed_Settings::feed_style_note());
 	}
 
 	/** @return array<string, array{0: string}> */
@@ -116,28 +104,19 @@ final class Sbr577FeedStyleOnlyWarningTest extends TestCase
 		return $out;
 	}
 
-	public function test_keys_that_render_without_the_builder_add_no_warning(): void
-	{
-		$this->assertSame(
-			array(),
-			SBR_Update_Feed_Settings::feed_style_warnings(7, array('layout', 'numPostDesktop', 'showHeader', 'sortByDate'))
-		);
-		$this->assertSame(array(), SBR_Update_Feed_Settings::feed_style_warnings(7, array()));
-	}
-
 	/**
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
 	 */
-	public function test_free_description_promises_no_filtering_and_flags_the_builder_step(): void
+	public function test_free_description_promises_no_filtering(): void
 	{
 		self::stubs();
 		$d = (new SBR_Update_Feed_Settings())->args()['description'];
 
 		$this->assertStringNotContainsString('filtering', $d);
 		$this->assertStringContainsString('sorting', $d);
-		$this->assertStringContainsString('Feed Builder', $d);
-		$this->assertStringContainsString('ratingIconColor', $d);
+		$this->assertStringNotContainsString('Feed Builder', $d, 'SMASH-2598: no Builder save is needed any more');
+		$this->assertStringNotContainsString('  ', $d);
 		$this->assertStringContainsString('get-pro-features', $d, 'the free upsell pointer must survive');
 	}
 
@@ -145,14 +124,14 @@ final class Sbr577FeedStyleOnlyWarningTest extends TestCase
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
 	 */
-	public function test_pro_description_keeps_its_text_and_still_flags_the_builder_step(): void
+	public function test_pro_description_keeps_its_text(): void
 	{
 		self::stubs();
 		define('SBR_PRO', true);
 		$d = (new SBR_Update_Feed_Settings())->args()['description'];
 
 		$this->assertStringContainsString('(layout, columns, header, sorting, filtering)', $d);
-		$this->assertStringContainsString('Feed Builder', $d);
+		$this->assertStringNotContainsString('Feed Builder', $d);
 		$this->assertStringNotContainsString('get-pro-features', $d);
 	}
 
@@ -187,28 +166,13 @@ final class Sbr577FeedStyleOnlyWarningTest extends TestCase
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
 	 */
-	public function test_create_feed_description_flags_the_builder_step(): void
+	public function test_create_feed_no_longer_flags_a_builder_step(): void
 	{
 		self::stubs();
 		$d = (new SBR_Create_Feed())->args()['description'];
 
-		$this->assertStringContainsString('Feed Builder', $d);
-		$this->assertStringContainsString('ratingIconColor', $d);
-	}
-
-	public function test_create_feed_warns_only_for_keys_the_agent_requested(): void
-	{
-		// execute() passes the validated REQUEST keys (taken before the template
-		// adds its own colours), so a template's own styling never warns.
+		$this->assertStringNotContainsString('Feed Builder', $d);
 		$src = file_get_contents(dirname(__DIR__, 2) . '/class/Common/Abilities/Abilities/SBR_Create_Feed.php');
-		$taken    = strpos($src, '$requested_keys = array_keys($clean);');
-		$template = strpos($src, 'apply_template_with_warning($clean)');
-		$this->assertNotFalse($taken);
-		$this->assertLessThan($template, $taken, 'request keys must be captured before the template runs');
-		$this->assertStringContainsString('feed_style_warnings(', $src);
-		$this->assertStringContainsString('$requested_keys', substr($src, strpos($src, 'feed_style_warnings(')));
-
-		$w = SBR_Update_Feed_Settings::feed_style_warnings(42, array('headingColor'));
-		$this->assertStringContainsString('feed_id=42', $w[0]);
+		$this->assertStringNotContainsString('feed_style_warnings(', $src);
 	}
 }

@@ -1,0 +1,303 @@
+/**
+ * Zapier settings surface.
+ *
+ * Scoped to .sbc-zapier so it never leaks into the host settings page. The
+ * button/input classes are swappable per host (see Zapier_Settings_Surface's
+ * classes map); the rules below style the self-contained defaults and provide
+ * the layout (rows, spacing, warning) that every host relies on regardless of
+ * which button/input classes it supplies.
+ */
+
+.sbc-zapier {
+	width: 100%;
+	/* Hosts add padding to the row (e.g. IG's sb-tab-box): keep it inside 100%. */
+	box-sizing: border-box;
+}
+
+/* --- vertical rhythm --------------------------------------------------- */
+
+.sbc-zapier .sbc-zapier-heading {
+	margin: 0 0 8px;
+	font-size: 15px;
+	font-weight: 600;
+	color: #141b38;
+}
+
+.sbc-zapier .sbc-zapier-desc,
+.sbc-zapier .sbc-zapier-upsell-title {
+	margin: 0 0 16px;
+}
+
+.sbc-zapier .sbc-zapier-upsell-title {
+	font-weight: 600;
+	color: #141b38;
+}
+
+.sbc-zapier .sbc-zapier-field {
+	margin-bottom: 24px;
+}
+
+.sbc-zapier .sbc-zapier-field:last-child {
+	margin-bottom: 0;
+}
+
+.sbc-zapier .sbc-zapier-field > label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 600;
+	font-size: 13px;
+	color: #141b38;
+}
+
+/* --- input + button row ------------------------------------------------ */
+
+.sbc-zapier .sbc-zapier-row {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+}
+
+
+/* Left column of the revealed-key row: input + warning, input's own width. */
+
+
+/* Any input the row holds grows to fill; the button stays its natural size.
+   Written against the element, not a class, so host-supplied input/button
+   classes size correctly too. */
+.sbc-zapier .sbc-zapier-row > .sbc-zapier-input-wrap {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.sbc-zapier .sbc-zapier-input-wrap input {
+	width: 100%;
+}
+
+.sbc-zapier .sbc-zapier-row > button {
+	flex: 0 0 auto;
+}
+
+/* --- default control styling (hosts that pass no classes) -------------- */
+
+.sbc-zapier .sbc-zapier-input {
+	padding: 7px 10px;
+	border: 1px solid #dcdde1;
+	border-radius: 2px;
+	background: #fff;
+	color: #141b38;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 13px;
+}
+
+.sbc-zapier .sbc-zapier-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 90px;
+	padding: 7px 16px;
+	border: 1px solid #dcdde1;
+	border-radius: 2px;
+	background: #f3f4f5;
+	color: #141b38;
+	font-weight: 600;
+	font-size: 13px;
+	text-decoration: none;
+	cursor: pointer;
+	transition: all 0.15s ease-in-out;
+}
+
+.sbc-zapier .sbc-zapier-btn:hover {
+	background: #fff;
+}
+
+.sbc-zapier .sbc-zapier-btn[disabled] {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.sbc-zapier .sbc-zapier-btn-primary {
+	background: #0068a0;
+	border-color: #096292;
+	color: #fff;
+}
+
+.sbc-zapier .sbc-zapier-btn-primary:hover {
+	background: #005b8c;
+}
+
+.sbc-zapier .sbc-zapier-btn-danger {
+	background: #d63638;
+	border-color: #b32d2e;
+	color: #fff;
+}
+
+.sbc-zapier .sbc-zapier-btn-danger:hover {
+	background: #b32d2e;
+}
+
+/* --- key states -------------------------------------------------------- */
+
+.sbc-zapier .sbc-zapier-warning {
+	margin: 12px 0;
+	padding: 8px 12px;
+	background: #fff4e5;
+	border-left: 3px solid #d98500;
+	color: #6b4a00;
+	font-size: 13px;
+}
+
+
+.sbc-zapier .sbc-zapier-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+	margin-bottom: 4px;
+}
+
+/* --- toggle row (config `toggle`) -------------------------------------- */
+
+.sbc-zapier-toggle-row {
+	display: flex;
+	gap: 24px;
+	padding: 24px 0;
+}
+
+.sbc-zapier-toggle-label {
+	flex: 0 0 200px;
+}
+
+.sbc-zapier-toggle-label h3 {
+	margin: 0;
+	font-size: 16px;
+}
+
+.sbc-zapier-toggle-body {
+	flex: 1;
+}
+
+.sbc-zapier .sbc-zapier-toggle .sbc-zapier-desc {
+	display: block;
+	margin: 0;
+}
+
+/* Customizer hosts key their switcher spacing on the section's direct children,
+   which the toggle wrapper sits in the way of: restate it for those classes. */
+.sbc-zapier-toggle > .sb-settings-section-insider {
+	display: flex;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.sbc-zapier-toggle > .sb-text-small {
+	line-height: 1.7em;
+}
+
+/* Gap between the toggle description and the connection panel. */
+.sbc-zapier .sbc-zapier-panel {
+	margin-top: 16px;
+}
+
+/* Host button classes (e.g. display: flex) must not beat `hidden`. */
+.sbc-zapier [hidden] {
+	display: none !important;
+}
+
+.sbc-zapier-switch {
+	display: inline-flex;
+	cursor: pointer;
+	margin-bottom: 12px;
+}
+
+/* Visually hidden. Core/host checkbox styles (min-width, border, :checked
+   background and ::before tick) otherwise leave a sliver above the track. */
+.sbc-zapier .sbc-zapier-switch input[type="checkbox"],
+.sbc-zapier .sbc-zapier-switch input[type="checkbox"]:checked,
+.sbc-zapier .sbc-zapier-switch input[type="checkbox"]:focus {
+	position: absolute;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+	clip-path: inset(50%);
+	overflow: hidden;
+	appearance: none;
+}
+
+.sbc-zapier .sbc-zapier-switch input[type="checkbox"]::before {
+	content: none;
+}
+
+.sbc-zapier-switch .toggle-track {
+	position: relative;
+	display: inline-block;
+	width: 36px;
+	height: 20px;
+	border-radius: 31px;
+	background: #d0d1d7;
+	transition: background 0.4s;
+}
+
+.sbc-zapier-switch .toggle-indicator {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	border-radius: 100px;
+	background: #fff;
+	transition: left 0.4s;
+}
+
+.sbc-zapier-switch input:checked + .toggle-track {
+	background: #0096cc;
+}
+
+.sbc-zapier-switch input:checked + .toggle-track .toggle-indicator {
+	left: 18px;
+}
+
+.sbc-zapier-switch input:focus-visible + .toggle-track {
+	box-shadow: 0 0 0 2px #2271b1;
+}
+
+/* Valid API key (default look; hosts pass their license-key classes). */
+.sbc-zapier .sbc-zapier-input-wrap {
+	position: relative;
+}
+
+.sbc-zapier .sbc-zapier-icon {
+	position: absolute;
+	top: 50%;
+	right: 12px;
+	transform: translateY(-50%);
+	color: #59ab46;
+	line-height: 0;
+}
+
+.sbc-zapier .sbc-zapier-valid .sbc-zapier-input {
+	border-color: #59ab46;
+}
+
+/* "i" link to the feature doc, after the toggle description. */
+.sbc-zapier .sbc-zapier-info {
+	display: inline-flex;
+	vertical-align: middle;
+	margin-left: 4px;
+	color: #434960;
+	text-decoration: none;
+}
+
+.sbc-zapier .sbc-zapier-info:hover,
+.sbc-zapier .sbc-zapier-info:focus-visible {
+	color: #0068a0;
+}
+
+.sbc-zapier-warning {
+	color: #b32d2e;
+	font-weight: 600;
+}

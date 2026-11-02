@@ -36,6 +36,10 @@ class ContentProvider
      */
     const CRON_HOOK = 'sbc_about_us_update';
     /**
+     * One-off fetch scheduled when consent is switched on.
+     */
+    const REFRESH_ONCE_HOOK = 'sbc_about_us_refresh_once';
+    /**
      * Default remote endpoint. The content is identical across Smash Balloon
      * plugins, so a single canonical file serves every plugin on the site.
      *
@@ -189,8 +193,10 @@ class ContentProvider
         if (!$dsc || !self::remote_allowed()) {
             return;
         }
-        if (self::needs_refresh()) {
-            self::refresh();
+        // Fetch on the next cron spawn, not inside the consent save request,
+        // so a slow remote can never make the save time out.
+        if (\true === self::needs_refresh() && \false === wp_next_scheduled(self::REFRESH_ONCE_HOOK)) {
+            wp_schedule_single_event(time(), self::REFRESH_ONCE_HOOK);
         }
     }
     /**
@@ -214,8 +220,14 @@ class ContentProvider
                 wp_clear_scheduled_hook(self::CRON_HOOK);
                 wp_schedule_event(time(), 'twicedaily', self::CRON_HOOK);
             }
-        } elseif ($scheduled) {
-            wp_clear_scheduled_hook(self::CRON_HOOK);
+        } else {
+            if (\true === $scheduled) {
+                wp_clear_scheduled_hook(self::CRON_HOOK);
+            }
+            // A one-off fetch queued by an opt-in must not outlive an opt-out.
+            if (\false !== wp_next_scheduled(self::REFRESH_ONCE_HOOK)) {
+                wp_clear_scheduled_hook(self::REFRESH_ONCE_HOOK);
+            }
         }
     }
     /**
@@ -317,6 +329,7 @@ class ContentProvider
     public static function uninstall()
     {
         wp_clear_scheduled_hook(self::CRON_HOOK);
+        wp_clear_scheduled_hook(self::REFRESH_ONCE_HOOK);
         delete_option(self::OPTION_NAME);
         self::$data = null;
     }

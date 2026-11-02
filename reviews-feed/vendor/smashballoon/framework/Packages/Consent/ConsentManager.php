@@ -19,6 +19,7 @@
  */
 namespace SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent;
 
+use SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\AboutUs\ContentProvider;
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -179,6 +180,14 @@ class ConsentManager
         ConsentAjax::register();
         ConsentAssets::register();
         ConsentRest::register();
+        // Some plugins boot About Us only under is_admin(), so on a wp-cron
+        // request nothing would run the About Us events a consent save
+        // schedules. Consent boots on every request; hook the callbacks here
+        // too (add_action dedupes the same callback).
+        if (\true === class_exists(ContentProvider::class)) {
+            add_action(ContentProvider::CRON_HOOK, [ContentProvider::class, 'refresh']);
+            add_action(ContentProvider::REFRESH_ONCE_HOOK, [ContentProvider::class, 'refresh']);
+        }
     }
     /**
      * @return array<string,array>  Registered plugin instances.
@@ -279,18 +288,20 @@ class ConsentManager
      * Whether the host is a Pro edition. Filter-based; defaults to false (Free).
      * Pro plugins opt in via add_filter('sbc_consent_is_pro', '__return_true').
      *
-     * The result is cached for the lifetime of the request, so the
-     * `sbc_consent_is_pro` filter MUST be attached before the first call to
-     * is_pro() / flags() / is_dsc_enabled() / is_notif_enabled(). In practice
-     * that means hooking the filter at or before `plugins_loaded` priority 10
-     * — the same place ConsentManager::init() is typically called from.
+     * A true result is cached for the lifetime of the request. A false result
+     * is not, so a Pro filter attached by another plugin later in the request
+     * is still honoured.
      *
      * @return bool
      */
     public static function is_pro()
     {
-        if (self::$is_pro_cache !== null) {
-            return self::$is_pro_cache;
+        // Only a true result is cached. Every plugin bundles its own copy of
+        // this class, so a Free copy can read is_pro() before the Pro plugin's
+        // init() adds the filter; caching false there would treat a Pro site
+        // as Free for the rest of the request.
+        if (self::$is_pro_cache === \true) {
+            return \true;
         }
         self::$is_pro_cache = (bool) apply_filters('sbc_consent_is_pro', \false);
         return self::$is_pro_cache;
