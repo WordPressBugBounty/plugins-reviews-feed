@@ -20,7 +20,6 @@ if (! defined('ABSPATH')) {
 }
 
 use Smashballoon\Stubs\Services\ServiceProvider;
-use SmashBalloon\Reviews\Common\FeedCache;
 use SmashBalloon\Reviews\Common\Parser;
 use SmashBalloon\Reviews\Common\TemplateRenderer;
 use SmashBalloon\Reviews\Common\Util;
@@ -633,7 +632,7 @@ class SBR_Review_Alert_Frontend extends ServiceProvider
 			? '\\SmashBalloon\\Reviews\\Pro\\Feed'
 			: '\\SmashBalloon\\Reviews\\Common\\Feed';
 
-		$feed = new $feed_class($feed_settings, $cache_id, new FeedCache($cache_id, DAY_IN_SECONDS));
+		$feed = new $feed_class($feed_settings, $cache_id, Util::feed_cache_for_site($cache_id, DAY_IN_SECONDS));
 
 		$feed->init();
 		$feed->get_set_cache();

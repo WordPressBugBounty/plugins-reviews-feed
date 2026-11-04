@@ -374,6 +374,51 @@ class PostAggregator {
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
+	/**
+	 * The language a source's newest stored row is in, or null when it has none. '' is a real answer: a Google feed on
+	 * the default language stores its rows with lang ''. SMASH-2407.
+	 *
+	 * @param string $provider_id Source account id.
+	 * @return string|null
+	 */
+	public function newest_stored_lang($provider_id)
+	{
+		global $wpdb;
+		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
+
+		// get_row, not get_var: wpdb::get_var() returns null for '', which would hide the default language.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is esc_sql'd
+		$row = $wpdb->get_row(
+			$wpdb->prepare("SELECT lang FROM $table_name WHERE provider_id = %s ORDER BY time_stamp DESC LIMIT 1", (string) $provider_id),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return is_array($row) && isset($row['lang']) && is_string($row['lang']) ? $row['lang'] : null;
+	}
+
+	/**
+	 * Does a source have any stored row in this language? Raw (no decode, no dedup), so every reader asks the
+	 * same question the same way. SMASH-2407.
+	 *
+	 * @param string $provider_id
+	 * @param string $lang
+	 * @return bool
+	 */
+	public function has_rows_in_lang($provider_id, $lang)
+	{
+		global $wpdb;
+		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is esc_sql'd
+		$found = $wpdb->get_var(
+			$wpdb->prepare("SELECT 1 FROM $table_name WHERE provider_id = %s AND lang = %s LIMIT 1", (string) $provider_id, (string) $lang)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $found !== null;
+	}
+
 	private function build_provider_business_where_clause($requests_needed)
 	{
 

@@ -617,6 +617,72 @@ class DB extends \Smashballoon\Customizer\V2\DB{
 	}
 
 	/**
+	 * Write a source's fetch state (`error`): JSON from Feed::api_request(), or '' to clear it. SMASH-2408.
+	 *
+	 * Its own writer, so source_update() — which receives whole add-source payloads — never starts honouring an
+	 * `error` key. Keyed on account_id + provider: the hydrated `id` is the table's primary key, not account_id.
+	 *
+	 * @param string $account_id
+	 * @param string $provider
+	 * @param string $error
+	 * @return false|int
+	 */
+	public function source_set_fetch_state($account_id, $provider, $error)
+	{
+		global $wpdb;
+
+		return $wpdb->update(
+			$this->sources_table,
+			array('error' => (string) $error),
+			array('account_id' => (string) $account_id, 'provider' => (string) $provider),
+			array('%s'),
+			array('%s', '%s')
+		);
+	}
+
+	/**
+	 * Sources holding a stored fetch state (SMASH-2408 writes JSON to `error`; '' means none). SMASH-2411.
+	 *
+	 * @return list<array{account_id: string, provider: string, name: string, error: string}>
+	 */
+	public function sources_with_fetch_state()
+	{
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare("SELECT account_id, provider, name, error FROM $this->sources_table WHERE error LIKE %s LIMIT 500", '{%'),
+			ARRAY_A
+		);
+
+		return is_array($rows) ? $rows : array();
+	}
+
+	/**
+	 * Every source id any feed's settings list, decoded rather than LIKE-matched. SMASH-2411.
+	 *
+	 * @return list<string>
+	 */
+	public function feed_source_ids()
+	{
+		global $wpdb;
+
+		$ids = array();
+		foreach ((array) $wpdb->get_col("SELECT settings FROM $this->feeds_table") as $settings) {
+			$decoded = json_decode((string) $settings, true);
+			if (!is_array($decoded) || !isset($decoded['sources']) || !is_array($decoded['sources'])) {
+				continue;
+			}
+			foreach ($decoded['sources'] as $id) {
+				if (is_scalar($id)) {
+					$ids[] = (string) $id;
+				}
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}
+
+	/**
 	 * Update a source (connected account)
 	 *
 	 * @param array $to_update

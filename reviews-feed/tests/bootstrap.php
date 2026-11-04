@@ -163,7 +163,8 @@ if (!function_exists('sanitize_key')) {
 if (!function_exists('esc_html')) {
 	function esc_html($text)
 	{
-		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+		// No double-encode, as core's _wp_specialchars() (formatting.php:945): an entity passes through unchanged.
+		return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8', false);
 	}
 }
 
@@ -621,10 +622,25 @@ if (!function_exists('wp_enqueue_script')) {
 		$GLOBALS['sbr_test_enqueued_scripts'][$handle] = compact('src', 'deps', 'ver', 'in_footer');
 	}
 }
+if (!function_exists('wp_kses_post')) {
+	// SMASH-2410: FeedDisplay::error_html() runs in unit tests now; identity is enough to assert structure.
+	function wp_kses_post($data)
+	{
+		return $data;
+	}
+}
+if (!function_exists('has_action')) {
+	// SMASH-2646: the bulk import's cache flush asks for LiteSpeed's purge hook; nothing is hooked in unit tests.
+	function has_action($hook, $callback = false)
+	{
+		return false;
+	}
+}
 if (!function_exists('do_action')) {
 	function do_action($hook, ...$args)
 	{
-		// no-op for tests
+		// No-op, but recorded so a test can assert a hook still fires (SMASH-2410).
+		$GLOBALS['sbr_test_actions'][] = $hook;
 	}
 }
 
@@ -713,8 +729,33 @@ if (!function_exists('delete_transient')) {
 if (!isset($GLOBALS['wpdb'])) {
 	$GLOBALS['wpdb'] = new class {
 		public $prefix = 'wp_';
+		public $options = 'wp_options';
+		/** @var array<int, mixed> The last prepare()'s arguments, for the refresh-lock statements below. */
+		private $last_args = [];
+		// Feed's refresh lock (SMASH-2437) runs three statements on the options table; they answer here like MySQL,
+		// with affected rows, over $wp_options_mock. Every other query keeps answering 0 / null.
 		public function query($sql)
 		{
+			global $wp_options_mock;
+			if (!is_array($wp_options_mock)) {
+				$wp_options_mock = [];
+			}
+			$args = $this->last_args;
+			if (strpos((string) $sql, "INSERT IGNORE INTO {$this->options}") === 0) {
+				if (array_key_exists($args[0], $wp_options_mock)) {
+					return 0;
+				}
+				$wp_options_mock[ $args[0] ] = $args[1];
+				return 1;
+			}
+			if (strpos((string) $sql, "UPDATE {$this->options} SET option_value = %s WHERE option_name = %s AND option_value = %s") === 0) {
+				[ $value, $name, $expected ] = $args;
+				if (!array_key_exists($name, $wp_options_mock) || (string) $wp_options_mock[ $name ] !== (string) $expected || (string) $expected === (string) $value) {
+					return 0; // MySQL counts a row whose value didn't change as unaffected.
+				}
+				$wp_options_mock[ $name ] = $value;
+				return 1;
+			}
 			return 0;
 		}
 		public function get_results($sql, $output = null)
@@ -723,6 +764,11 @@ if (!isset($GLOBALS['wpdb'])) {
 		}
 		public function get_var($sql)
 		{
+			global $wp_options_mock;
+			if (strpos((string) $sql, "SELECT option_value FROM {$this->options} WHERE option_name = %s") === 0) {
+				$name = $this->last_args[0];
+				return is_array($wp_options_mock) && array_key_exists($name, $wp_options_mock) ? (string) $wp_options_mock[ $name ] : null;
+			}
 			return null;
 		}
 		public function get_row($sql, $output = null)
@@ -731,11 +777,17 @@ if (!isset($GLOBALS['wpdb'])) {
 		}
 		public function prepare($query, ...$args)
 		{
+			$this->last_args = $args;
 			return $query;
 		}
 		public function esc_like($text)
 		{
 			return addcslashes((string) $text, '_%\\');
+		}
+		// SMASH-2408: Feed::api_request() now records a source's fetch state through $wpdb->update().
+		public function update($table, $data, $where, $format = null, $where_format = null)
+		{
+			return 0;
 		}
 	};
 }

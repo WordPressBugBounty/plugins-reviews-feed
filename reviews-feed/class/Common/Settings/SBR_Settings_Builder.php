@@ -127,11 +127,13 @@ class SBR_Settings_Builder extends Settings_Builder {
 	{
 		$data = parent::settingspage_builder_data();
 
-		if ( class_exists( '\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager' )
-			&& \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager::is_locked_by_pro() ) {
-			foreach ( $data as $key => $tab ) {
-				if ( is_array( $tab ) && isset( $tab['id'] ) && 'sb-data-controls-tab' === $tab['id'] ) {
-					unset( $data[ $key ] );
+		if (
+			class_exists('\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager')
+			&& \SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages\Consent\ConsentManager::is_locked_by_pro()
+		) {
+			foreach ($data as $key => $tab) {
+				if (is_array($tab) && isset($tab['id']) && 'sb-data-controls-tab' === $tab['id']) {
+					unset($data[ $key ]);
 				}
 			}
 		}

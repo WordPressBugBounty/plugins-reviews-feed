@@ -152,6 +152,7 @@ class Smash1610RelayErrorAtFeedCreationTest extends TestCase
 		$this->assertArrayNotHasKey('actionUrl', $relay[0], 'No Settings link (SMASH-1610 option A).');
 	}
 
+	/** The site's own HTTP failing never reaches our relay, so only its owner can fix it: shown (SITE_CONNECTION_IDS). */
 	public function test_an_unreachable_relay_reuses_the_message_sbrelay_wrote(): void
 	{
 		global $wp_http_error_mock;
@@ -164,6 +165,18 @@ class Smash1610RelayErrorAtFeedCreationTest extends TestCase
 		$this->assertCount(1, $relay);
 		$this->assertSame('relayUnreachable', $relay[0]['id']);
 		$this->assertStringContainsString("Couldn't reach the reviews server", $relay[0]['message']);
+	}
+
+	/** The relay answering 5xx is ours to monitor: hidden from the client. */
+	public function test_a_relay_server_error_is_not_shown_to_the_client(): void
+	{
+		$this->relay_answers('<html>502 Bad Gateway</html>', 502);
+		$feed = $this->feed();
+
+		$feed->api_request([ $this->source('down.example') ]);
+
+		$this->assertSame([], $feed->get_relay_errors());
+		$this->assertSame([], $feed->get_errors());
 	}
 
 	public function test_an_unknown_refusal_names_its_cleaned_id(): void
@@ -289,6 +302,16 @@ class Smash1610RelayErrorAtFeedCreationTest extends TestCase
 
 		$this->assertCount(2, $feed->get_relay_errors());
 		$this->assertStringNotContainsString('No Posts Found', implode(' ', array_column($feed->get_errors(), 'message')));
+	}
+
+	/** A provider failure is hidden, and it still counts as the reason the feed is empty: no "No Posts Found" either. */
+	public function test_an_empty_feed_after_a_provider_failure_shows_the_client_nothing(): void
+	{
+		$this->relay_answers('{"success":false,"data":{"id":"reviewsSourceNotCreated"}}', 404);
+		$feed = $this->feed();
+
+		$this->assertSame([], $feed->update_posts_cache());
+		$this->assertSame([], $feed->get_errors());
 	}
 
 	/** BC: a genuinely empty source still says "No Posts Found". */

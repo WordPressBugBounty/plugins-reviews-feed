@@ -3,6 +3,7 @@
 namespace SmashBalloon\Reviews\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use SmashBalloon\Reviews\Common\Integrations\SBRelay;
 
 /**
  * SBRelay::$slow_endpoints raises the HTTP timeout from WP's 5s default to 120s.
@@ -13,37 +14,16 @@ use PHPUnit\Framework\TestCase;
  * milliseconds with 0 bytes received`, while the calls that did land took 1.8s to
  * 4.4s — already at the ceiling.
  *
- * Source-level assertions: the plugin unit suite runs on plain PHPUnit with no WP
- * test framework, and SBRelay's constructor reads options, so the list is checked
- * where it is declared.
+ * The list is SBRelay::SLOW_ENDPOINTS, read without constructing SBRelay (whose
+ * constructor reads options).
  */
 final class RelaySlowEndpointsTest extends TestCase
 {
 	/** @return list<string> */
 	private static function slowEndpoints(): array
 	{
-		$path = __DIR__ . '/../../class/Common/Integrations/SBRelay.php';
-		self::assertFileExists($path, 'SBRelay.php not found at expected path');
-
-		$src = (string) file_get_contents($path);
-
-		$start = strpos($src, '$this->slow_endpoints = [');
-		self::assertNotFalse($start, 'slow_endpoints must still be declared in SBRelay');
-
-		$end = strpos($src, '];', $start);
-		self::assertNotFalse($end, 'slow_endpoints declaration must be terminated');
-
-		$block = substr($src, $start, $end - $start);
-
-		// Strip comments first: an apostrophe in prose (`WP's`) would otherwise be
-		// read as a string delimiter and desynchronise every match after it. Block
-		// comments included, so a commented-out endpoint cannot count as present.
-		$block = (string) preg_replace('#/\*.*?\*/#s', '', $block);
-		$block = (string) preg_replace('#//[^\n]*#', '', $block);
-
-		preg_match_all("/'([^']+)'/", $block, $matches);
-
-		return $matches[1];
+		// A public constant since SMASH-2434, so it's read as declared rather than parsed out of the source.
+		return array_values(SBRelay::SLOW_ENDPOINTS);
 	}
 
 	public function test_tripadvisor_reviews_and_sources_get_the_longer_timeout(): void

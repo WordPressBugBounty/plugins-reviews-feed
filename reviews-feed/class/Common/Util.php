@@ -8,6 +8,7 @@ namespace SmashBalloon\Reviews\Common;
 use SmashBalloon\Reviews\Common\Builder\SBR_Sources;
 use SmashBalloon\Reviews\Common\Customizer\DB;
 use SmashBalloon\Reviews\Common\Helpers\SBR_Error_Handler;
+use SmashBalloon\Reviews\Common\Utils\SourceFetchOutcome;
 use SmashBalloon\Reviews\Pro\Integrations\Providers\EDD;
 
 class Util
@@ -330,9 +331,9 @@ class Util
 			]);
 		}
 
-		// Unshift, not push. The customizer renders pluginNotices[0] and nothing
-		// else — PluginNotices.js declares setCurrentNoticeIndex and never calls
-		// it — so a third notice is invisible whenever an earlier one fires. Both
+		// Unshift, not push. Customizer bundles before SMASH-2411 render
+		// pluginNotices[0] and nothing else, so a later notice is invisible
+		// whenever an earlier one fires. Both
 		// notices above gate on `sbr_apikeys_limit`, which is currently never
 		// populated (SMASH-1901 D3), so appending happened to work; the moment
 		// that bug is fixed it would have silently suppressed this one on exactly
@@ -344,7 +345,76 @@ class Util
 			array_unshift($notices, $tripadvisor_sunset);
 		}
 
+		// Last: a bundle older than SMASH-2411 still renders only pluginNotices[0].
+		$failing_sources = self::get_failing_sources_notice();
+		if ($failing_sources !== null) {
+			$notices[] = $failing_sources;
+		}
+
 		return $notices;
+	}
+
+	/**
+	 * A source name as HTML text for PluginNotices' innerHTML: decoded, then escaped, so "I &lt;3 Cafe"
+	 * (sanitize_text_field()'s storage) reads "I <3 Cafe" and a stored tag reads as text. No strip: it cuts
+	 * "I <3 Cafe" to "I". Both transports keep the escape — the JSON responses and wp_localize_script(), which
+	 * decodes only top-level scalars (class-wp-scripts.php:657); pluginNotices is nested.
+	 *
+	 * @param string $text
+	 * @return string
+	 */
+	private static function notice_html($text)
+	{
+		return esc_html(trim(html_entity_decode($text, ENT_QUOTES, 'UTF-8')));
+	}
+
+	/** How many failing source names the notice lists before "and N more". */
+	const FAILING_SOURCES_NOTICE_NAMES = 5;
+
+	/**
+	 * Name the sources a feed uses that the site itself has to fix (SMASH-2411): config states, such as an inactive
+	 * WooCommerce or EDD. Provider failures are never shown to the client; we monitor providers ourselves.
+	 *
+	 * @return array|null Notice in the get_plugin_notices() shape, or null.
+	 */
+	public static function get_failing_sources_notice()
+	{
+		$db = new DB();
+		$failing = [];
+		foreach ($db->sources_with_fetch_state() as $row) {
+			$state = SourceFetchOutcome::decode_state((string) $row['error']);
+			if ($state === null || $state['scope'] !== SourceFetchOutcome::SCOPE_CONFIG) {
+				continue;
+			}
+			$name = self::notice_html((string) $row['name']);
+			$failing[(string) $row['account_id']] = $name !== '' ? $name : self::notice_html((string) $row['account_id']);
+		}
+		if (empty($failing)) {
+			return null;
+		}
+
+		// Exact ids from each feed's settings: a LIKE would let "acme" match "acme-shop".
+		$used = array_values(array_intersect_key($failing, array_flip($db->feed_source_ids())));
+		if (empty($used)) {
+			return null;
+		}
+
+		$names = implode(', ', array_slice($used, 0, self::FAILING_SOURCES_NOTICE_NAMES));
+		$more = count($used) - self::FAILING_SOURCES_NOTICE_NAMES;
+		if ($more > 0) {
+			/* translators: 1: comma-separated source names, 2: how many more sources */
+			$names = sprintf(__('%1$s and %2$d more', 'reviews-feed'), $names, $more);
+		}
+
+		return [
+			'type' => 'error',
+			'heading' => __('Some sources could not fetch new reviews.', 'reviews-feed'),
+			'description' => sprintf(
+				/* translators: %s: comma-separated source names */
+				__('Affected: %s. The plugin or item these sources read reviews from isn\'t available. Reviews already saved still show in your feeds.', 'reviews-feed'),
+				$names
+			),
+		];
 	}
 
 	/**
@@ -1279,6 +1349,24 @@ class Util
 	public static function sbr_is_pro()
 	{
 		return defined('SBR_PRO') && SBR_PRO === true;
+	}
+
+	/**
+	 * The feed cache matching the feed class this site builds: Pro\FeedCache on Pro, whose set_wpml() Pro\Feed::init()
+	 * calls on WPML sites; Common\FeedCache has none, so pairing it with Pro\Feed fataled (SMASH-2381).
+	 *
+	 * @param string $cache_id Cache id.
+	 * @param int    $cache_time Cache time in seconds.
+	 *
+	 * @return FeedCache
+	 */
+	public static function feed_cache_for_site($cache_id, $cache_time = 0)
+	{
+		if (self::sbr_is_pro() && class_exists('\\SmashBalloon\\Reviews\\Pro\\FeedCache')) {
+			return new \SmashBalloon\Reviews\Pro\FeedCache($cache_id, $cache_time);
+		}
+
+		return new FeedCache($cache_id, $cache_time);
 	}
 
 	/**

@@ -22,7 +22,6 @@ if (! defined('ABSPATH')) {
 use Smashballoon\Stubs\Services\ServiceProvider;
 use SmashBalloon\Reviews\Common\Util;
 use SmashBalloon\Reviews\Common\Feed;
-use SmashBalloon\Reviews\Common\FeedCache;
 
 /**
  * Class SBR_Review_Alert_Service
@@ -1266,7 +1265,7 @@ class SBR_Review_Alert_Service extends ServiceProvider
 		]);
 
 		$unfiltered_cache_id = 'popup_preview_unfiltered_' . md5(wp_json_encode(['sources' => $source_db_ids]));
-		$unfiltered_feed = new $feed_class($unfiltered_settings, $unfiltered_cache_id, new FeedCache($unfiltered_cache_id, 300));
+		$unfiltered_feed = new $feed_class($unfiltered_settings, $unfiltered_cache_id, Util::feed_cache_for_site($unfiltered_cache_id, 300));
 		$unfiltered_feed->init();
 		$unfiltered_feed->get_set_cache();
 		$unfiltered_reviews = $unfiltered_feed->get_post_set_page();
@@ -1305,7 +1304,7 @@ class SBR_Review_Alert_Service extends ServiceProvider
 		]));
 		$cache_id = 'popup_preview_' . $cache_key;
 
-		$feed = new $feed_class($feed_settings, $cache_id, new FeedCache($cache_id, 300)); // 5 min cache for preview
+		$feed = new $feed_class($feed_settings, $cache_id, Util::feed_cache_for_site($cache_id, 300)); // 5 min cache for preview
 
 		$feed->init();
 		$feed->get_set_cache();

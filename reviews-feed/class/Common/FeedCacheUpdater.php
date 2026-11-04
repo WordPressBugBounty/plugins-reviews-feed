@@ -36,7 +36,7 @@ class FeedCacheUpdater {
 			// `empty($settings['sources'])` guard, leaving the cron a silent
 			// no-op for the cached upstream fetch it is supposed to drive.
 			$settings   = SBR_Settings::get_settings_by_feed_id($feed_id, false, false);
-			$feed_cache = new FeedCache((string) $feed_id, 0);
+			$feed_cache = Util::feed_cache_for_site((string) $feed_id, 0);
 
 			$feed = Util::sbr_is_pro()
 				? new \SmashBalloon\Reviews\Pro\Feed($settings, $feed_id, $feed_cache)

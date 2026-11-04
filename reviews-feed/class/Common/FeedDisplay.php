@@ -44,6 +44,14 @@ class FeedDisplay {
 		$settings = $this->feed->get_settings();
 		$parser = $this->parser;
 
+		// SMASH-2410: a source failed and nothing is stored — visitors get no empty shell (a "no reviews" block during
+		// an outage is a false public claim). Admins see the error box for what they can fix (their key, config, the
+		// site failing to reach the relay); a hidden provider failure leaves it empty (SBR-556). An honestly empty feed
+		// renders as before.
+		if ($this->shows_failed_empty_state()) {
+			return $this->failed_empty_html($posts, $settings, $feed_id);
+		}
+
 		wp_enqueue_script('sbr_scripts');
 
 		ob_start();
@@ -54,6 +62,39 @@ class FeedDisplay {
 		$html = ob_get_contents();
 		ob_get_clean();
 		return $html;
+	}
+
+	/**
+	 * No posts at all, and the reason is a failed source rather than filters or a source with no reviews.
+	 *
+	 * @return bool
+	 */
+	public function shows_failed_empty_state()
+	{
+		$all_posts = $this->feed->get_posts();
+
+		return empty($all_posts) && $this->feed->has_failed_source();
+	}
+
+	/**
+	 * What a failed, empty feed renders: the error box for admins when there is an error they can fix to show
+	 * (error_html() is admin-gated), nothing for visitors, and the three feed hooks so integrations keep firing.
+	 *
+	 * @param array  $posts
+	 * @param array  $settings
+	 * @param string $feed_id
+	 * @return string
+	 */
+	protected function failed_empty_html($posts, $settings, $feed_id)
+	{
+		ob_start();
+		do_action('sbr_before_feed', $posts, $settings);
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- error_html() escapes its own output
+		echo $this->error_html();
+		do_action('sbr_before_feed_end', $this, $feed_id);
+		do_action('sbr_after_feed', $posts, $settings);
+
+		return (string) ob_get_clean();
 	}
 
 	public function items_only($page = 1)

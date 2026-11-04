@@ -203,12 +203,14 @@ class Smash1994FreeEditionAbilitiesTest extends TestCase
 	public function test_free_never_exposes_a_pro_only_key(): void
 	{
 		$free = SBR_Settings_Schema::feed_settings();
-		foreach (array(
+		foreach (
+			array(
 			'feedTemplate', 'numPostTablet', 'numPostMobile', 'masonryTabletColumns', 'masonryMobileColumns',
 			'carouselDesktopColumns', 'carouselBreakpointDesktop', 'showLoadButton', 'loadButtonText',
 			'includedStarFilters', 'includeWords', 'excludeWords', 'filterCharCountMin', 'filterCharCountMax',
 			'moderationEnabled', 'moderationType', 'moderationAllowList', 'moderationBlockList',
-		) as $pro_key) {
+			) as $pro_key
+		) {
 			$this->assertArrayNotHasKey($pro_key, $free, "$pro_key is Pro-only and must be ABSENT in free");
 		}
 		// ...and none of the inert tier metadata is ever emitted.

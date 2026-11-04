@@ -16,6 +16,8 @@ use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\ReconcileMigratedLicen
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RepairFacebookCollectionRatingsRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RecalculateCollectionRatingsRoutine;
 use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RecalculateUnratedCollectionRatingsRoutine;
+use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\HideCachedProviderFailuresRoutine;
+use SmashBalloon\Reviews\Common\Services\Upgrade\Routines\RemoveBlankErrorReviewsRoutine;
 
 class RoutineManagerService extends ServiceProvider{
 	/**
@@ -48,6 +50,10 @@ class RoutineManagerService extends ServiceProvider{
 		RecalculateCollectionRatingsRoutine::class,
 		// SMASH-2468 — unrated reviews counted as 0 in collection averages; recalculate every collection once more.
 		RecalculateUnratedCollectionRatingsRoutine::class,
+		// SBR-556 — provider failures are no longer shown; drop the ones already sitting in feed caches.
+		HideCachedProviderFailuresRoutine::class,
+		// SMASH-2647 — blank review cards saved from a relay error map up to 2.16.1; remove them once.
+		RemoveBlankErrorReviewsRoutine::class,
 	];
 
 	public function register()

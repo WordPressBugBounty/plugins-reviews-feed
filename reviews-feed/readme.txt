@@ -3,7 +3,7 @@ Contributors: smashballoon, craig-at-smash-balloon, am, smub
 Tags: Google reviews, reviews, testimonials, yelp, Google business
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.16.1
+Stable tag: 2.17.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -208,6 +208,15 @@ We understand that sometimes you need help, have issues or just have questions. 
 * Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
 
 == Changelog ==
+= 2.17.0 =
+* New: If a review platform has trouble sending reviews, your feeds keep showing the reviews already saved, and visitors don't see an error or an empty reviews box. The source is retried in the background, a little later after each failed try.
+* New: The All Feeds page now names the sources that need your attention.
+* Fix: A Google feed set to a language that has no reviews now shows your saved reviews instead of none.
+* Fix: When Google refuses a source's API key or Place ID, you now see an error for that source. Before, nothing showed up, and the feed could show a blank review.
+* Fix: Blank review cards left behind by that error in earlier versions are removed when you update.
+* Fix: Plugin security hardening.
+* Tweak: A feed refreshes its reviews only once when several visitors load it at the same time, also when it has many sources.
+
 = 2.16.1 =
 * Fix: The data-sharing popup no longer locks you out of your WordPress admin when your choice can't be saved. You can always close it and keep working.
 * Fix: A feed created by an AI assistant now shows its fonts, colors and spacing straight away. Before, it looked unstyled until you opened it in the feed editor and saved it.

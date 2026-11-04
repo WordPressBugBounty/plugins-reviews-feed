@@ -26,7 +26,6 @@ use SmashBalloon\Reviews\Common\PostAggregator;
 use SmashBalloon\Reviews\Common\Services\SettingsManagerService;
 use SmashBalloon\Reviews\Common\Traits\SBR_Feed_Templates_Settings;
 use SmashBalloon\Reviews\Common\Util;
-use SmashBalloon\Reviews\Common\FeedCache;
 use SmashBalloon\Reviews\Common\Helpers\Data_Encryption;
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_External_Reviews_Update;
 use SmashBalloon\Reviews\Pro\Services\BulkUpdate\Bulk_Reviews_Update;
@@ -173,7 +172,7 @@ class SBR_Feed_Saver_Manager
 				echo wp_json_encode($return);
 				wp_die();
 			} else {
-				$feed_cache = new FeedCache($feed_id);
+				$feed_cache = Util::feed_cache_for_site((string) $feed_id);
 				if (isset($_POST['get_posts']) && $_POST['get_posts'] == true) {
 					$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($settings_data, $feed_id, $feed_cache) : new \SmashBalloon\Reviews\Common\Feed($settings_data, $feed_id, $feed_cache);
 					$feed->init();
@@ -265,7 +264,7 @@ class SBR_Feed_Saver_Manager
 			$preview_settings = self::sanitize_settings($preview_settings);
 
 			$feed_id = absint($_POST['feedID']);
-			$feed_cache = new FeedCache($feed_id, 30000);
+			$feed_cache = Util::feed_cache_for_site((string) $feed_id, 30000);
 			$feed_cache->clear('posts');
 			$feed_cache->clear('header');
 			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings, $feed_id, $feed_cache) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, $feed_cache);
@@ -398,7 +397,8 @@ class SBR_Feed_Saver_Manager
 			$preview_settings['numPostTablet'] = 100;
 			$preview_settings['numPostMobile'] = 100;
 
-			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings, $feed_id, new FeedCache($feed_id, 30000)) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, new FeedCache($feed_id, 30000));
+			$feed_cache = Util::feed_cache_for_site((string) $feed_id, 30000);
+			$feed = Util::sbr_is_pro() ? new \SmashBalloon\Reviews\Pro\Feed($preview_settings, $feed_id, $feed_cache) : new \SmashBalloon\Reviews\Common\Feed($preview_settings, $feed_id, $feed_cache);
 			$feed->init();
 			$posts = $feed->get_posts_for_moderation();
 

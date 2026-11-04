@@ -834,27 +834,55 @@ class SBR_Trust_Badge_Builder
 		$out = array();
 
 		foreach ($missing as $id) {
-			$id  = (string) $id;
-			$row = isset($by_id[$id]) ? $by_id[$id] : array();
-
-			$out[] = array(
-				'id' => $id,
-				// A source removed from the table still sits in the badge's
-				// settings, so fall back to the id rather than an empty label.
-				'name'     => isset($row['name']) && (string) $row['name'] !== ''
-					? (string) $row['name']
-					: $id,
-				'provider' => isset($row['provider']) ? (string) $row['provider'] : '',
-				// Separates "still fetching" from "the fetch failed", which are
-				// different things for the author to do something about.
-				'errored'  => isset($row['error']) && (string) $row['error'] !== '',
-				// No row at all: disconnected or deleted, and the badge is
-				// carrying an id that points at nothing.
-				'missing'  => $row === array(),
-			);
+			$id    = (string) $id;
+			$out[] = self::unreported_row($id, isset($by_id[$id]) ? $by_id[$id] : array());
 		}
 
 		return $out;
+	}
+
+	/**
+	 * One unreported source as the badge editor lists it.
+	 *
+	 * @param string $id  Source account id.
+	 * @param array  $row Its sources-table row, or [] when it has none.
+	 * @return array{id: string, name: string, provider: string, errored: bool, missing: bool}
+	 */
+	public static function unreported_row($id, $row)
+	{
+		return array(
+			'id' => $id,
+			// A source removed from the table still sits in the badge's
+			// settings, so fall back to the id rather than an empty label.
+			'name'     => isset($row['name']) && (string) $row['name'] !== ''
+				? (string) $row['name']
+				: $id,
+			'provider' => isset($row['provider']) ? (string) $row['provider'] : '',
+			// "The fetch failed" (the editor says "Reconnect them") as opposed to "still fetching". Only a failure the
+			// client can fix by reconnecting; a provider failure or a config state is no reconnect (needs_reconnect()).
+			'errored'  => isset($row['error']) && self::needs_reconnect((string) $row['error']),
+			// No row at all: disconnected or deleted, and the badge is
+			// carrying an id that points at nothing.
+			'missing'  => $row === array(),
+		);
+	}
+
+	/**
+	 * @param string $error The sources.error column.
+	 * @return bool
+	 */
+	private static function needs_reconnect($error)
+	{
+		if ($error === '') {
+			return false;
+		}
+		$state = \SmashBalloon\Reviews\Common\Utils\SourceFetchOutcome::decode_state($error);
+
+		// Not a state this version writes: keep the old "non-empty means errored". Otherwise only what the client can fix
+		// by reconnecting (their own key, a Facebook token); a provider failure reads as "not counted yet" instead.
+		return $state === null
+			|| ($state['scope'] === \SmashBalloon\Reviews\Common\Utils\SourceFetchOutcome::SCOPE_SOURCE
+				&& in_array($state['id'], \SmashBalloon\Reviews\Common\Utils\SourceFetchOutcome::CLIENT_FIXABLE_IDS, true));
 	}
 
 	/**

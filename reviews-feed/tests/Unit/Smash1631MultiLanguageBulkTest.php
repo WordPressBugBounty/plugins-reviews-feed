@@ -474,6 +474,68 @@ class Smash1631MultiLanguageBulkTest extends TestCase
 	}
 
 	/**
+	 * SMASH-2382 (#581 review): a relay error map in data.reviews is not a page of reviews, so the bulk page
+	 * neither caches it nor advances on it; it takes the empty-page retry.
+	 *
+	 * @dataProvider bulkErrorMapProvider
+	 * @param array<string,mixed> $reviews
+	 */
+	public function test_an_error_map_in_data_reviews_is_an_empty_bulk_page($reviews): void
+	{
+		$bulk = $this->makeBulkAtPage1('CHIJ_ERRMAP');
+		$bulk->endpoint = 'reviews/google';
+		$bulk->settings = ['localization' => 'es-419'];
+		$bulk->provider = ['info' => '{"id":"CHIJ_ERRMAP"}'];
+		$bulk->relay = $this->makeAnsweringRelay(['success' => true, 'data' => ['reviews' => $reviews]]);
+
+		$bulk->get_bulk_reviews();
+
+		$state = $this->state('CHIJ_ERRMAP');
+		$this->assertSame(1, $state['page'], 'An error map must not advance the bulk page.');
+		$this->assertTrue($state['retry'], 'An error map is an empty page: retry once.');
+	}
+
+	/** @return array<string, array{0: array<string,mixed>}> */
+	public static function bulkErrorMapProvider(): array
+	{
+		return [
+			'refused-key map'  => [['errorId' => 'sourceConnectionError', 'error' => ['error' => 'invalidKey']]],
+			'scrape error map' => [['error' => 'scrapingException', 'message' => 'x']],
+		];
+	}
+
+	/**
+	 * BC (SMASH-2646): reviews still cache and advance the page, a string-keyed map of reviews included, since
+	 * classify() calls it fetched and Feed::api_request() caches it too.
+	 *
+	 * @dataProvider bulkReviewsProvider
+	 * @param array<int|string,mixed> $reviews
+	 */
+	public function test_bc_reviews_still_cache_and_advance_the_bulk_page($reviews): void
+	{
+		$bulk = $this->makeBulkAtPage1('CHIJ_REVIEWS');
+		$bulk->endpoint = 'reviews/google';
+		$bulk->settings = ['localization' => 'es-419'];
+		$bulk->provider = ['id' => 'CHIJ_REVIEWS', 'provider' => 'google', 'info' => '{"id":"CHIJ_REVIEWS"}'];
+		$bulk->relay = $this->makeAnsweringRelay(['success' => true, 'data' => ['reviews' => $reviews]]);
+
+		$bulk->get_bulk_reviews();
+
+		$this->assertSame(2, $this->state('CHIJ_REVIEWS')['page'], 'A page of reviews advances.');
+	}
+
+	/** @return array<string, array{0: array<int|string,mixed>}> */
+	public static function bulkReviewsProvider(): array
+	{
+		$review = ['review_id' => 'r1', 'text' => 'Great', 'rating' => 5, 'time' => 1700000000, 'reviewer' => ['name' => 'A']];
+
+		return [
+			'a list of reviews'      => [[$review]],
+			'a keyed map of reviews' => [['a' => $review]],
+		];
+	}
+
+	/**
 	 * @param array<string,mixed> $overrides
 	 */
 	private function makeBulkAtPage1(string $account_id, array $overrides = []): Bulk_Reviews_Update
@@ -499,6 +561,27 @@ class Smash1631MultiLanguageBulkTest extends TestCase
 	{
 		global $wp_options_mock;
 		return $wp_options_mock['sbr_bulk_sources'][$account_id] ?? [];
+	}
+
+	/**
+	 * @param array<string,mixed> $answer
+	 * @return mixed Anonymous relay double returning $answer for every call (mixed, as for makeCapturingRelay()).
+	 */
+	private function makeAnsweringRelay(array $answer)
+	{
+		return new class ($answer) {
+			/** @var array<string,mixed> */
+			private $answer;
+			/** @param array<string,mixed> $answer */
+			public function __construct(array $answer)
+			{
+				$this->answer = $answer;
+			}
+			public function call($endpoint, $args, $method, $auth)
+			{
+				return $this->answer;
+			}
+		};
 	}
 
 	/**

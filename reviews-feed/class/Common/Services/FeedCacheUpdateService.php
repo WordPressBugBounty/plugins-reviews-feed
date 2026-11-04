@@ -72,14 +72,44 @@ class FeedCacheUpdateService extends ServiceProvider {
 	{
 		$caches = $this->get_caches();
 
-		$updater = new FeedCacheUpdater($caches);
-		$updater->do_updates();
+		$this->updater($this->batch_with_retries($caches, new FailedSourceRetry()))->do_updates();
 
+		// The 12-hour batch alone decides whether another one is needed.
 		$num = count($caches);
 		if ($num === self::RESULTS_PER_CRON_UPDATE) {
 			// Schedule another batch in 5 minutes if needed
 			wp_schedule_single_event(time() + 300, self::CRON_JOB_ADDITIONAL_BATCH);
 		}
+	}
+
+	/**
+	 * The 12-hour batch plus the feeds holding a failed source that are due by their backoff (SMASH-2409): at most what
+	 * is left of RESULTS_PER_CRON_UPDATE (at least one), never a feed already in the batch.
+	 *
+	 * @param array<int, array<string, mixed>> $caches feed_caches_query() rows.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function batch_with_retries(array $caches, FailedSourceRetry $retry)
+	{
+		$batch = $caches;
+		// A WPML-suffixed row (`5_fr`) is feed 5: never refetch it twice in one run.
+		$stale_ids = array_map(fn ($id) => preg_match('/^(\d+)/', is_scalar($id) ? (string) $id : '', $m) === 1 ? (int) $m[1] : 0, array_column($caches, 'feed_id'));
+		// Within the cron's own per-tick budget; at least one, so retries never starve behind a full 12-hour batch.
+		$limit = max(1, self::RESULTS_PER_CRON_UPDATE - count($caches));
+		foreach ($retry->schedule_retries($stale_ids, $limit) as $feed_id) {
+			$batch[] = array('feed_id' => $feed_id);
+		}
+
+		return $batch;
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $batch
+	 * @return FeedCacheUpdater
+	 */
+	protected function updater(array $batch)
+	{
+		return new FeedCacheUpdater($batch);
 	}
 
 	public function get_caches()

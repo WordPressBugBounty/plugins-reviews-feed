@@ -107,6 +107,10 @@ class SBR_Sources{
 		if (self::exists_in_database($source_data)) {
 			$source_data['last_updated'] = date('Y-m-d H:i:s');
 			self::update($source_data, false);
+			// SMASH-2408: re-adding a source is the admin's fix for a failing one, so its stored failure goes.
+			if (isset($source_data['provider'])) {
+				(new DB())->source_set_fetch_state($source_data['id'], $source_data['provider'], '');
+			}
 		} else {
 			self::insert($source_data);
 		}
