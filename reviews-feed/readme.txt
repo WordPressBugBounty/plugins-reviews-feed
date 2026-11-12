@@ -1,83 +1,92 @@
-=== Reviews Feed – Add Testimonials and Customer Reviews From Google Reviews, Yelp, TripAdvisor, and More ===
+=== Reviews Feed – Google Reviews, Yelp, Trustpilot & Tripadvisor Reviews Widget ===
 Contributors: smashballoon, craig-at-smash-balloon, am, smub
-Tags: Google reviews, reviews, testimonials, yelp, Google business
+Tags: google reviews, reviews widget, trustpilot, tripadvisor, testimonials
 Requires at least: 4.1
 Tested up to: 7.1
-Stable tag: 2.17.0
+Stable tag: 2.18.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-No API key required. Display Yelp and Google reviews for any business in a clean, customizable feed on your site.
+Turn your Google and Yelp reviews into trust on any page, free and with no API key, or show all 11 review platforms with Pro.
 
 == Description ==
 
-Display Yelp and Google business reviews on your site, either in the same single feed or in multiple different ones. Provide social proof through real customer testimonials that will turn site visitors into paying customers.
+Your happy customers already left you great reviews on Google, Yelp and other sites. Reviews Feed brings them onto your own pages, right where a new visitor is deciding whether to trust you. Real reviews next to your prices or your booking form are often what turn that visitor into a customer.
+
+Show reviews from Google, Yelp and nine more platforms as a feed, a trust badge, or a pop-up that appears while people browse. Google and Yelp are free with no API key, and your first feed takes about a minute to set up.
 
 https://vimeo.com/1166356273
 
-If a Google business listing has a physical location, you can display your latest reviews for it in an attractive feed. You can also enter the website address of any Yelp business and instantly create a feed of your Yelp reviews as well. Business ratings are an important part of social proof to increase customer confidence in your online business. Website visitors will instantly increase their trust in your business if they can see real customer reviews from real customers.
+> <strong>Reviews Feed Pro</strong><br />
+> Reviews Feed Pro adds 9 more review platforms like Trustpilot, Facebook and Tripadvisor, plus Trust Badges, Review Alerts, carousel templates and review filters. [See what Reviews Feed Pro adds](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-2026-refresh&utm_content=pro-blockquote)
 
-Showing Google rating and Yelp reviews on your website is one of the best ways to convince site visitors to do business with you and boost your conversions. Customer testimonials are crucial to building positive brand trust for online businesses.
+= Google reviews widget at a glance =
 
-Our plugin makes it easy to set up an automatically updating feed of Yelp and Google reviews. After installing the plugin, create a feed by visiting the Reviews Feed menu item that appears in your dashboard. Configure a source of reviews for your feed, customize the look and feel, then use a shortcode to display your reviews feed anywhere on your site. It takes less than a minute to get started.
+* Trusted on 100,000+ WordPress sites
+* 11 review platforms in one plugin: Google and Yelp free, 9 more with Pro
+* Your first feed is live in about a minute, no API key
+* Review schema built in free, so your pages are eligible for star ratings in Google
+* New: AI assistants like ChatGPT and Claude can help build your feeds
 
-In our free version, an API key is required only if you would like ongoing updates to your reviews feed. If you don't have an API key, you can still display up to 10 of the latest reviews for a single business without needing an API key. Simply verify your email address to unlock this feature!
+= Free Google reviews and Yelp reviews widget =
 
-= Features =
-* Super **simple to set up**
-* Display reviews from **multiple Google and Yelp accounts** in the same feed or in separate feeds
-* Completely **responsive** and mobile ready - layout looks great on any screen size and in any container width
-* **Completely customizable** - Customize the width, height, number of reviews, number of columns, text size, background color, review spacing and more!
-* Display **multiple reviews feeds** on the same page or on different pages throughout your site
-* Customize the length of the review text with the ability to show the entire text with a click
-* Choose to show your Google reviews translated in many supported languages or show them without translation
-* Display the reviewer's name, date and start rating of each Google review or Yelp review
-* Show the **overall star rating** of your Google or Yelp listing in a customizable header at the top of the feed
-* Prompt site visitors to leave a review on Google or Yelp with a button in the header
-* Display your Yelp and Google reviews in chronological order or reverse chronological order.
-* Automatically show new reviews, collected daily when you enter you own API keys (free and easy to get)
-* **New!** Display up to 10 of the latest **free Google reviews** or **free Yelp reviews** for a single business without needing an API key. Simply verify your email address to unlock this feature!
-* Handy block for easily adding your reviews feed to posts and pages using the block editor
+* **No API key to start.** Verify your email and show the 10 latest reviews for one Google or Yelp business. Add your own Google or Yelp API key when you want regular updates and more businesses.
+* **Add it anywhere.** Drop the Reviews Feed block or Elementor widget onto any page, or paste the shortcode into posts, sidebars and page builders.
+* **Add more than one business.** Without an API key a feed shows one Google or Yelp business. Add your own Google or Yelp API key to include more review sources.
+* **Ask for more reviews.** A "Write a review" button sits above the feed and sends happy customers straight to your review page.
+* **Looks like your site.** Feeds pick up your theme's styles, and you can change columns, spacing, colors and text size in a live preview.
+* **Show the reviews that read well.** Hide very short or very long reviews, sort newest or oldest first, and show Google reviews translated or as written.
+* **Review markup built in.** Each feed adds the review schema Google reads, which makes your pages eligible for star ratings in search. Google decides which results show them, and it works with or without an SEO plugin.
+* **New: build feeds with AI.** On WordPress 6.9 and newer, assistants like ChatGPT and Claude read your feeds and, once you switch on write access, build and update feeds from the Google and Yelp sources you've connected, through the WordPress Abilities API. It stays off until you turn it on.
 
-= Benefits =
-* **Build Brand Trust** - Customer reviews are essential to building trust with customers
-* **Social Proof** - Real customer reviews, proven to increase sales.
-* **Display Your Reviews Your Way** - Customize your Google review and Yelp review feeds to look exactly the way you want, so that they blend seamlessly into your site or pop out at your visitors!
-* **Keep Your Site Looking Fresh** - Show your latest Yelp and Google reviews and Yelp reviews updated automatically every day.
-* **Super Simple to Set Up** - Once installed, you can be displaying your Yelp and Google reviews within a minute! No confusing steps or special account needed.
+= Reviews Feed Pro =
 
-= Pro Version =
-In order to maintain the free version of the plugin on an ongoing basis, and to provide quick and effective support for free, we offer a Pro version of the plugin. The Pro version allows you to:
-* Include Trustpilot, TripAdvisor, WordPress.org and Facebook reviews in your feed
-* Filter reviews by star rating
-* Create and add reviews manually to feeds
-* Create custom collections of specific reviews to display anywhere
-* Show reviews in a carousel slider
-* Show images from Yelp reviews that open in a large popup lightbox
-* Show avatar images for all reviewers
-* Filter customer reviews by keyword or phrase
-* Moderate your review feeds with a visual moderation mode, select specific reviews to display in the feed
-* Choose from several attractive preconfigured templates
-* Highlight a specific Google review or Yelp review
-* Even more advanced customization options than the free version
-* Block reviews by specific users
-* Integrate with WPML (WordPress Multilingual) to show translated Google reviews in the chosen site language
-* **Unlock more reviews and automatic updates without API keys!** The Pro version allows you to display up to 50 initial reviews from Google and Yelp and receive weekly automatic updates from multiple sources - all without needing to add an API key.
-* **Collect and display user-submitted reviews!** Seamlessly integrate with WPForms and Formidable Forms to collect customer reviews directly through your forms and display them in your review feeds.
-* **NEW! Display WooCommerce product reviews!** Showcase reviews from your WooCommerce store by selecting individual products, categories, or tags.
+Pro comes in three plans, and each one includes everything in the plan before it.
 
-[Find out more about the Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-pro-upsell&utm_content=FindOutMore).
+**Pro Basic, for 1 site**
 
-= Featured Reviews from Smash Balloon Products =
-"The plugins created by Smash Balloon are absolutely solid! I’ve used them all on various websites. But recently, there was a code conflict caused by another plugin. I reached to Smash Balloon’s customer support, and they went over and beyond to help me resolve the issue." - walterhnry
+* Your overall star rating in the feed header and in your review markup
+* Unlimited reviews, saved after every update so your feed keeps growing, with daily updates
+* 6 more templates: Carousel, Grid Carousel, Showcase Carousel, Masonry, Simple Cards and Single Review
+* Filter by star rating or words, hide any review in one click, and build Review Collections so each page shows the right reviews
+* Reviewer photos and review images with a full-size popup
+* Turn WPForms or Formidable Forms submissions into reviews, or add reviews you collected elsewhere by hand
+* Google reviews translated into each language on WPML sites
 
-"The guys @smashballoon are the bomb! thank you! I’ve been looking for an Instagram plugin like yours forever! Thank you Thank you Thank you!" - ApisCera
+**Pro Plus, for 5 sites**
 
-= Feedback or Support =
-We're dedicated to providing the most customizable, robust and well supported Yelp and Google reviews feed plugin in the world, so if you have an issue or have any feedback on how to improve the plugin, then please open a ticket in the [Support forum](http://wordpress.org/support/plugin/reviews-feed 'Reviews Feed Support Forum').
+* Facebook, Trustpilot, WooCommerce, Easy Digital Downloads and AliExpress reviews
+* Trust Badges: one combined rating across your platforms, placed with a block, widget, shortcode or image
+* Review Alerts: a fresh review or your overall rating pops up while people browse, on desktop and phones
 
-For advanced review moderation by star rating or curated list, to display Yelp review images, display reviews in a carousel slider + more, check out the [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-pro-features&utm_content=MoreAdvanced).
+**Pro Elite, for 10 sites**
+
+* Tripadvisor, Airbnb, Booking.com and WordPress.org reviews
+* Twice-daily review updates
+* Priority support
+
+[See every Reviews Feed Pro feature and plan](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-2026-refresh&utm_content=pro-plans-list)
+
+= A reviews widget for every kind of business =
+
+* Local services like plumbers, cleaners, dentists, salons and gyms, with Google and Yelp reviews
+* Restaurants and cafés, with Google and Yelp reviews, plus Tripadvisor on Pro Elite
+* Hotels and rentals, with Booking.com scores and Airbnb reviews on Pro Elite
+* Online stores, with WooCommerce and Easy Digital Downloads product reviews on Pro Plus
+* Agencies and freelancers building client sites
+
+= Your reviews and your data =
+
+To show reviews without your own API key, the plugin connects to the Smash Balloon Relay service, which fetches your Google and Yelp reviews for you. See the [Smash Balloon Terms of Service](https://smashballoon.com/terms/) and [Privacy Policy](https://smashballoon.com/privacy-policy/). Once fetched, your reviews are stored in your own WordPress database, and your site builds each feed as regular HTML that search engines can read. Usage tracking is off by default.
+
+= What users say =
+
+> "Integrating it is simple and requires very little to connect it and implement it."
+> evanclick2017, ★★★★★
+
+> "It's a very good plugin, multiple feed, support is awesome!"
+> harrycustom, ★★★★★
 
 == Installation ==
 
@@ -120,94 +129,67 @@ You can display as many different Yelp and Google reviews feeds as you like, on 
 
 == Frequently Asked Questions ==
 
-= Can I display multiple reviews feeds on my site or on the same page? =
+= Is Reviews Feed free? =
 
-Yep. You can display multiple reviews feeds by creating multiple feeds and using multiple shortcodes: `[reviews-feed feed=1] [reviews-feed feed=2]`.
+Yes. Google and Yelp reviews, the Default template, the block, the Elementor widget and review schema markup are all free. Pro plans add more platforms and features: Pro Basic adds templates, filtering and your overall rating, Pro Plus adds Facebook, Trustpilot, WooCommerce, Easy Digital Downloads, AliExpress, Trust Badges and Review Alerts, and Pro Elite adds Tripadvisor, Airbnb, Booking.com and WordPress.org. [Compare the Pro plans](https://smashballoon.com/pricing/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-2026-refresh&utm_content=faq-is-it-free).
 
-= Can I show reviews from more than one account in one single feed? =
+= Do I need an API key? =
 
-Yep. You can add multiple accounts from both Google and Yelp using the customizer.
+Not to start. Verify your email address and you can show the 10 latest reviews for one Google or Yelp business. Adding your own Google or Yelp API key gives you regular updates and more businesses. Pro keeps your reviews updated without a key. Guides: [Google API key](https://smashballoon.com/doc/creating-a-google-api-key/?reviews&utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-google-key&utm_content=CreateKey), [Yelp API key](https://smashballoon.com/doc/creating-a-yelp-api-key/?reviews&utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-yelp-key&utm_content=CreateKey).
 
-= How do I find my Google business place ID? =
+= Will my reviews show as stars in Google search? =
 
-We include a handy link to Google's place ID finder when connecting your Google account to the plugin.
+Valid review markup makes your pages eligible for star ratings, and Google decides which results actually show them. The free plugin adds the markup for your Google and Yelp reviews, and Pro adds your overall rating. Stars show most consistently on product pages, using WooCommerce or Easy Digital Downloads reviews, which come with Pro. Google is more cautious with a business's own reviews of itself, so a Google feed on your homepage may not get them. You can turn the markup off under Settings → Advanced.
 
-= Does the plugin send any data to Smash Balloon? =
+= Does it work with my theme and page builder? =
 
-Only if you turn on the optional Usage Tracking setting (Reviews Feed → Settings → Advanced), which is off by default in the free plugin. When enabled, it sends a weekly background report about your plugin settings and relevant site stats (like WordPress and PHP versions) to help us prevent conflicts and improve the product. It never sends sensitive information such as access tokens, email addresses, or user info, and you can turn it off at any time — doing so also deletes the data collected on your site. [Learn More](https://smashballoon.com/doc/usage-tracking-reviews/)
+Yes. Feeds pick up your theme's styles. Add them with the block, the Elementor widget, or the [reviews-feed feed=1] shortcode anywhere shortcodes work.
 
-= My review feed is empty. What happened!? =
+= Can I show only my best reviews? =
 
-There are a few common reasons for this:
+The free plugin lets you hide very short or very long reviews. Pro adds filters by star rating and words, one-click hiding, and Review Collections for hand-picking reviews.
 
-* **Your Google business does not have a physical address.** At this time, only Google businesses with a physical address can be included in the feed.
+= Can I show several businesses or locations? =
 
-* **There are no reviews available for the provider.** Make sure there are reviews available on Google or Yelp for your chosen business.
+Without an API key, a feed shows one Google or Yelp business. Add your own Google or Yelp API key to include more review sources in your feeds.
 
-If you're still having an issue displaying your feed, then please open a ticket in the [Support forum](http://wordpress.org/support/plugin/reviews-feed 'Reviews Feed Support Forum') with a link to the page where you're trying to display the reviews feed and, if possible, a link to your Google business or Yelp business page.
+= Can AI assistants help manage my feeds? =
 
-= How do I get a Google business (Google Maps) API key? =
+Yes. On WordPress 6.9 or later, assistants like ChatGPT and Claude can read your settings, feeds and sources through the WordPress Abilities API. Switch on "MCP Write Access" under Settings → General and they can build and update feeds from the Google and Yelp sources you've connected. It's off by default, and Pro lets them work across every platform and setting.
 
-It’s free and simple to get an API key for Google reviews. This allows you to continue to get fresh Google reviews daily. [See our guide here](https://smashballoon.com/doc/creating-a-google-api-key/?reviews&utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-google-key&utm_content=CreateKey).
+= My feed is empty. What happened? =
 
-= How do I get a Yelp reviews API key? =
+Usually the Google business has no physical address, or the business has no reviews yet. If it's neither, open a topic in the support forum with a link to the page.
 
-Yelp also provides a free API key that is easy to obtain. This allows you to continue to get fresh Yelp reviews daily. [See our guide here](https://smashballoon.com/doc/creating-a-yelp-api-key/?reviews&utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-yelp-key&utm_content=CreateKey).
+= Does the plugin collect usage data? =
 
-= How do I filter my reviews by star rating? =
-
-This is a feature of the [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-star-filter&utm_content=ProVersion) of the plugin, which allows you to filter your review feeds, show Yelp review images, show reviews in a carousel + more!
-
-= Can I control the reviews I want to appear in my feed? =
-This is a feature of the [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-mod-mode&utm_content=ProVersion) of the plugin, which lets you easily show specific reviews or hide certain ratings from your feed.
-= Are other review providers available besides Yelp and Google? =
-
-Our [Pro version](https://smashballoon.com/reviews-feed/?utm_source=reviews-free&utm_medium=readmefile&utm_campaign=readme-more-providers&utm_content=ProVersion) offers support for Facebook reviews, Trustpilot reviews, and WooCommerce product reviews in the "Plus" tier, and additionally TripAdvisor reviews and WordPress.org reviews in the "Elite" tier.
+Only if you switch on Usage Tracking under Settings → Advanced. It's off by default and never includes access tokens, email addresses or anything about your users. Turning it off deletes what was collected.
 
 == Screenshots ==
 
-1. Edit and manage multiple feeds
-2. Display reviews from multiple platforms
-3. Completely customize your feed
-4. Responsive by design
-5. Customize with a live preview
-6. Choose between multiple layouts
-7. Embed it anywhere
-
-== Other Notes ==
-
-Build positive brand trust in your Google business or Yelp listing with real Yelp and Google reviews on your website. Super simple to set up and tons of customization options to seamlessly match the look and feel of your site.
-
-= Why do I need this? =
-
-**Boost Social Proof**
-Showing real customer reviews on your checkout page, pricing page, and in other places on your website has been shown to increase conversions and boost sales of your Google business or Yelp store.
-
-**Save Time**
-Don't have time to update the reviews on your site? Save time and increase efficiency by setting up a feed once and having the latest reviews show up automatically on your website.
-
-**Display Your Reviews Your Way**
-Customize your review feeds to look exactly the way you want, so that they blend seamlessly into your site or pop out at your visitors!
-
-**No Coding Required**
-Choose from tons of built-in Reviews Feed customization options to create a truly unique feed of your Yelp and Google reviews.
-
-**Super simple to set up**
-Once installed, you can be displaying your Yelp and Google reviews in under a minute! No confusing steps or registration needed.
-
-**Mind-blowing Customer Support**
-We understand that sometimes you need help, have issues or just have questions. We love our users and strive to provide the best support experience in the business. We're experts in the Yelp and Google reviews API and can provide unparalleled service and expertise. If you need support then just let us know and we'll get back to you right away.
-
-= What can it do? =
-
-* Display reviews from any physical Google business or Yelp business listing.
-* Completely responsive and mobile ready –your reviews feed layout looks great on any screen size and in any container width
-* Display multiple reviews feeds on the same page or on different pages throughout your site by creating multiple feeds in our customizer
-* Choose a language for your Google reviews content to display in or leave reviews untranslated.
-* Collect and permanently store new Yelp and Google reviews over time. Use our feature to load more reviews on the page.
-* Encourage visitors to leave their own reviews with a link to Google or Yelp to rate your business.
+1. Free: show your Google and Yelp reviews on any page, and let visitors leave their own.
+2. Bring all your reviews together in one feed, from all 11 platforms. Google and Yelp are free, and the rest come with Pro Plus or Pro Elite.
+3. Show the review platforms your customers actually use, whether you run a hotel, a shop or a software business. Pro Plus and Pro Elite.
+4. Start from a layout that fits your page, with 7 templates. Default is free, the rest come with Pro.
+5. See exactly how your feed will look, with live edits before you publish.
+6. Show only the reviews you want, with an allow or block list. Pro.
+7. Put your rating where it builds trust, on your site and in your email signature. Trust Badges, Pro Plus.
+8. Keep fresh reviews in front of shoppers as they browse, on desktop and phones. Review Alerts, Pro Plus.
+9. Review markup makes your pages eligible for star ratings in Google. The schema is free, and Pro adds your average rating.
+10. Your reviews look right on every screen, desktop and phone.
 
 == Changelog ==
+= 2.18.0 =
+* New: The Embed Feed window has a "Create Page and Go" option. It creates a new page and opens it in the block editor with your feed already added.
+* Fix: "Add and Go to Page" in the Embed Feed window now opens the block editor with your feed already added, instead of an empty page. The page's existing content stays.
+* Fix: When Yelp stops accepting your own Yelp API key because its free trial ended or the key was revoked, the feed now tells you what to fix instead of showing "reviewsError".
+* Fix: After you add a Google API key to a source that started without one, your feed now fills in the reviews between your first import and Google's latest 5, instead of skipping them.
+* Fix: Saving a feed with no changes no longer shows "Error saving Feed".
+* Fix: If you open the editor for a feed that was deleted, it now tells you the feed no longer exists, instead of Save and Embed doing nothing.
+* Tweak: The Embed Feed window is updated, with page and post search. On WordPress versions older than 5.8, Embed shows the feed shortcode to add to a page instead.
+* Tweak: Add Source on the free plan now explains that it fetches up to your 10 latest reviews, and that an API key or an upgrade keeps adding new reviews as they come in.
+* Tweak: If you had turned on usage tracking before, Data Sharing stays on after you update, so you don't have to opt in again. Sites that never opted in stay off and are asked.
+
 = 2.17.0 =
 * New: If a review platform has trouble sending reviews, your feeds keep showing the reviews already saved, and visitors don't see an error or an empty reviews box. The source is retried in the background, a little later after each failed try.
 * New: The All Feeds page now names the sources that need your attention.

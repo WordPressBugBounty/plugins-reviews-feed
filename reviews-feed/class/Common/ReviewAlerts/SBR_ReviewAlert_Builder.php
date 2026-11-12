@@ -202,7 +202,7 @@ class SBR_ReviewAlert_Builder extends ServiceProvider
 		wp_enqueue_script(
 			'sb-customizer-app',
 			$js_file,
-			['wp-i18n', 'jquery'],
+			['wp-i18n', 'wp-api-fetch', 'jquery'],
 			Util::asset_version('vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js'),
 			true
 		);

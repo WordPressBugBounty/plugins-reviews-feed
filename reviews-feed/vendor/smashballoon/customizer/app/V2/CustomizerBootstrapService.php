@@ -17,6 +17,7 @@ class CustomizerBootstrapService extends ServiceProvider
     public function register()
     {
         $this->register_constants();
+        add_action('rest_api_init', [\Smashballoon\Customizer\V2\EmbedTargets::class, 'register_route']);
     }
     private function register_constants()
     {

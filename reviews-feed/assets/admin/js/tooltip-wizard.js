@@ -112,10 +112,117 @@ var SBRTooltipWizard = window.SBRTooltipWizard || ( function( document, window, 
 		 */
 		load: function() {
 			if ( sbr_admin_tooltip_wizard.sbr_wizard_gutenberg ) {
-				app.waitForInserterButton( function( result ) {
-					app.initGutenbergTooltip( result );
-				} );
+				app.insertFeedBlock();
 			}
+		},
+
+		/**
+		 * Show the "Add a Block" tooltip once the inserter button renders.
+		 */
+		showTooltip: function() {
+			app.waitForInserterButton( function( result ) {
+				app.initGutenbergTooltip( result );
+			} );
+		},
+
+		/**
+		 * Insert the Reviews Feed block for the feed chosen in the Embed modal's
+		 * "Add and Go to Page". Falls back to the "Add a Block" tooltip when the
+		 * block cannot be inserted.
+		 */
+		insertFeedBlock: function() {
+			// wp_localize_script turns 0 into "0", so parse it to fall back to the tooltip.
+			var feedId = parseInt( sbr_admin_tooltip_wizard.sbr_wizard_feed_id, 10 ) || 0;
+			// The modern block, like the other feed plugins. The legacy block only if the modern one is not registered.
+			var name = 'smashballoon/reviews-feed';
+			var attributes = { feedId: String( feedId ) };
+			if ( app.isGutenberg() && wp.blocks && ! wp.blocks.getBlockType( name ) ) {
+				name = 'sbr/sbr-feed-block';
+				attributes = { shortcodeSettings: 'feed="' + feedId + '"' };
+			}
+			if ( ! feedId || ! app.isGutenberg() || ! wp.data || ! wp.blocks.getBlockType( name ) ) {
+				app.showTooltip();
+				return;
+			}
+			var editor = wp.data.select( 'core/editor' );
+			var done = false;
+			var unsubscribe;
+			var blocksWaitOver = false;
+			var waitTimer;
+			var tryInsert = function() {
+				// __unstableIsEditorReady exists since WP 5.3, older editors are set up before window load.
+				if ( done || ( editor.__unstableIsEditorReady && ! editor.__unstableIsEditorReady() ) ) {
+					return;
+				}
+				// Start the 5s cap when the editor first reports ready, so a slow editor still gets the wait.
+				if ( ! waitTimer ) {
+					waitTimer = setTimeout( function() {
+						blocksWaitOver = true;
+						tryInsert();
+					}, 5000 );
+				}
+				// On WP 6.1 the editor reports ready before core loads the saved blocks, and that load
+				// overwrites an earlier insert. So also wait until the block list holds the saved content,
+				// for up to 5s once ready: saved content that parses to no blocks would otherwise hold the insert forever.
+				var post = editor.getCurrentPost();
+				var saved = post && post.content;
+				saved = String( ( saved && saved.raw !== undefined ? saved.raw : saved ) || '' ).trim();
+				if ( saved !== '' && ! blocksWaitOver && editor.getEditorBlocks && ! editor.getEditorBlocks().length ) {
+					return;
+				}
+				done = true;
+				if ( unsubscribe ) {
+					unsubscribe();
+				}
+				try {
+					var block = wp.blocks.createBlock( name, attributes );
+					if ( wp.data.dispatch( 'core/editor' ).resetEditorBlocks ) {
+						// WP 5.3+: write to the post itself, the block-editor store re-syncs from it after setup.
+						var blocks = editor.getEditorBlocks();
+						if ( ! app.hasFeedBlock( blocks, feedId ) ) {
+							wp.data.dispatch( 'core/editor' ).resetEditorBlocks( blocks.concat( block ) );
+						}
+					} else {
+						// core/block-editor exists since WP 5.2, core/editor holds the blocks on 5.0/5.1.
+						var store = wp.data.select( 'core/block-editor' ) ? 'core/block-editor' : 'core/editor';
+						if ( ! app.hasFeedBlock( wp.data.select( store ).getBlocks(), feedId ) ) {
+							wp.data.dispatch( store ).insertBlocks( block );
+						}
+					}
+				} catch ( e ) {
+					app.showTooltip();
+				}
+				// Drop sbr_wizard so a reload does not insert again.
+				try {
+					var url = new URL( window.location.href );
+					url.searchParams.delete( 'sbr_wizard' );
+					window.history.replaceState( window.history.state, '', url.toString() );
+				} catch ( e ) {}
+			};
+			tryInsert();
+			if ( ! done ) {
+				unsubscribe = wp.data.subscribe( tryInsert );
+				// The editor never reported ready: stop waiting and point at the inserter instead.
+				setTimeout( function() {
+					if ( ! done && ! waitTimer ) {
+						done = true;
+						unsubscribe();
+						app.showTooltip();
+					}
+				}, 10000 );
+			}
+		},
+
+		/**
+		 * Whether a Reviews Feed block (modern or legacy) for this feed is already on the page.
+		 */
+		hasFeedBlock: function( blocks, feedId ) {
+			return blocks.some( function( b ) {
+				// Modern feedId, or legacy `feed="N"` / the bare id once its select changes.
+				var id = parseInt( String( b.attributes.feedId || b.attributes.shortcodeSettings || '' ).replace( /feed|=|"/g, '' ), 10 );
+				return ( ( b.name === 'smashballoon/reviews-feed' || b.name === 'sbr/sbr-feed-block' ) && id === feedId )
+					|| app.hasFeedBlock( b.innerBlocks || [], feedId );
+			} );
 		},
 
 		/**

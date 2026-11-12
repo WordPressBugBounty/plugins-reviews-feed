@@ -169,3 +169,54 @@ if (!function_exists('SmashBalloon\Reviews\Vendor\Smashballoon\Framework\sb_get_
         return $active_plugins;
     }
 }
+if (function_exists('add_action') === \true && function_exists(__NAMESPACE__ . '\sb_stack_frontend_notices') === \false) {
+    /**
+     * Stack the admin-only floating notices of every Smash Balloon plugin in one
+     * bottom-right column, so the critical issue and license notices of several
+     * active plugins no longer sit on top of each other.
+     *
+     * @return void
+     */
+    function sb_stack_frontend_notices()
+    {
+        // Each plugin bundles its own scoped copy of this file, so print only once.
+        if (is_user_logged_in() === \false || did_action('sb_frontend_notices_stacked') > 0) {
+            return;
+        }
+        do_action('sb_frontend_notices_stacked');
+        ?>
+		<style>
+			#sb-frontend-notices{position:fixed;right:20px;bottom:20px;z-index:10000;max-width:calc(100% - 40px);
+				display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+			#sb-frontend-notices>*{position:static!important;margin:0!important;max-width:100%}
+			#sb-frontend-notices>[class*="-critical-notice-hide"]{display:none!important}
+		</style>
+		<script>
+			(function () {
+				var notices = Array.prototype.filter.call(
+					document.querySelectorAll(
+						'.sbi-critical-notice,.cff-critical-notice,'
+						+ '.sbi-frontend-license-notice,.cff-frontend-license-notice,'
+						+ '.ctf-frontend-license-notice,.sby-frontend-license-notice'
+					),
+					function (notice) {
+						return 'fixed' === window.getComputedStyle(notice).position;
+					}
+				);
+				if (notices.length < 2) {
+					return;
+				}
+
+				var stack = document.createElement('div');
+				stack.id  = 'sb-frontend-notices';
+				notices.forEach(function (notice) {
+					stack.appendChild(notice);
+				});
+				document.body.appendChild(stack);
+			})();
+		</script>
+		<?php 
+    }
+    // After the plugins print their notices (wp_footer priority 300).
+    add_action('wp_footer', __NAMESPACE__ . '\sb_stack_frontend_notices', 1000);
+}

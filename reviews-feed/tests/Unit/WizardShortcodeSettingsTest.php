@@ -102,4 +102,21 @@ class WizardShortcodeSettingsTest extends TestCase
 		$this->assertSame('feed="7"', SB_Reviews_Blocks::wizard_shortcode_settings('7" evil="1'));
 		$this->assertSame('feed="0"', SB_Reviews_Blocks::wizard_shortcode_settings('" onerror="x'));
 	}
+
+	/**
+	 * wizard_feed_id() is the same rule as an int, for the block insert
+	 * (Tooltip_Wizard), so the preselect and the inserted block always agree.
+	 *
+	 * @return void
+	 */
+	public function test_wizard_feed_id_matches_the_shortcode_rule()
+	{
+		$this->assertSame(1, SB_Reviews_Blocks::wizard_feed_id('1'));
+		$this->assertSame(218, SB_Reviews_Blocks::wizard_feed_id(218));
+		$this->assertSame(7, SB_Reviews_Blocks::wizard_feed_id('7" evil="1'));
+		$this->assertSame(0, SB_Reviews_Blocks::wizard_feed_id('abc'));
+		$this->assertSame(0, SB_Reviews_Blocks::wizard_feed_id(''));
+		$this->assertSame(0, SB_Reviews_Blocks::wizard_feed_id('-5'));
+		$this->assertSame(0, SB_Reviews_Blocks::wizard_feed_id(array( 9 )));
+	}
 }

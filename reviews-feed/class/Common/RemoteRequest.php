@@ -58,6 +58,14 @@ class RemoteRequest
 	 */
 	private const MEMO_MAX_KEYS = 64;
 
+	/** Option: gap key (gap_key()) => the time `since` was first sent (int), or GAP_CLOSED. SMASH-1161. */
+	const GAP_OPTION = 'sbr_google_gap_fill';
+
+	const GAP_CLOSED = 'closed';
+
+	/** Stop sending `since` this long after the first one, filled or not (a relay without the backfill never says so). */
+	const GAP_WINDOW_SECONDS = 2592000;
+
 	private $provider;
 
 	private $args;
@@ -128,7 +136,99 @@ class RemoteRequest
 			self::$memo[$memo_key] = $response;
 		}
 
+		if (isset($args['since']) && is_scalar($this->args['account_id'] ?? null)) {
+			self::record_google_gap($this->gap_key((string) $this->args['account_id']), $response);
+		}
+
 		return $response;
+	}
+
+	/**
+	 * SMASH-1161: a keyed Google fetch is Google's newest 5. Until the relay says the gap is filled, `since` is the
+	 * first (keyless) import's newest review, and the relay fills the reviews between it and those 5.
+	 */
+	private function google_since(bool $keyed): ?int
+	{
+		if (!$keyed || $this->provider !== 'google' || $this->endpoint !== 'reviews' || empty($this->args['account_id']) || !is_scalar($this->args['account_id'])) {
+			return null;
+		}
+		$account_id = (string) $this->args['account_id'];
+
+		return self::google_gap_open($this->gap_key($account_id)) ? PostAggregator::first_import_newest_time($account_id) : null;
+	}
+
+	/** A source's gap is per feed language: the relay walks and answers each language on its own. */
+	private function gap_key(string $account_id): string
+	{
+		$language = $this->args['language'] ?? '';
+
+		return is_string($language) && $language !== '' && $language !== 'default' ? $account_id . '|' . $language : $account_id;
+	}
+
+	/** @return array<string, int|string> */
+	private static function google_gaps(): array
+	{
+		$gaps = get_option(self::GAP_OPTION, []);
+
+		return is_array($gaps) ? $gaps : [];
+	}
+
+	/** Is this source's gap still to fill: never closed, and inside the window from the first `since`? */
+	private static function google_gap_open(string $gap_key): bool
+	{
+		$state = self::google_gaps()[ $gap_key ] ?? null;
+
+		return $state === null || (is_int($state) && time() - $state < self::GAP_WINDOW_SECONDS);
+	}
+
+	/**
+	 * Closes the gap when the relay answers `gap_filled: true`; otherwise starts the window on the first `since`.
+	 * Only a relay answer counts: an unreachable relay or an error envelope leaves the state as it was.
+	 *
+	 * @param mixed $response SBRelay::call()'s answer.
+	 */
+	private static function record_google_gap(string $gap_key, $response): void
+	{
+		if (!is_array($response) || ($response['success'] ?? null) !== true) {
+			return;
+		}
+		$gaps  = self::google_gaps();
+		$state = $gaps[ $gap_key ] ?? null;
+		if (($response['data']['gap_filled'] ?? null) === true) {
+			$gaps[ $gap_key ] = self::GAP_CLOSED;
+		} elseif ($state === null) {
+			$gaps[ $gap_key ] = time();
+		} else {
+			return;
+		}
+
+		update_option(self::GAP_OPTION, $gaps, false);
+	}
+
+	/**
+	 * Forget a source's gap state in every language, so a source added again gets its own fill. SMASH-1161.
+	 *
+	 * @param mixed $account_id
+	 */
+	public static function forget_google_gap($account_id): void
+	{
+		if (!is_scalar($account_id)) {
+			return;
+		}
+		$account_id = (string) $account_id;
+		$gaps       = self::google_gaps();
+		$kept       = array_filter(
+			$gaps,
+			static function ($key) use ($account_id) {
+				return (string) $key !== $account_id && strpos((string) $key, $account_id . '|') !== 0;
+			},
+			ARRAY_FILTER_USE_KEY
+		);
+		if (count($kept) === count($gaps)) {
+			return;
+		}
+
+		update_option(self::GAP_OPTION, $kept, false);
 	}
 
 	/**
@@ -223,6 +323,9 @@ class RemoteRequest
 		} else {
 			$args['api_key'] = !empty($this->args['access_token']) ? $this->args['access_token'] : '';
 		}
+
+		// SMASH-1161: `since` only when google_since() has one (is_int drops its null).
+		$args += array_filter(['since' => $this->google_since(!empty($args['api_key']))], 'is_int');
 
 		if (!empty($this->args['language']) && $this->args['language'] !== 'default') {
 			$args['language'] = $this->args['language'];

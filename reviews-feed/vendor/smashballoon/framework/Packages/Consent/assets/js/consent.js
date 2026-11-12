@@ -9,6 +9,8 @@
  *                                Never rejects: Response when saved, null when not.
  *   - activateModal()            Programmatically opens the re-prompt modal.
  *   - showRepromptModal          (config) — truthy = open on init.
+ *   - consentMigrated            (config) — truthy = consent came only from the
+ *                                legacy opt-in migration; a pending Skip is sent.
  */
 (function () {
     'use strict';
@@ -359,24 +361,36 @@
 
         // Truthy check (not strict ===), defensive against wp_localize_script type coercion.
         if (!getConfig().showRepromptModal) {
+            // SMASH-2686: consent is on only because the legacy opt-in was
+            // carried over, after this browser's Skip failed to save. The Skip
+            // is the admin's choice, so send it as a normal Skip.
+            if (getConfig().consentMigrated && getPending() !== null) {
+                retryPendingSkip('skip');
+                return;
+            }
             if (getConfig().consentResolved) {
                 clearPending();
             }
             return;
         }
 
-        var pending = getPending();
-        if (pending === null) {
+        if (getPending() === null) {
             activateModal();
             return;
         }
         // Skip already chosen in this browser but not stored yet: keep the
-        // popup closed and retry in the background, at most once a minute.
+        // popup closed and retry in the background. dsc only: keeps a
+        // notifications value set since (e.g. in Settings); with none set it
+        // stores the same as a normal Skip.
+        retryPendingSkip('skip', { dsc: false });
+    }
+
+    // Sends a pending Skip at most once a minute; clears it once stored.
+    function retryPendingSkip(choice, extra) {
+        var pending = getPending();
         if (Date.now() - (parseInt(pending, 10) || 0) >= RETRY_THROTTLE_MS) {
             setPending();
-            // dsc only: keeps a notifications value set since (e.g. in
-            // Settings); with none set it stores the same as a normal Skip.
-            queueSave('skip', { dsc: false }).then(function (result) {
+            queueSave(choice, extra).then(function (result) {
                 if (result.saved) {
                     clearPending();
                 }

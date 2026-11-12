@@ -713,7 +713,7 @@ class SBR_Trust_Badge_Builder
 		wp_enqueue_script(
 			'sb-customizer-app',
 			$js_file,
-			array( 'wp-i18n', 'jquery' ),
+			array( 'wp-i18n', 'wp-api-fetch', 'jquery' ),
 			Util::asset_version('vendor/smashballoon/customizer/sb-common/sb-customizer/build/static/js/main.js'),
 			true
 		);

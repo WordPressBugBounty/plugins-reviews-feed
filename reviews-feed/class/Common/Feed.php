@@ -1390,6 +1390,26 @@ class Feed
 	}
 
 	/**
+	 * Our text for a provider refusing the client's own API key (SMASH-1686), or null. sb-relay's reviewsError carries the
+	 * provider's error code as `status` (Reviews/Yelp.php); it is matched here, never echoed.
+	 *
+	 * @param string $provider The source's provider.
+	 * @param mixed  $status   The envelope's `status`.
+	 * @return string|null
+	 */
+	private static function provider_key_reason($provider, $status)
+	{
+		$reasons = array(
+			'yelp' => array(
+				'TRIAL_EXPIRED'             => __('Yelp stopped answering for this source because the free trial on your Yelp API key has ended. Upgrade your plan on Yelp, or add a key from a Yelp account with an active plan under Settings, Manage API Keys.', 'reviews-feed'),
+				'UNAUTHORIZED_ACCESS_TOKEN' => __('Yelp no longer accepts your Yelp API key. Create a new key on Yelp and add it under Settings, Manage API Keys.', 'reviews-feed'),
+			),
+		);
+
+		return is_string($status) ? ( $reasons[ $provider ][ $status ] ?? null ) : null;
+	}
+
+	/**
 	 * Record a relay refusal as a feed error carrying its id (SMASH-1610).
 	 *
 	 * The text is ours, keyed by id, not the relay's `message`: relay strings can echo request input.
@@ -1406,9 +1426,15 @@ class Feed
 			$error_id = 'relayError';
 		}
 
+		$key_reason = $error_id === 'reviewsError'
+			? self::provider_key_reason((string) ($request['provider'] ?? ''), $response['status'] ?? null)
+			: null;
+
 		if ($error_id === 'freeReviewsLimitExceeded') {
 			// Provider-neutral on purpose: this also fires for sources with no API-key field (Trustpilot, sb-relay LimitReviewsRequest).
 			$reason = __("This source has reached the number of reviews the plugin can fetch on your current plan, so new reviews can't be fetched for it right now.", 'reviews-feed');
+		} elseif ($key_reason !== null) {
+			$reason = $key_reason;
 		} elseif (in_array($error_id, array( 'relayUnreachable', 'relayServerError' ), true) && ! empty($response['message']) && is_string($response['message'])) {
 			$reason = wp_strip_all_tags($response['message']);
 		} else {

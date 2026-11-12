@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 class ConsentAssets
 {
     const ASSET_HANDLE = 'sbc-consent';
-    const ASSET_VERSION = '1.0.9';
+    const ASSET_VERSION = '1.0.10';
     /**
      * @var bool
      */
@@ -98,6 +98,9 @@ class ConsentAssets
             'showRepromptModal' => $show_modal,
             // Lets the JS drop a stale pending Skip once nothing is pending.
             'consentResolved' => ConsentManager::is_modal_dismissed() || ConsentManager::is_dsc_enabled(),
+            // Consent is on only from the legacy opt-in migration, so a Skip
+            // still pending in this browser is sent, not dropped (SMASH-2686).
+            'consentMigrated' => ConsentManager::is_consent_migrated(),
             'plugin_slug' => $plugin_slug,
             'restRoot' => esc_url_raw(rest_url('sbc/v1/')),
             'restNonce' => wp_create_nonce('wp_rest'),

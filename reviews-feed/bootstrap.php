@@ -212,6 +212,20 @@ if ( class_exists( '\SmashBalloon\Reviews\Vendor\Smashballoon\Framework\Packages
 			'is_pro'              => $sbr_pro,
 			'show_reprompt_modal' => ! $sbr_pro,
 			'pro_init_option'     => $sbr_pro ? 'sbr_pro_consent_initialized' : null,
+			// SMASH-2630: sites that had opted in to usage tracking keep sharing
+			// after the consent update (run once by the package). Reads the raw
+			// toggle, because Config::is_enabled() already includes the consent gate.
+			// SMASH-2686: 2.10.0 saved usagetracking = true as a default on any
+			// Settings save, so the toggle alone is not proof. A stored site token
+			// is: only the 2.11.0+ tracker stores one, and only while enabled.
+			'legacy_optin'        => static function () {
+				$settings = get_option( 'sbr_settings', array() );
+				if ( ! is_array( $settings ) || empty( $settings['usagetracking'] ) ) {
+					return false;
+				}
+				$token = get_option( \SmashBalloon\Reviews\Common\UsageTracking\Config::OPTION_SITE_TOKEN, '' );
+				return is_string( $token ) && '' !== $token;
+			},
 		)
 	);
 }

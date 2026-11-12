@@ -13,6 +13,7 @@ if (! defined('ABSPATH')) {
 }
 
 use Smashballoon\Stubs\Services\ServiceProvider;
+use SmashBalloon\Reviews\Common\Admin\Blocks\SB_Reviews_Blocks;
 
 class Tooltip_Wizard extends ServiceProvider
 {
@@ -77,6 +78,9 @@ class Tooltip_Wizard extends ServiceProvider
 		$wp_localize_data = [];
 		if ($this->check_gutenberg_wizard()) {
 			$wp_localize_data['sbr_wizard_gutenberg'] = true;
+			// 0 (no feed named) falls back to the tooltip.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only feed id for the block insert.
+			$wp_localize_data['sbr_wizard_feed_id'] = SB_Reviews_Blocks::wizard_feed_id(wp_unslash($_GET['sbr_wizard'] ?? ''));
 		}
 
 		wp_localize_script(

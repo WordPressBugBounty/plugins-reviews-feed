@@ -193,17 +193,29 @@ class SB_Reviews_Blocks extends ServiceProvider
 	 */
 	public static function wizard_shortcode_settings($arg)
 	{
+		return 'feed="' . self::wizard_feed_id($arg) . '"';
+	}
+
+	/**
+	 * The feed id a `sbr_wizard` arg names, 0 when it names none.
+	 *
+	 * @param mixed $arg Raw `sbr_wizard` value, unslashed by the caller.
+	 *
+	 * @return int
+	 */
+	public static function wizard_feed_id($arg)
+	{
 		// Answered before the cast, which would raise "Array to string conversion".
 		// Same '' WP's own _sanitize_text_fields() gives for an array
-		// (wp-includes/formatting.php:5634), so the same feed="0".
+		// (wp-includes/formatting.php:5634), so the same 0.
 		if (! is_scalar($arg)) {
-			return 'feed="0"';
+			return 0;
 		}
 
 		// DEPARTURE from the inline version this replaced: it emitted feed="-5" for
-		// `-5`. Clamping is deliberate — a negative names no feed — and absint()
+		// `-5`. Clamping is deliberate, a negative names no feed, and absint()
 		// is wrong here because it folds the sign onto real feed 5.
-		return 'feed="' . max(0, (int) sanitize_text_field((string) $arg)) . '"';
+		return max(0, (int) sanitize_text_field((string) $arg));
 	}
 
 	/**

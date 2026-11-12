@@ -52,6 +52,8 @@ if (! $preserve_settings) {
 		'sbr_smash_usage_events',
 		'sbr_smash_usage_active_dates',
 		'sbr_smash_usage_session_durations',
+		// RemoteRequest::GAP_OPTION; a leftover `closed` entry stops a re-added place from getting its fill.
+		'sbr_google_gap_fill',
 	);
 	foreach ($wp_options_keys as $key) {
 		delete_option($key);

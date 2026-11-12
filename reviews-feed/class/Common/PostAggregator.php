@@ -16,6 +16,9 @@ class PostAggregator {
 	public const UPLOAD_FOLDER_NAME = 'sbr-feed-images';
 	public const POSTS_TABLE_NAME = SBR_POSTS_TABLE;
 
+	/** Rows created this long after a source's first row still count as its first import. SMASH-1161. */
+	const FIRST_IMPORT_SECONDS = 3600;
+
 	/**
 	 * @var array
 	 */
@@ -398,6 +401,44 @@ class PostAggregator {
 	}
 
 	/**
+	 * Unix time of the newest review in a source's first import, any language, or null when it has none. SMASH-1161.
+	 *
+	 * The first import is the keyless 10 a site had before adding a key. Later keyed rows are left out, because their
+	 * newest is Google's own and would hide the gap. A row with no created_on predates the column, so it counts.
+	 *
+	 * @param string $provider_id Source account id.
+	 * @param string $provider    Its provider; no index leads with provider_id, so this one narrows the scan.
+	 * @return int|null
+	 */
+	public static function first_import_newest_time($provider_id, $provider = 'google')
+	{
+		global $wpdb;
+		$table_name = esc_sql($wpdb->prefix . self::POSTS_TABLE_NAME);
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is esc_sql'd
+		$newest = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT MAX(time_stamp) FROM $table_name
+				WHERE provider = %s AND provider_id = %s
+				AND (created_on IS NULL OR created_on <= (
+					SELECT DATE_ADD(MIN(created_on), INTERVAL %d SECOND) FROM $table_name WHERE provider = %s AND provider_id = %s
+				))",
+				(string) $provider,
+				(string) $provider_id,
+				self::FIRST_IMPORT_SECONDS,
+				(string) $provider,
+				(string) $provider_id
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// SinglePostCache writes time_stamp with date(), which WordPress runs in UTC.
+		$time = is_string($newest) && $newest !== '' ? strtotime($newest . ' UTC') : false;
+
+		return is_int($time) && $time > 0 ? $time : null;
+	}
+
+	/**
 	 * Does a source have any stored row in this language? Raw (no decode, no dedup), so every reader asks the
 	 * same question the same way. SMASH-2407.
 	 *
@@ -619,6 +660,9 @@ class PostAggregator {
 			)
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// SMASH-1161: a source added again starts a new first import, so its gap is open again.
+		RemoteRequest::forget_google_gap($provider_id);
 	}
 
 	/**

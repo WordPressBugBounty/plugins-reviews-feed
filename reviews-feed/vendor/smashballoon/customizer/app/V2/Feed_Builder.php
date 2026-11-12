@@ -65,7 +65,19 @@ class Feed_Builder extends ServiceProvider
      */
     public function builder_enqueue_admin_scripts()
     {
-        $builder_data = ['ajaxHandler' => admin_url('admin-ajax.php'), 'adminPostURL' => admin_url('post.php'), 'widgetsPageURL' => admin_url('widgets.php'), 'builderUrl' => admin_url('admin.php?page=' . $this->builder_menu_slug), 'wordpressPageLists' => \Smashballoon\Customizer\V2\SB_Utils::get_wp_pages(), 'iconsList' => \Smashballoon\Customizer\V2\SB_Utils::get_icons(), 'reactScreen' => 'customizer', 'templatesList' => $this->get_templates_list()];
+        $builder_data = [
+            'ajaxHandler' => admin_url('admin-ajax.php'),
+            'adminPostURL' => admin_url('post.php'),
+            'widgetsPageURL' => admin_url('widgets.php'),
+            'builderUrl' => admin_url('admin.php?page=' . $this->builder_menu_slug),
+            'wordpressPageLists' => \Smashballoon\Customizer\V2\SB_Utils::get_wp_pages(),
+            'iconsList' => \Smashballoon\Customizer\V2\SB_Utils::get_icons(),
+            'reactScreen' => 'customizer',
+            // The Embed Feed modal's "Add and Go to Page" inserts the feed block,
+            // which registers from WordPress 5.8. Older sites get the shortcode.
+            'embedModalSupported' => \Smashballoon\Customizer\V2\EmbedModal::is_supported(),
+            'templatesList' => $this->get_templates_list(),
+        ];
         //Only for Customizer
         if (isset($_GET['feed_id'])) {
             $builder_data = array_merge($builder_data, ['isFeedEditor' => \true, 'feedEditor' => ['defaultTab' => 'sb-customize-tab'], 'customizerData' => $this->customizer_builder_data(), 'feedData' => $this->customizer_feed_data()]);
@@ -79,7 +91,7 @@ class Feed_Builder extends ServiceProvider
         }
         $builder_data = array_merge($builder_data, $this->custom_builder_data());
         //Data comming from the Actual plugin
-        wp_enqueue_script('sb-customizer-app', $customizer_js_file, array('wp-i18n', 'jquery'), \false, \true);
+        wp_enqueue_script('sb-customizer-app', $customizer_js_file, array('wp-i18n', 'jquery', 'wp-api-fetch'), \false, \true);
         wp_localize_script('sb-customizer-app', 'sb_customizer', $builder_data);
         wp_enqueue_media();
         wp_set_script_translations('sb-customizer-app', 'reviews-feed', SBR_PLUGIN_DIR . 'languages/');
